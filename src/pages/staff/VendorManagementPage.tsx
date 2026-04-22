@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Input, Spinner } from '../../components/ui'
-import { assignVendorToClient } from '../../services/auth'
 import type { Profile } from '../../types'
 
 function getAuthToken(): string | null {
@@ -32,7 +31,6 @@ export default function VendorManagementPage() {
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [vendorProjects, setVendorProjects] = useState<VendorProject[]>([])
-  const [clients, setClients] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [newVendorName, setNewVendorName] = useState('')
   const [newVendorEmail, setNewVendorEmail] = useState('')
@@ -183,19 +181,6 @@ export default function VendorManagementPage() {
     }
   }
 
-  const handleAssignVendor = async () => {
-    if (!selectedClientId || !selectedVendorId) return
-
-    try {
-      await assignVendorToClient(selectedClientId, selectedVendorId)
-      setSelectedClientId('')
-      setSelectedVendorId('')
-      loadData()
-    } catch (err) {
-      console.error('Failed to assign vendor', err)
-    }
-  }
-
   if (isLoading) return <Spinner size="lg" />
 
   return (
@@ -212,22 +197,24 @@ export default function VendorManagementPage() {
             </Card>
           ) : (
             vendors.map((vendor) => (
-              <Card
+              <button
                 key={vendor.id}
-                className="p-4 flex items-center justify-between cursor-pointer hover:border-white/20 transition-colors"
                 onClick={() => {
                   setSelectedVendorToEdit(vendor)
                   setEditingEmail(vendor.contact_email || '')
                 }}
+                className="w-full text-left"
               >
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-3 h-3 rounded-full bg-green-500 status-dot"></div>
-                  <div>
-                    <p className="font-semibold text-white">{vendor.name}</p>
-                    <p className="text-sm text-secondary">{vendor.contact_email || 'No email set'}</p>
+                <Card className="p-4 flex items-center justify-between cursor-pointer hover:border-white/20 transition-colors">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="w-3 h-3 rounded-full bg-green-500 status-dot"></div>
+                    <div>
+                      <p className="font-semibold text-white">{vendor.name}</p>
+                      <p className="text-sm text-secondary">{vendor.contact_email || 'No email set'}</p>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </button>
             ))
           )}
         </div>

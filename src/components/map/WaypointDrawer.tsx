@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { X, Trash2 } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { Badge, Button, Select, Spinner, Textarea, useToast } from '../ui'
 import { getWaypointHistory } from '../../services/waypointRepairHistory'

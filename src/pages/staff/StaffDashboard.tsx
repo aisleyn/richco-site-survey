@@ -21,7 +21,6 @@ export default function StaffDashboard() {
     surveysThisMonth: 0,
     completed: 0,
   })
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const loadStats = async () => {
@@ -67,8 +66,6 @@ export default function StaffDashboard() {
         })
       } catch (error) {
         console.error('Error loading stats:', error)
-      } finally {
-        setIsLoading(false)
       }
     }
 
