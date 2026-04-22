@@ -1,0 +1,150 @@
+@import 'leaflet/dist/leaflet.css';
+
+.map-container {
+  background-color: #0a0a0a;
+  position: relative;
+}
+
+.map-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.8) 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.map-container .leaflet-container {
+  background-color: #0a0a0a;
+}
+
+.map-container .leaflet-control-attribution {
+  background-color: transparent;
+  color: #666;
+  font-size: 11px;
+}
+
+.map-container .leaflet-control {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: none;
+  padding: 4px !important;
+}
+
+.map-container .leaflet-control-zoom {
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.map-container .leaflet-control-zoom-in,
+.map-container .leaflet-control-zoom-out {
+  background-color: transparent;
+  border: none;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  line-height: 1.5;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.map-container .leaflet-control-zoom-in:hover,
+.map-container .leaflet-control-zoom-out:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.map-container .leaflet-popup-content-wrapper {
+  background-color: #0a0a0a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: white;
+}
+
+.map-container .leaflet-popup-tip {
+  background-color: #0a0a0a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.map-container .leaflet-popup-content {
+  color: white;
+  margin: 0;
+}
+
+.map-container .leaflet-circle-marker {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.map-container .leaflet-circle-marker:hover {
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.3));
+}
+
+.map-container .leaflet-draggable {
+  cursor: grab;
+}
+
+.map-container .leaflet-draggable:active {
+  cursor: grabbing;
+}
+
+/* Layer toggle button styles */
+.map-layer-toggle {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 4px 8px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-layer-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.map-layer-toggle.active {
+  background-color: white;
+  color: black;
+}
+
+/* Legend styles */
+.map-legend {
+  background-color: rgba(10, 10, 10, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  color: white;
+  font-size: 12px;
+}
+
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.map-legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.map-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}

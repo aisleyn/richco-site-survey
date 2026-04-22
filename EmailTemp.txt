@@ -1,0 +1,32 @@
+Dear [User Name],
+
+Please find below a summary of the current repair updates for this biweekly period:
+
+**Project/Location:** [Project Name or Site]
+**Reporting Period:** [Start Date – End Date]
+
+**Summary of Work Completed:**
+
+* [Brief description of completed repairs]
+* [Key milestones achieved]
+
+**Ongoing Repairs:**
+
+* [Repair item + current status]
+* [Expected completion date if applicable]
+
+**Pending/Upcoming Work:**
+
+* [Next scheduled repairs or actions]
+
+**Issues or Delays (if any):**
+
+* [Brief explanation + impact]
+
+Please review and let us know if you have any questions or require additional documentation.
+
+
+Best regards,
+[Your Full Name]
+[Company Name]
+[Contact Information]

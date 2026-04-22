@@ -1,0 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-base text-primary;
+    background: linear-gradient(135deg, #080808 0%, #080808 100%),
+                radial-gradient(ellipse 800px 600px at 20% 30%, rgba(76, 110, 100, 0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 600px 500px at 80% 70%, rgba(71, 85, 105, 0.12) 0%, transparent 65%);
+    background-attachment: fixed;
+  }
+
+  html, body, #root {
+    @apply h-full;
+  }
+
+  h1 {
+    @apply text-3xl font-bold;
+    font-family: "Syne", sans-serif;
+  }
+
+  h2 {
+    @apply text-2xl font-bold;
+    font-family: "Syne", sans-serif;
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+    font-family: "Syne", sans-serif;
+  }
+
+  button {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-elevated rounded-lg shadow-card;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .card-hover:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .status-dot {
+    @apply w-3 h-3 rounded-full;
+    animation: pulse-status 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-status {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+}

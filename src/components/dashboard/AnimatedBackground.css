@@ -1,0 +1,23 @@
+.animated-background-container {
+  background: inherit;
+}
+
+.animated-node {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: drift var(--duration) linear infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes drift {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0);
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--drift-x), var(--drift-y));
+  }
+}
