@@ -1,16 +1,4 @@
 {
-  "routes": [
-    {
-      "route": "/*",
-      "serve": "/index.html",
-      "statusCode": 200
-    },
-    {
-      "route": "/*",
-      "serve": "/404.html",
-      "statusCode": 404
-    }
-  ],
   "navigationFallback": {
     "rewrite": "/index.html"
   },
