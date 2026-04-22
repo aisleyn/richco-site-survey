@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Input, Spinner } from '../../components/ui'
-import type { Profile } from '../../types'
 
 function getAuthToken(): string | null {
   const projectId = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0]
@@ -36,8 +35,6 @@ export default function VendorManagementPage() {
   const [newVendorEmail, setNewVendorEmail] = useState('')
   const [selectedVendorForProject, setSelectedVendorForProject] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
-  const [selectedClientId, setSelectedClientId] = useState('')
-  const [selectedVendorId, setSelectedVendorId] = useState('')
   const [selectedVendorToEdit, setSelectedVendorToEdit] = useState<Vendor | null>(null)
   const [editingEmail, setEditingEmail] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
@@ -54,22 +51,19 @@ export default function VendorManagementPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
 
-      const [vendorsRes, projectsRes, vendorProjectsRes, clientsRes] = await Promise.all([
+      const [vendorsRes, projectsRes, vendorProjectsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors`, { headers }),
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/projects`, { headers }),
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects`, { headers }),
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.client`, { headers }),
       ])
 
       const vendorsData = await vendorsRes.json()
       const projectsData = await projectsRes.json()
       const vendorProjectsData = await vendorProjectsRes.json()
-      const clientsData = await clientsRes.json()
 
       setVendors(vendorsData || [])
       setProjects(projectsData || [])
       setVendorProjects(vendorProjectsData || [])
-      setClients(clientsData || [])
     } finally {
       setIsLoading(false)
     }

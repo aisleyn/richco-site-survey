@@ -103,7 +103,7 @@ export const router = createBrowserRouter([
     path: '/client',
     element: (
       <RequireRole allowedRole="client">
-        <AppShell showSidebar={false} />
+        <AppShell />
       </RequireRole>
     ),
     children: [
