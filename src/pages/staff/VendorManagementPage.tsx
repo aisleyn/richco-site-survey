@@ -57,13 +57,13 @@ export default function VendorManagementPage() {
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects`, { headers }),
       ])
 
-      const vendorsData = await vendorsRes.json()
-      const projectsData = await projectsRes.json()
-      const vendorProjectsData = await vendorProjectsRes.json()
+      const vendorsData = vendorsRes.ok ? await vendorsRes.json() : []
+      const projectsData = projectsRes.ok ? await projectsRes.json() : []
+      const vendorProjectsData = vendorProjectsRes.ok ? await vendorProjectsRes.json() : []
 
-      setVendors(vendorsData || [])
-      setProjects(projectsData || [])
-      setVendorProjects(vendorProjectsData || [])
+      setVendors(Array.isArray(vendorsData) ? vendorsData : [])
+      setProjects(Array.isArray(projectsData) ? projectsData : [])
+      setVendorProjects(Array.isArray(vendorProjectsData) ? vendorProjectsData : [])
     } finally {
       setIsLoading(false)
     }

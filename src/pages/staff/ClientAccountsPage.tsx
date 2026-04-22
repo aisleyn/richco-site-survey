@@ -51,11 +51,11 @@ export default function ClientAccountsPage() {
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors`, { headers }),
       ])
 
-      const clientsData = await clientsRes.json()
-      const vendorsData = await vendorsRes.json()
+      const clientsData = clientsRes.ok ? await clientsRes.json() : []
+      const vendorsData = vendorsRes.ok ? await vendorsRes.json() : []
 
-      setClients(clientsData || [])
-      setVendors(vendorsData || [])
+      setClients(Array.isArray(clientsData) ? clientsData : [])
+      setVendors(Array.isArray(vendorsData) ? vendorsData : [])
     } finally {
       setIsLoading(false)
     }
