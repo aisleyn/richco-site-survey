@@ -146,6 +146,30 @@ def fill_template(template_path, output_path, data):
 
     print(f"Total replacements after headers/footers: {replaced_count}", file=sys.stderr)
 
+    # Comprehensive search for ALL text in the document
+    print(f"Comprehensive search for remaining placeholders", file=sys.stderr)
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+
+    def search_and_replace_in_element(element, replacements):
+        """Recursively search and replace in all text elements"""
+        count = 0
+        # Look for text runs
+        for t_elem in element.iter(qn('w:t')):
+            if t_elem.text:
+                for key, value in replacements.items():
+                    placeholder = f"{{{{{key}}}}}"
+                    if placeholder in t_elem.text:
+                        t_elem.text = t_elem.text.replace(placeholder, str(value))
+                        print(f"✓ Replaced '{key}' in text element", file=sys.stderr)
+                        count += 1
+        return count
+
+    found_count = search_and_replace_in_element(doc.element, replacements)
+    if found_count > 0:
+        print(f"Found and replaced {found_count} placeholders in comprehensive search", file=sys.stderr)
+        replaced_count += found_count
+
     # Handle images - look for Item.Images of Area placeholder
     images_added = 0
     if data.get('images') and len(data['images']) > 0:
