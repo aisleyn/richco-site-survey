@@ -37,3 +37,8 @@ export async function getSignedUrl(bucket: string, path: string, expiresIn = 360
 
   return data.signedUrl
 }
+
+export function getPublicUrl(bucket: string, path: string): string {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+  return data.publicUrl
+}
