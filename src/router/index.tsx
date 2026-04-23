@@ -15,9 +15,9 @@ import MapPage from '../pages/staff/MapPage'
 import SurveysPage from '../pages/staff/SurveysPage'
 import ReportsPage from '../pages/staff/ReportsPage'
 import SettingsPage from '../pages/staff/SettingsPage'
-import VendorManagementPage from '../pages/staff/VendorManagementPage'
+import ClientManagementPage from '../pages/staff/VendorManagementPage'
 import VendorProjectsPage from '../pages/staff/VendorProjectsPage'
-import ClientAccountsPage from '../pages/staff/ClientAccountsPage'
+import AccountsPage from '../pages/staff/ClientAccountsPage'
 import UserManagementPage from '../pages/staff/UserManagementPage'
 import ClientDashboard from '../pages/client/ClientDashboard'
 import ClientProfilePage from '../pages/client/ProfilePage'
@@ -59,7 +59,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'vendors',
-        element: <VendorManagementPage />,
+        element: <ClientManagementPage />,
       },
       {
         path: 'vendor-projects',
@@ -67,7 +67,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'accounts',
-        element: <ClientAccountsPage />,
+        element: <AccountsPage />,
       },
       {
         path: 'users',

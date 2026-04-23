@@ -5,8 +5,8 @@ const navItems = [
   { label: 'Projects', href: '/staff/projects' },
   { label: 'Surveys', href: '/staff/surveys' },
   { label: 'Reports', href: '/staff/reports' },
-  { label: 'Vendors', href: '/staff/vendors' },
-  { label: 'Client Accounts', href: '/staff/accounts' },
+  { label: 'Clients', href: '/staff/vendors' },
+  { label: 'Accounts', href: '/staff/accounts' },
   { label: 'Settings', href: '/staff/settings' },
 ]
 

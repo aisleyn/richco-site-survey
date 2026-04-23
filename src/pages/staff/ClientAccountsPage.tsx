@@ -21,8 +21,9 @@ function getAuthToken(): string | null {
   return raw ? JSON.parse(raw)?.access_token ?? null : null
 }
 
-export default function ClientAccountsPage() {
+export default function AccountsPage() {
   const [clients, setClients] = useState<Profile[]>([])
+  const [staff, setStaff] = useState<Profile[]>([])
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [newClientEmail, setNewClientEmail] = useState('')
@@ -46,15 +47,18 @@ export default function ClientAccountsPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
 
-      const [clientsRes, vendorsRes] = await Promise.all([
+      const [clientsRes, staffRes, vendorsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.client`, { headers }),
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.richco_staff`, { headers }),
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors`, { headers }),
       ])
 
       const clientsData = clientsRes.ok ? await clientsRes.json() : []
+      const staffData = staffRes.ok ? await staffRes.json() : []
       const vendorsData = vendorsRes.ok ? await vendorsRes.json() : []
 
       setClients(Array.isArray(clientsData) ? clientsData : [])
+      setStaff(Array.isArray(staffData) ? staffData : [])
       setVendors(Array.isArray(vendorsData) ? vendorsData : [])
     } finally {
       setIsLoading(false)
@@ -190,10 +194,11 @@ export default function ClientAccountsPage() {
 
   const activeClients = clients.filter(c => !c.archived)
   const archivedClients = clients.filter(c => c.archived)
+  const activeStaff = staff.filter(s => !s.archived)
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-white mb-6">Client Accounts</h1>
+      <h1 className="text-3xl font-bold text-white mb-6">Accounts</h1>
 
       {/* Active Clients */}
       <div>
@@ -220,6 +225,30 @@ export default function ClientAccountsPage() {
                 >
                   Delete
                 </Button>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Active Staff */}
+      <div>
+        <h2 className="text-2xl font-bold text-white mb-4">Active Staff</h2>
+        <div className="grid gap-4">
+          {activeStaff.length === 0 ? (
+            <Card className="p-6">
+              <p className="text-center text-secondary">No active staff accounts</p>
+            </Card>
+          ) : (
+            activeStaff.map((staffMember) => (
+              <Card key={staffMember.id} className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500 status-dot"></div>
+                  <div>
+                    <p className="font-semibold text-white">{staffMember.email}</p>
+                    <p className="text-sm text-secondary">{staffMember.full_name || 'No name set'}</p>
+                  </div>
+                </div>
               </Card>
             ))
           )}
