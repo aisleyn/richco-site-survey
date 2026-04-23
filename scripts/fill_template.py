@@ -62,8 +62,8 @@ def fill_template(template_path, output_path, data):
 
     # Dictionary of replacements with both display name and actual placeholder
     replacements = {
-        'Item.Name': data.get('clientName', 'N/A'),
-        'Item.Client': data.get('clientName', 'N/A'),
+        'Item.Name': data.get('areaName', 'N/A'),  # Room/Area name
+        'Item.Client': data.get('clientName', 'N/A'),  # Vendor/Client name
         'Item.Area Name/ Room Number': data.get('areaName', 'N/A'),
         'Item.Area Size (Sqft)': data.get('areaSize', 'N/A'),
         'Item.Survey Date': data.get('surveyDate', 'N/A'),
@@ -79,9 +79,11 @@ def fill_template(template_path, output_path, data):
     print(f"Processing {len(doc.paragraphs)} paragraphs", file=sys.stderr)
     for idx, paragraph in enumerate(doc.paragraphs):
         para_text = ''.join(run.text for run in paragraph.runs)
+        if para_text.strip():
+            print(f"Para {idx}: {para_text[:100]}", file=sys.stderr)
         for key, value in replacements.items():
             if replace_text_in_paragraph(paragraph, key, value):
-                print(f"Replaced '{{{{key}}}}' in paragraph {idx}", file=sys.stderr)
+                print(f"Replaced '{key}' in paragraph {idx}", file=sys.stderr)
                 replaced_count += 1
 
     # Also replace in tables
@@ -90,6 +92,9 @@ def fill_template(template_path, output_path, data):
         for row_idx, row in enumerate(table.rows):
             for cell_idx, cell in enumerate(row.cells):
                 for para_idx, paragraph in enumerate(cell.paragraphs):
+                    cell_text = ''.join(run.text for run in paragraph.runs)
+                    if cell_text.strip():
+                        print(f"Table {table_idx}, row {row_idx}, cell {cell_idx}: {cell_text[:100]}", file=sys.stderr)
                     for key, value in replacements.items():
                         if replace_text_in_paragraph(paragraph, key, value):
                             print(f"Replaced '{key}' in table {table_idx}, row {row_idx}, cell {cell_idx}", file=sys.stderr)
