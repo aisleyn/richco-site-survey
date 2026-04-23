@@ -17,7 +17,7 @@ const logStream = fs.createWriteStream(logFile, { flags: 'a' })
 function log(msg) {
   const timestamp = new Date().toISOString()
   const line = `[${timestamp}] ${msg}\n`
-  log(line)
+  process.stderr.write(line)
   logStream.write(line)
 }
 
