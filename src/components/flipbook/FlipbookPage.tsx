@@ -41,7 +41,7 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
     <div className="p-8 bg-white min-h-96">
       {/* Page Header */}
       <div className="mb-8 pb-6 border-b border-slate-200">
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 className="text-2xl font-bold text-black mb-2">
           {page.month_tag} Report
         </h2>
         <p className="text-sm text-slate-600">
@@ -55,7 +55,7 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
           <div key={survey.id} className={idx > 0 ? 'pt-8 border-t border-slate-200' : ''}>
             {/* Survey Header */}
             <div className="mb-6">
-              <h3 className="text-xl font-semibold text-white">
+              <h3 className="text-xl font-semibold text-black">
                 {survey.area_name}
               </h3>
               <p className="text-sm text-slate-600 mt-1">
@@ -71,7 +71,7 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
                   <label className="text-xs font-semibold text-slate-600 uppercase">
                     Survey Notes
                   </label>
-                  <p className="text-sm text-white mt-1">{survey.survey_notes}</p>
+                  <p className="text-sm text-black mt-1">{survey.survey_notes}</p>
                 </div>
               )}
               {survey.suggested_system && (
