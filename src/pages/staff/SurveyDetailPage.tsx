@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSurveyById, getSurveyMedia, publishSurvey } from '../../services/surveys'
-import { generateSurveyPDF } from '../../lib/pdfExport'
+import { generateSurveyWord } from '../../lib/wordExport'
 import type { Survey, SurveyMedia } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
@@ -45,14 +45,14 @@ export default function SurveyDetailPage() {
     }
   }
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadReport = async () => {
     if (!survey) return
     setIsDownloading(true)
     try {
       const imageMedia = media.filter((m) => m.media_type === 'image').map((m) => m.file_url)
       const scanMedia = media.filter((m) => m.media_type === '3d_scan').map((m) => m.file_url)
 
-      await generateSurveyPDF({
+      await generateSurveyWord({
         projectName: survey.project_name,
         areaName: survey.area_name,
         surveyDate: survey.survey_date,
@@ -66,12 +66,12 @@ export default function SurveyDetailPage() {
 
       addToast({
         type: 'success',
-        message: 'PDF downloaded successfully',
+        message: 'Report downloaded successfully',
       })
     } catch (error) {
       addToast({
         type: 'error',
-        message: 'Failed to generate PDF',
+        message: 'Failed to generate report',
       })
     } finally {
       setIsDownloading(false)
@@ -105,8 +105,8 @@ export default function SurveyDetailPage() {
             </>
           )}
           {survey.status === 'published' && (
-            <Button variant="primary" onClick={handleDownloadPDF} isLoading={isDownloading} className="w-full xs:w-auto">
-              📥 Download as PDF
+            <Button variant="primary" onClick={handleDownloadReport} isLoading={isDownloading} className="w-full xs:w-auto">
+              📥 Download Report
             </Button>
           )}
         </div>
