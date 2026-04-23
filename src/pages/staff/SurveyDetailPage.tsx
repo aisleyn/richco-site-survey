@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { getSurveyById, getSurveyMedia, publishSurvey } from '../../services/surveys'
+import { getSurveyById, getSurveyMedia, publishSurvey, deleteSurvey } from '../../services/surveys'
 import { generateSurveyFromTemplate } from '../../lib/templateExport'
 import type { Survey, SurveyMedia } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner } from '../../components/ui'
@@ -15,6 +15,7 @@ export default function SurveyDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isPublishing, setIsPublishing] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -79,6 +80,23 @@ export default function SurveyDetailPage() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!survey) return
+    if (!window.confirm('Are you sure you want to delete this survey? This cannot be undone.')) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      await deleteSurvey(survey.id)
+      addToast({ type: 'success', message: 'Survey deleted successfully' })
+      navigate('/staff/surveys')
+    } catch (error) {
+      addToast({ type: 'error', message: 'Failed to delete survey' })
+      setIsDeleting(false)
+    }
+  }
+
   if (isLoading) return <div className="flex items-center justify-center min-h-screen"><Spinner size="lg" /></div>
   if (!survey) return <div>Survey not found</div>
 
@@ -110,6 +128,9 @@ export default function SurveyDetailPage() {
               📥 Download Report
             </Button>
           )}
+          <Button variant="danger" onClick={handleDelete} isLoading={isDeleting} className="w-full xs:w-auto">
+            Delete
+          </Button>
         </div>
       </div>
 

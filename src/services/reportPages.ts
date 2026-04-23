@@ -58,3 +58,12 @@ export async function upsertReportPage(projectId: string, surveyId: string): Pro
     if (insertError) throw insertError
   }
 }
+
+export async function deleteProjectReports(projectId: string): Promise<void> {
+  const { error } = await supabase
+    .from('report_pages')
+    .delete()
+    .eq('project_id', projectId)
+
+  if (error) throw error
+}

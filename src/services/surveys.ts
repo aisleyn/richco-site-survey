@@ -117,3 +117,19 @@ export async function publishSurvey(surveyId: string, projectId: string): Promis
 
   await upsertReportPage(projectId, surveyId)
 }
+
+export async function deleteSurvey(surveyId: string): Promise<void> {
+  const { error: mediaError } = await supabase
+    .from('survey_media')
+    .delete()
+    .eq('survey_id', surveyId)
+
+  if (mediaError) throw mediaError
+
+  const { error: surveyError } = await supabase
+    .from('surveys')
+    .delete()
+    .eq('id', surveyId)
+
+  if (surveyError) throw surveyError
+}
