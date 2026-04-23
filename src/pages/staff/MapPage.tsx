@@ -284,7 +284,7 @@ export default function MapPage() {
       {/* Waypoints List */}
       {waypoints.length > 0 && (
         <Card className="mt-8">
-          <h2 className="text-lg font-semibold text-white mb-4">Waypoints</h2>
+          <h2 className="text-lg font-semibold text-black mb-4">Waypoints</h2>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {waypoints.map((wp) => (
               <div
