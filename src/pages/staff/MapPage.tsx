@@ -203,16 +203,17 @@ export default function MapPage() {
   return (
     <div>
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">{project.name} — Floor Plan Map</h1>
-            <p className="text-secondary mt-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Floor Plan Map</h1>
+            <p className="text-secondary mt-2 text-sm sm:text-base">
               {waypoints.length} waypoint{waypoints.length !== 1 ? 's' : ''}
             </p>
           </div>
           <Button
             variant="primary"
             onClick={() => setIsPdfModalOpen(true)}
+            className="w-full sm:w-auto"
           >
             📄 Upload Floor Plan
           </Button>
@@ -236,22 +237,25 @@ export default function MapPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={isPlacingWaypoint ? 'primary' : 'secondary'}
               onClick={() => setIsPlacingWaypoint(!isPlacingWaypoint)}
+              className="flex-1 xs:flex-none"
             >
               {isPlacingWaypoint ? '✓ Placing Waypoint' : '+ Place Waypoint'}
             </Button>
             <Button
               variant={isMovingWaypoint ? 'primary' : 'secondary'}
               onClick={() => setIsMovingWaypoint(!isMovingWaypoint)}
+              className="flex-1 xs:flex-none"
             >
               {isMovingWaypoint ? '✓ Moving Waypoint' : '↔ Move Waypoint'}
             </Button>
             <Button
               variant="secondary"
               onClick={() => phaserMapRef.current?.resetView()}
+              className="flex-1 xs:flex-none"
             >
               🏠 Reset View
             </Button>
@@ -272,7 +276,7 @@ export default function MapPage() {
                 handleUpdateWaypoint({ ...wp, x_percent: x, y_percent: y })
               }
             }}
-            className="h-[600px] border border-slate-200 rounded-lg overflow-hidden"
+            className="h-80 sm:h-[600px] border border-slate-200 rounded-lg overflow-hidden"
           />
         </div>
       )}

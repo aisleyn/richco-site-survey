@@ -36,15 +36,15 @@ export default function SurveysPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">All Surveys</h1>
-          <p className="text-secondary mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">All Surveys</h1>
+          <p className="text-secondary mt-2 text-sm sm:text-base">
             {surveys.length} survey{surveys.length !== 1 ? 's' : ''} total
           </p>
         </div>
-        <Link to="/staff/projects">
-          <Button variant="primary">Create Survey</Button>
+        <Link to="/staff/projects" className="w-full sm:w-auto">
+          <Button variant="primary" className="w-full sm:w-auto">Create Survey</Button>
         </Link>
       </div>
 
@@ -61,14 +61,14 @@ export default function SurveysPage() {
           {surveys.map((survey) => (
             <Link key={survey.id} to={`/staff/surveys/${survey.id}`}>
               <Card className="card-hover cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{survey.area_name}</h3>
-                    <p className="text-sm text-secondary mt-1">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-white">{survey.area_name}</h3>
+                    <p className="text-xs sm:text-sm text-secondary mt-1">
                       {survey.project_name} • {new Date(survey.survey_date).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <span
                       className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                         survey.status === 'published'

@@ -20,10 +20,10 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
   }[size]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className={clsx('bg-surface rounded-lg shadow-lg w-full mx-4', maxWidthClass, className)}>
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
-          <h2 className="text-xl font-semibold text-white">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className={clsx('bg-surface rounded-lg shadow-lg w-full mx-auto', maxWidthClass, className)}>
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-slate-600 transition-colors"
@@ -34,7 +34,7 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
             </svg>
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-4 sm:p-6">{children}</div>
       </div>
     </div>
   )

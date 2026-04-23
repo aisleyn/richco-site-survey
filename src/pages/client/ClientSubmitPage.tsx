@@ -115,7 +115,7 @@ export default function ClientSubmitPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white mb-8">Submit Repair Request</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-8">Submit Repair Request</h1>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -149,11 +149,11 @@ export default function ClientSubmitPage() {
             previewMode="list"
           />
 
-          <div className="flex gap-4 pt-6">
-            <Button type="submit" variant="primary" className="flex-1" isLoading={isSubmitting}>
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
+            <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting}>
               Submit Request
             </Button>
-            <Button type="button" variant="secondary" onClick={() => navigate('/client')}>
+            <Button type="button" variant="secondary" onClick={() => navigate('/client')} className="w-full sm:w-auto">
               Cancel
             </Button>
           </div>
@@ -173,8 +173,8 @@ export default function ClientSubmitPage() {
           />
 
           {/* Modal */}
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-96 flex flex-col">
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4 sm:p-6">
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] sm:max-h-96 flex flex-col">
               <div className="border-b border-slate-200 p-4">
                 <h2 className="text-lg font-semibold text-white">
                   {isPlacingWaypoint ? 'Click on the floor plan to mark the location' : 'Location marked!'}

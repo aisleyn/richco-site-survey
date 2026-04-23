@@ -53,8 +53,8 @@ export default function ClientMapPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">{project.name} — Site Map</h1>
-        <p className="text-secondary mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Site Map</h1>
+        <p className="text-secondary mt-2 text-sm sm:text-base">
           {waypoints.length} repair location{waypoints.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -80,8 +80,8 @@ export default function ClientMapPage() {
       {/* Repair Locations Summary */}
       {waypoints.length > 0 && (
         <Card className="mt-8">
-          <h2 className="text-lg font-semibold text-white mb-4">Repair Locations</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Repair Locations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {waypoints.map((wp) => (
               <button
                 key={wp.id}

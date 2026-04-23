@@ -100,17 +100,17 @@ export default function StaffDashboard() {
           </svg>
 
           {/* Main content */}
-          <div className="max-w-2xl w-full text-center">
+          <div className="max-w-2xl w-full text-center px-4">
             {/* Logo */}
-            <img src="/richco-logo.png" alt="Richco" className="h-40 w-auto mx-auto mb-8" />
+            <img src="/richco-logo.png" alt="Richco" className="h-24 xs:h-32 sm:h-40 w-auto mx-auto mb-6 xs:mb-8" />
 
             {/* Headline */}
-            <h1 className="text-6xl md:text-7xl font-light tracking-tight text-white mb-6" style={{ fontFamily: '"Syne", sans-serif' }}>
+            <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-light tracking-tight text-white mb-4 xs:mb-6" style={{ fontFamily: '"Syne", sans-serif' }}>
               Richco Site Survey
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-secondary mb-12 font-medium leading-relaxed">
+            <p className="text-sm xs:text-base sm:text-lg md:text-xl text-secondary mb-8 xs:mb-12 font-medium leading-relaxed">
               Richco Site Surveys and Client Repair Requests
             </p>
 
@@ -129,69 +129,71 @@ export default function StaffDashboard() {
             </div>
 
             {/* Floating stat nodes */}
-            <div className="relative h-80 flex items-center justify-center">
-              {/* Left nodes */}
-              <div className="absolute left-0 top-10 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left transform -translate-x-1/3 hover:border-white/80 transition-colors">
-                <p className="text-white text-sm font-medium uppercase tracking-wider">Active Projects</p>
-                <p className="text-white text-3xl font-bold mt-2">{stats.activeProjects}</p>
-              </div>
+            <div className="relative w-full md:h-80 md:flex md:items-center md:justify-center">
+              <div className="grid grid-cols-1 md:grid-cols-2 md:grid-none gap-4 md:gap-0 w-full md:w-auto">
+                {/* Left nodes */}
+                <div className="md:absolute md:left-0 md:top-10 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left md:transform md:-translate-x-1/3 hover:border-white/80 transition-colors">
+                  <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wider">Active Projects</p>
+                  <p className="text-white text-2xl sm:text-3xl font-bold mt-2">{stats.activeProjects}</p>
+                </div>
 
-              <div className="absolute left-0 bottom-0 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left transform -translate-x-1/3 hover:border-white/80 transition-colors">
-                <p className="text-white text-sm font-medium uppercase tracking-wider">Open Repairs</p>
-                <p className="text-white text-3xl font-bold mt-2">{stats.openRepairs}</p>
-              </div>
+                <div className="md:absolute md:left-0 md:bottom-0 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left md:transform md:-translate-x-1/3 hover:border-white/80 transition-colors">
+                  <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wider">Open Repairs</p>
+                  <p className="text-white text-2xl sm:text-3xl font-bold mt-2">{stats.openRepairs}</p>
+                </div>
 
-              {/* Right nodes */}
-              <div className="absolute right-0 top-10 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left transform translate-x-1/3 hover:border-white/80 transition-colors">
-                <p className="text-white text-sm font-medium uppercase tracking-wider">Surveys This Month</p>
-                <p className="text-white text-3xl font-bold mt-2">{stats.surveysThisMonth}</p>
-              </div>
+                {/* Right nodes */}
+                <div className="md:absolute md:right-0 md:top-10 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left md:transform md:translate-x-1/3 hover:border-white/80 transition-colors">
+                  <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wider">Surveys This Month</p>
+                  <p className="text-white text-2xl sm:text-3xl font-bold mt-2">{stats.surveysThisMonth}</p>
+                </div>
 
-              <div className="absolute right-0 bottom-0 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left transform translate-x-1/3 hover:border-white/80 transition-colors">
-                <p className="text-white text-sm font-medium uppercase tracking-wider">Completed</p>
-                <p className="text-white text-3xl font-bold mt-2">{stats.completed}</p>
+                <div className="md:absolute md:right-0 md:bottom-0 bg-elevated border-2 border-white rounded-lg px-6 py-4 text-left md:transform md:translate-x-1/3 hover:border-white/80 transition-colors">
+                  <p className="text-white text-xs sm:text-sm font-medium uppercase tracking-wider">Completed</p>
+                  <p className="text-white text-2xl sm:text-3xl font-bold mt-2">{stats.completed}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Quick Access Cards */}
-        <div className="py-20 px-6">
+        <div className="py-12 xs:py-16 sm:py-20 px-4 xs:px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xs:gap-6">
               {/* Field Map Card */}
               <Link to="/staff/projects" className="group">
-                <div className="bg-elevated border-2 border-white rounded-lg p-8 hover:border-white/80 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
+                <div className="bg-elevated border-2 border-white rounded-lg p-6 xs:p-8 hover:border-white/80 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
                   <div className="mb-4">
-                    <MapIcon className="w-8 h-8 text-white" />
+                    <MapIcon className="w-6 xs:w-8 h-6 xs:h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: '"Syne", sans-serif' }}>Field Map</h3>
-                  <p className="text-secondary text-sm mb-6">Interactive site maps and waypoint management</p>
-                  <span className="text-white text-sm font-medium group-hover:translate-x-1 inline-block transition-transform">View Maps →</span>
+                  <h3 className="text-base xs:text-lg sm:text-xl font-semibold text-white mb-2" style={{ fontFamily: '"Syne", sans-serif' }}>Field Map</h3>
+                  <p className="text-secondary text-xs xs:text-sm mb-6">Interactive site maps and waypoint management</p>
+                  <span className="text-white text-xs xs:text-sm font-medium group-hover:translate-x-1 inline-block transition-transform">View Maps →</span>
                 </div>
               </Link>
 
               {/* Survey Reports Card */}
               <Link to="/staff/reports" className="group">
-                <div className="bg-elevated border-2 border-white rounded-lg p-8 hover:border-white/80 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
+                <div className="bg-elevated border-2 border-white rounded-lg p-6 xs:p-8 hover:border-white/80 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
                   <div className="mb-4">
-                    <FileTextIcon className="w-8 h-8 text-white" />
+                    <FileTextIcon className="w-6 xs:w-8 h-6 xs:h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: '"Syne", sans-serif' }}>Survey Reports</h3>
-                  <p className="text-secondary text-sm mb-6">Generated reports and documentation</p>
-                  <span className="text-white text-sm font-medium group-hover:translate-x-1 inline-block transition-transform">View Reports →</span>
+                  <h3 className="text-base xs:text-lg sm:text-xl font-semibold text-white mb-2" style={{ fontFamily: '"Syne", sans-serif' }}>Survey Reports</h3>
+                  <p className="text-secondary text-xs xs:text-sm mb-6">Generated reports and documentation</p>
+                  <span className="text-white text-xs xs:text-sm font-medium group-hover:translate-x-1 inline-block transition-transform">View Reports →</span>
                 </div>
               </Link>
 
               {/* Client Submissions Card */}
               <Link to="/staff/projects" className="group">
-                <div className="bg-elevated border-2 border-white rounded-lg p-8 hover:border-white/80 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
+                <div className="bg-elevated border-2 border-white rounded-lg p-6 xs:p-8 hover:border-white/80 transition-all duration-300 hover:-translate-y-1 cursor-pointer h-full">
                   <div className="mb-4">
-                    <InboxIcon className="w-8 h-8 text-white" />
+                    <InboxIcon className="w-6 xs:w-8 h-6 xs:h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2" style={{ fontFamily: '"Syne", sans-serif' }}>Client Submissions</h3>
-                  <p className="text-secondary text-sm mb-6">Repair requests and project submissions</p>
-                  <span className="text-white text-sm font-medium group-hover:translate-x-1 inline-block transition-transform">View Submissions →</span>
+                  <h3 className="text-base xs:text-lg sm:text-xl font-semibold text-white mb-2" style={{ fontFamily: '"Syne", sans-serif' }}>Client Submissions</h3>
+                  <p className="text-secondary text-xs xs:text-sm mb-6">Repair requests and project submissions</p>
+                  <span className="text-white text-xs xs:text-sm font-medium group-hover:translate-x-1 inline-block transition-transform">View Submissions →</span>
                 </div>
               </Link>
             </div>

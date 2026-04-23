@@ -57,8 +57,8 @@ export default function ReportsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">All Reports</h1>
-        <p className="text-secondary mt-2">Flipbook reports by project</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">All Reports</h1>
+        <p className="text-secondary mt-2 text-sm sm:text-base">Flipbook reports by project</p>
       </div>
 
       {projects.length === 0 ? (
@@ -70,7 +70,7 @@ export default function ReportsPage() {
           onAction={() => (window.location.href = '/staff/projects')}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {projects.map((project) => (
             <Link
               key={project.id}
@@ -78,8 +78,8 @@ export default function ReportsPage() {
             >
               <Card className="card-hover cursor-pointer h-full">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                  <p className="text-sm text-secondary mt-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-white">{project.name}</h3>
+                  <p className="text-xs sm:text-sm text-secondary mt-2">
                     {project.report_count} report{project.report_count !== 1 ? 's' : ''}
                   </p>
                   <p className="text-xs text-slate-500 mt-3">

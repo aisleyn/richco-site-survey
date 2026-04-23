@@ -125,12 +125,12 @@ export default function ProjectsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">Projects</h1>
-          <p className="text-secondary mt-1">Manage your client projects</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Projects</h1>
+          <p className="text-secondary mt-1 text-sm sm:text-base">Manage your client projects</p>
         </div>
-        <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+        <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
           New Project
         </Button>
       </div>
@@ -160,27 +160,27 @@ export default function ProjectsPage() {
                 .map((project) => (
                   <Link key={project.id} to={`/staff/projects/${project.id}`}>
                     <Card className="card-hover cursor-pointer">
-                      <div className="flex items-center justify-between">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                        <div className="flex-1">
                           <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                          <p className="text-sm text-secondary mt-1">
+                          <p className="text-xs sm:text-sm text-secondary mt-1">
                             Created {new Date(project.created_at).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1">
                           <button
                             onClick={(e) => handleArchiveProject(e, project.id, project.archived || false)}
-                            className="text-amber-600 hover:text-amber-700 text-sm font-medium transition-colors"
+                            className="text-amber-600 hover:text-amber-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
                           >
                             Archive
                           </button>
                           <button
                             onClick={(e) => handleDeleteProject(e, project.id)}
-                            className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                            className="text-red-600 hover:text-red-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
                           >
                             Delete
                           </button>
-                          <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="hidden xs:block w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
                         </div>
@@ -204,27 +204,27 @@ export default function ProjectsPage() {
                   .map((project) => (
                     <Link key={project.id} to={`/staff/projects/${project.id}`}>
                       <Card className="card-hover cursor-pointer bg-slate-50">
-                        <div className="flex items-center justify-between">
-                          <div>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                          <div className="flex-1">
                             <h3 className="text-lg font-semibold text-white">{project.name}</h3>
-                            <p className="text-sm text-secondary mt-1">
+                            <p className="text-xs sm:text-sm text-secondary mt-1">
                               Created {new Date(project.created_at).toLocaleDateString()}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1">
                             <button
                               onClick={(e) => handleArchiveProject(e, project.id, project.archived || false)}
-                              className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+                              className="text-blue-600 hover:text-blue-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
                             >
                               Restore
                             </button>
                             <button
                               onClick={(e) => handleDeleteProject(e, project.id)}
-                              className="text-red-600 hover:text-red-700 text-sm font-medium transition-colors"
+                              className="text-red-600 hover:text-red-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
                             >
                               Delete
                             </button>
-                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="hidden xs:block w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </div>
