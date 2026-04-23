@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Modal, Button } from '../ui'
-import { uploadFile, getPublicUrl } from '../../services/storage'
+import { uploadFile, getSignedUrl } from '../../services/storage'
 import { supabase } from '../../lib/supabase'
 import { pdfjsLib } from '../../lib/pdf'
 
@@ -74,8 +74,8 @@ export function PdfUploadModal({
       // Upload to storage
       const fileName = `${projectId}/floor-plan-${Date.now()}.png`
       const uploadResult = await uploadFile('floor-plans', fileName, imageBlob as File)
-      // Use public URL that never expires instead of signed URL
-      const imageUrl = getPublicUrl('floor-plans', uploadResult.path)
+      // Use signed URL with 10-year expiration so map persists permanently
+      const imageUrl = await getSignedUrl('floor-plans', uploadResult.path, 315360000) // 10 years
 
       // Update project with new map image URL
       await supabase

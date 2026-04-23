@@ -403,8 +403,8 @@ export class MapScene extends Phaser.Scene {
     // Label (smaller font, closer position)
     const label = this.add.text(0, -14, waypoint.area_name, {
       fontSize: '10px',
-      color: '#ffffff',
-      backgroundColor: '#1f2937',
+      color: '#000000',
+      backgroundColor: '#ffffff',
       padding: { x: 4, y: 2 },
       fontFamily: 'monospace',
     })
