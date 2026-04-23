@@ -154,15 +154,21 @@ def fill_template(template_path, output_path, data):
     def search_and_replace_in_element(element, replacements):
         """Recursively search and replace in all text elements"""
         count = 0
+        element_count = 0
         # Look for text runs
         for t_elem in element.iter(qn('w:t')):
+            element_count += 1
             if t_elem.text:
+                # Show first 20 text elements found
+                if element_count <= 20:
+                    print(f"Text element {element_count}: {repr(t_elem.text[:80])}", file=sys.stderr)
                 for key, value in replacements.items():
                     placeholder = f"{{{{{key}}}}}"
                     if placeholder in t_elem.text:
                         t_elem.text = t_elem.text.replace(placeholder, str(value))
                         print(f"✓ Replaced '{key}' in text element", file=sys.stderr)
                         count += 1
+        print(f"Total text elements found: {element_count}", file=sys.stderr)
         return count
 
     found_count = search_and_replace_in_element(doc.element, replacements)
