@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { getSurveyById, getSurveyMedia, publishSurvey } from '../../services/surveys'
-import { generateSurveyWord } from '../../lib/wordExport'
+import { generateSurveyFromTemplate } from '../../lib/templateExport'
 import type { Survey, SurveyMedia } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
@@ -52,7 +52,7 @@ export default function SurveyDetailPage() {
       const imageMedia = media.filter((m) => m.media_type === 'image').map((m) => m.file_url)
       const scanMedia = media.filter((m) => m.media_type === '3d_scan').map((m) => m.file_url)
 
-      await generateSurveyWord({
+      await generateSurveyFromTemplate({
         projectName: survey.project_name,
         areaName: survey.area_name,
         surveyDate: survey.survey_date,
@@ -62,6 +62,7 @@ export default function SurveyDetailPage() {
         notes: survey.install_notes || 'N/A',
         images: imageMedia,
         scans: scanMedia,
+        clientName: survey.client_name || 'N/A',
       })
 
       addToast({
