@@ -206,6 +206,11 @@ if __name__ == '__main__':
     template_path = sys.argv[1]
     output_path = sys.argv[2]
 
+    # Also write logs to a file
+    log_file = 'fill_template.log'
+    with open(log_file, 'a') as lf:
+        lf.write(f"\n=== Starting fill_template.py at {sys.argv} ===\n")
+
     try:
         # Parse JSON data from argument
         if len(sys.argv) > 3:
@@ -213,12 +218,23 @@ if __name__ == '__main__':
         else:
             data = json.load(sys.stdin)
 
-        print(f"Starting template fill with data: {data}", file=sys.stderr)
+        msg = f"Starting template fill with data: {data}"
+        print(msg, file=sys.stderr)
+        with open(log_file, 'a') as lf:
+            lf.write(msg + "\n")
+
         fill_template(template_path, output_path, data)
-        print(json.dumps({'success': True, 'output': output_path}))
+        result = json.dumps({'success': True, 'output': output_path})
+        print(result)
+        with open(log_file, 'a') as lf:
+            lf.write(result + "\n")
     except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
+        error_msg = f"Error: {str(e)}"
+        print(error_msg, file=sys.stderr)
         import traceback
         traceback.print_exc(file=sys.stderr)
+        with open(log_file, 'a') as lf:
+            lf.write(error_msg + "\n")
+            traceback.print_exc(file=lf)
         print(json.dumps({'error': str(e)}), file=sys.stderr)
         sys.exit(1)
