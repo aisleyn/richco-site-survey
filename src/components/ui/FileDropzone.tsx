@@ -20,6 +20,7 @@ export function FileDropzone({
   label,
   error,
 }: FileDropzoneProps) {
+  const inputId = `file-input-${Math.random().toString(36).substr(2, 9)}`
   const [isDragActive, setIsDragActive] = useState(false)
   const [files, setFiles] = useState<File[]>([])
 
@@ -65,6 +66,10 @@ export function FileDropzone({
     onFilesSelected(updated)
   }
 
+  const handleZoneClick = () => {
+    document.getElementById(inputId)?.click()
+  }
+
   const isImage = (file: File) => file.type.startsWith('image/')
   const isVideo = (file: File) => file.type.startsWith('video/')
 
@@ -77,9 +82,10 @@ export function FileDropzone({
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
+        onClick={handleZoneClick}
         className={clsx(
-          'relative border-2 border-dashed rounded-lg p-6 transition-colors duration-200',
-          isDragActive ? 'border-white bg-white' : 'border-slate-300 bg-slate-50',
+          'relative border-2 border-dashed rounded-lg p-6 transition-colors duration-200 cursor-pointer',
+          isDragActive ? 'border-white bg-white' : 'border-slate-300 bg-slate-50 hover:bg-slate-100',
           error && 'border-red-300 bg-red-50',
           className,
         )}
@@ -90,11 +96,11 @@ export function FileDropzone({
           multiple={multiple}
           onChange={handleInputChange}
           className="hidden"
-          id={`file-input-${Math.random()}`}
+          id={inputId}
         />
 
         <label
-          htmlFor={`file-input-${Math.random()}`}
+          htmlFor={inputId}
           className="flex flex-col items-center justify-center cursor-pointer"
         >
           <svg className="w-8 h-8 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
