@@ -140,7 +140,7 @@ export function WaypointDrawer({
 
       {/* Drawer */}
       <div
-        className="fixed right-0 top-0 h-full w-[420px] bg-white shadow-xl overflow-y-auto transition-transform duration-250 ease-out"
+        className="fixed right-0 top-16 h-[calc(100%-4rem)] w-[420px] bg-white shadow-xl overflow-y-auto transition-transform duration-250 ease-out"
         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
       >
         {/* Header */}

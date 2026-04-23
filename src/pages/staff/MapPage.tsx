@@ -316,7 +316,7 @@ export default function MapPage() {
                     />
                   ) : (
                     <>
-                      <p className="font-medium text-white">{wp.area_name}</p>
+                      <p className="font-medium text-black">{wp.area_name}</p>
                       <p className="text-xs text-secondary">
                         {wp.status.replace('_', ' ')} • ({wp.x_percent.toFixed(1)}%, {wp.y_percent.toFixed(1)}%)
                       </p>
