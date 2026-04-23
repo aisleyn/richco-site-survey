@@ -9,7 +9,7 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ label, error, className, ...props }, ref) => {
   return (
     <div className="w-full">
-      {label && <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>}
+      {label && <label className="block text-sm font-medium text-white mb-1">{label}</label>}
       <textarea
         ref={ref}
         className={clsx(

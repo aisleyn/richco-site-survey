@@ -17,7 +17,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className, ...props }, ref) => {
     return (
       <div className="w-full">
-        {label && <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>}
+        {label && <label className="block text-sm font-medium text-white mb-1">{label}</label>}
         <select
           ref={ref}
           className={clsx(

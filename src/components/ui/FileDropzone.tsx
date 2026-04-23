@@ -75,7 +75,7 @@ export function FileDropzone({
 
   return (
     <div className="w-full">
-      {label && <label className="block text-sm font-medium text-slate-700 mb-2">{label}</label>}
+      {label && <label className="block text-sm font-medium text-white mb-2">{label}</label>}
 
       <div
         onDragEnter={handleDrag}
@@ -111,7 +111,7 @@ export function FileDropzone({
               d="M12 4v16m8-8H4"
             />
           </svg>
-          <p className="text-sm font-medium text-slate-700">Drag files here or click to browse</p>
+          <p className="text-sm font-medium text-white">Drag files here or click to browse</p>
           <p className="text-xs text-slate-500 mt-1">
             {multiple ? 'Multiple files allowed' : 'Single file only'}
           </p>
