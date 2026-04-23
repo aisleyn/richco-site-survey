@@ -144,18 +144,20 @@ export class MapScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.button !== 0) return
 
+      // In placement mode, ALWAYS place waypoints on any click
+      if (this.isPlacingWaypoint) {
+        console.log('MapScene: placing waypoint at pointer')
+        const { x, y } = this.worldToPercent(pointer.worldX, pointer.worldY)
+        console.log('MapScene: waypoint percent coords:', x, y)
+        this.callbacks?.onMapClick(x, y)
+        return
+      }
+
       // Check if clicking on a waypoint for dragging (only in move mode)
       const clickedWaypoint = this.getWaypointAtPointer(pointer)
       if (clickedWaypoint && this.isMovingWaypoint) {
         this.draggedWaypointId = clickedWaypoint
         this.input.setDefaultCursor('grabbing')
-        return
-      }
-
-      // In placement mode, always allow placing waypoints (even on existing ones)
-      if (this.isPlacingWaypoint) {
-        const { x, y } = this.worldToPercent(pointer.worldX, pointer.worldY)
-        this.callbacks?.onMapClick(x, y)
         return
       }
 
