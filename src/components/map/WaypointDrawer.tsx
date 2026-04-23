@@ -7,6 +7,7 @@ import { getWaypointHistory } from '../../services/waypointRepairHistory'
 import { getSurveyById, getSurveyMedia, getSurveysByProject } from '../../services/surveysRest'
 import { getSubmissionsByWaypoint, getClientSubmissionMedia } from '../../services/clientSubmissionsRest'
 import { updateWaypointNotes } from '../../services/mapWaypoints'
+import { getWaypointNotes, createWaypointNote, formatNoteDate, type WaypointNote } from '../../services/waypointNotes'
 import type { MapWaypoint, WaypointStatus, Survey, SurveyMedia, ClientSubmission, ClientSubmissionMedia, WaypointRepairHistory } from '../../types'
 
 interface WaypointDrawerProps {
@@ -42,11 +43,20 @@ export function WaypointDrawer({
   const [statusChanging, setStatusChanging] = useState(false)
   const [repairNotes, setRepairNotes] = useState(waypoint?.repair_notes || '')
   const [editingNotes, setEditingNotes] = useState(false)
+  const [waypointNotes, setWaypointNotes] = useState<WaypointNote[]>([])
+  const [newNote, setNewNote] = useState('')
+  const [isAddingNote, setIsAddingNote] = useState(false)
 
   // Load repair history
   useEffect(() => {
     if (!waypoint || !isOpen) return
     getWaypointHistory(waypoint.id).then(setRepairHistory).catch(() => {})
+  }, [waypoint?.id, isOpen])
+
+  // Load waypoint notes
+  useEffect(() => {
+    if (!waypoint || !isOpen) return
+    getWaypointNotes(waypoint.id).then(setWaypointNotes).catch(() => {})
   }, [waypoint?.id, isOpen])
 
   // Load available surveys for linking
@@ -127,6 +137,29 @@ export function WaypointDrawer({
     }
   }
 
+  const handleAddNote = async () => {
+    if (!waypoint || !profile || !newNote.trim()) return
+    setIsAddingNote(true)
+    try {
+      const note = await createWaypointNote(
+        waypoint.id,
+        profile.id,
+        profile.name || 'Unknown User',
+        profile.role || 'user',
+        newNote
+      )
+      if (note) {
+        setWaypointNotes([note, ...waypointNotes])
+        setNewNote('')
+        addToast({ type: 'success', message: 'Note added' })
+      }
+    } catch (err) {
+      addToast({ type: 'error', message: 'Failed to add note' })
+    } finally {
+      setIsAddingNote(false)
+    }
+  }
+
   if (!isOpen || !waypoint) return null
 
   return (
@@ -146,7 +179,7 @@ export function WaypointDrawer({
         {/* Header */}
         <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-white">{waypoint.area_name}</h2>
+            <h2 className="text-lg font-semibold text-black">{waypoint.area_name}</h2>
             <Badge variant={waypoint.status} className="mt-1">
               {waypoint.status.replace('_', ' ')}
             </Badge>
@@ -257,7 +290,7 @@ export function WaypointDrawer({
 
           {/* Client Submissions */}
           <div>
-            <p className="text-sm font-semibold text-white mb-3">
+            <p className="text-sm font-semibold text-black mb-3">
               Client Submissions <span className="text-slate-500">({submissions.length})</span>
             </p>
             {submissions.length === 0 ? (
@@ -324,6 +357,53 @@ export function WaypointDrawer({
               )}
             </div>
           )}
+
+          {/* Waypoint Notes */}
+          <div>
+            <p className="text-sm font-semibold text-black mb-3">Updates & Notes</p>
+
+            {/* Add Note Form */}
+            <div className="mb-4 space-y-2">
+              <Textarea
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Add an update or note..."
+                rows={2}
+                className="w-full"
+              />
+              <Button
+                size="sm"
+                onClick={handleAddNote}
+                disabled={!newNote.trim() || isAddingNote}
+                isLoading={isAddingNote}
+                className="w-full"
+              >
+                {isAddingNote ? 'Adding...' : 'Add Note'}
+              </Button>
+            </div>
+
+            {/* Notes List */}
+            {waypointNotes.length > 0 ? (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {waypointNotes.map((note) => (
+                  <div key={note.id} className="bg-slate-50 rounded p-3 border border-slate-200">
+                    <div className="flex items-start justify-between mb-1">
+                      <div>
+                        <p className="font-medium text-sm text-black">{note.user_name}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatNoteDate(note.created_at)}
+                          {note.user_role && ` • ${note.user_role}`}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-700 mt-2">{note.content}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 italic">No notes yet. Be the first to add one!</p>
+            )}
+          </div>
 
           {/* Repair History (staff only) */}
           {isStaff && repairHistory.length > 0 && (
