@@ -47,13 +47,19 @@ def replace_text_in_paragraph(paragraph, placeholder, value):
 def add_image_to_paragraph(paragraph, image_url):
     """Add image from URL to paragraph"""
     try:
+        print(f"[DEBUG] Fetching image from URL...", file=sys.stderr)
         response = requests.get(image_url, timeout=10)
+        print(f"[DEBUG] Response status: {response.status_code}", file=sys.stderr)
         if response.status_code == 200:
+            print(f"[DEBUG] Image fetched successfully, size: {len(response.content)} bytes", file=sys.stderr)
             image_data = BytesIO(response.content)
             paragraph.add_run().add_picture(image_data, width=Inches(2))
+            print(f"[DEBUG] Image inserted into document", file=sys.stderr)
             return True
+        else:
+            print(f"Warning: HTTP {response.status_code} - Could not fetch image from URL: {image_url[:100]}", file=sys.stderr)
     except Exception as e:
-        print(f"Warning: Could not insert image {image_url}: {e}", file=sys.stderr)
+        print(f"Warning: Could not insert image {image_url[:100]}: {e}", file=sys.stderr)
     return False
 
 def fill_template(template_path, output_path, data):
@@ -115,36 +121,9 @@ def fill_template(template_path, output_path, data):
 
     print(f"Total text replacements made: {replaced_count}", file=sys.stderr)
 
-    # Also check headers and footers
-    print(f"Checking {len(doc.sections)} sections for headers/footers", file=sys.stderr)
-    for sec_idx, section in enumerate(doc.sections):
-        # Check header
-        if section.header is not None:
-            for para_idx, paragraph in enumerate(section.header.paragraphs):
-                para_text = ''.join(run.text for run in paragraph.runs)
-                if para_text.strip():
-                    print(f"Header section {sec_idx}, para {para_idx}: {repr(para_text[:100])}", file=sys.stderr)
-                    for run_idx, run in enumerate(paragraph.runs):
-                        print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
-                    for key, value in replacements.items():
-                        if replace_text_in_paragraph(paragraph, key, value):
-                            print(f"[OK] Replaced '{key}' in header", file=sys.stderr)
-                            replaced_count += 1
-
-        # Check footer
-        if section.footer is not None:
-            for para_idx, paragraph in enumerate(section.footer.paragraphs):
-                para_text = ''.join(run.text for run in paragraph.runs)
-                if para_text.strip():
-                    print(f"Footer section {sec_idx}, para {para_idx}: {repr(para_text[:100])}", file=sys.stderr)
-                    for run_idx, run in enumerate(paragraph.runs):
-                        print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
-                    for key, value in replacements.items():
-                        if replace_text_in_paragraph(paragraph, key, value):
-                            print(f"[OK] Replaced '{key}' in footer", file=sys.stderr)
-                            replaced_count += 1
-
-    print(f"Total replacements after headers/footers: {replaced_count}", file=sys.stderr)
+    # Skipping header/footer processing to focus on main content
+    # print(f"Checking {len(doc.sections)} sections for headers/footers", file=sys.stderr)
+    print(f"Total replacements: {replaced_count}", file=sys.stderr)
 
     # Comprehensive search for ALL text in the document
     print(f"Comprehensive search for remaining placeholders", file=sys.stderr)
@@ -168,24 +147,41 @@ def fill_template(template_path, output_path, data):
         i = 0
         while i < len(t_elems):
             t_elem = t_elems[i]
-            if t_elem.text and t_elem.text.strip() == '{{':
+            if t_elem.text and '{{' in t_elem.text:
                 # Potential start of a placeholder, collect the next elements
-                collected = ['{{']
+                collected = [t_elem.text]
                 j = i + 1
+                last_closing = j - 1
                 while j < len(t_elems) and j < i + 10:  # Look ahead up to 10 elements
                     next_text = t_elems[j].text or ''
                     collected.append(next_text)
-                    if next_text.strip() == '}}':
+                    if '}}' in next_text:
                         # Found the closing braces
                         merged = ''.join(collected)
+
+                        # Skip image and scan placeholders - let them be handled by dedicated image insertion
+                        if 'Item.Images' in merged or 'Item.Scans' in merged or 'Images of Area' in merged or 'Scans of Area' in merged:
+                            i = j
+                            break
+
                         for key, value in replacements.items():
                             placeholder = f"{{{{{key}}}}}"
                             if placeholder in merged:
-                                # Replace in the first element and clear the others
-                                t_elem.text = str(value)
+                                # Replace the entire merged text, keeping structure
+                                new_text = merged.replace(placeholder, str(value))
+                                print(f"[DEBUG] Replacing split placeholder '{key}': '{merged}' -> '{new_text}'", file=sys.stderr)
+                                print(f"[DEBUG] Elements involved: {i} to {j} (count: {j-i+1})", file=sys.stderr)
+                                t_elem.text = new_text
+                                # Only clear the elements that are purely part of the placeholder (not spacing)
+                                # For elements 2-4 ('{{',' Item.Name', '}}'), we need to be careful:
+                                # Keep the first element with replacement, don't touch others to preserve spacing
                                 for k in range(i + 1, j + 1):
-                                    t_elems[k].text = ''
-                                print(f"[OK] Replaced '{key}' (split across elements)", file=sys.stderr)
+                                    old_text = t_elems[k].text or ''
+                                    # Only clear if it's clearly placeholder text, not spacing
+                                    if old_text.strip() in ['Item.Name', 'Item.Client', '}}', '{{']:
+                                        print(f"[DEBUG] Clearing element {k}: '{old_text}'", file=sys.stderr)
+                                        t_elems[k].text = ''
+                                print(f"[OK] Replaced '{key}' (split across {j-i+1} elements)", file=sys.stderr)
                                 count += 1
                                 i = j
                                 break
@@ -204,6 +200,7 @@ def fill_template(template_path, output_path, data):
     images_added = 0
     if data.get('images') and len(data['images']) > 0:
         print(f"Attempting to add {len(data['images'])} images", file=sys.stderr)
+        print(f"Image URLs: {data['images']}", file=sys.stderr)
         # Find the paragraph with Item.Images of Area placeholder
         for para_idx, paragraph in enumerate(doc.paragraphs):
             para_text = ''.join(run.text for run in paragraph.runs)
@@ -214,9 +211,10 @@ def fill_template(template_path, output_path, data):
                     run.text = ''
                 # Add all images to this paragraph
                 for idx, image_url in enumerate(data['images'][:5]):  # Limit to 5 images
+                    print(f"Attempting to add image {idx + 1}: {image_url}", file=sys.stderr)
                     if add_image_to_paragraph(paragraph, image_url):
                         images_added += 1
-                        print(f"Added image {idx + 1}/{len(data['images'])}", file=sys.stderr)
+                        print(f"Successfully added image {idx + 1}/{len(data['images'])}", file=sys.stderr)
                 break
 
         # Also check in tables
@@ -227,14 +225,16 @@ def fill_template(template_path, output_path, data):
                         for para_idx, paragraph in enumerate(cell.paragraphs):
                             para_text = ''.join(run.text for run in paragraph.runs)
                             if 'Item.Images' in para_text or 'Images of Area' in para_text:
-                                print(f"Found Images placeholder in table {table_idx}, row {row_idx}, cell {cell_idx}", file=sys.stderr)
+                                print(f"Found Images placeholder in table {table_idx}, row {row_idx}, cell {cell_idx}: {para_text[:100]}", file=sys.stderr)
                                 # Clear the placeholder text
                                 for run in paragraph.runs:
                                     run.text = ''
                                 # Add all images to this paragraph
                                 for idx, image_url in enumerate(data['images'][:5]):  # Limit to 5 images
+                                    print(f"Attempting to add image {idx + 1} to table: {image_url}", file=sys.stderr)
                                     if add_image_to_paragraph(paragraph, image_url):
                                         images_added += 1
+                                        print(f"Successfully added image {idx + 1}/{len(data['images'])} to table", file=sys.stderr)
                                 break
 
     print(f"Total images added: {images_added}", file=sys.stderr)

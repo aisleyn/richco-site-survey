@@ -15,7 +15,7 @@ export async function uploadFile(bucket: string, path: string, file: File): Prom
 
   const { data: urlData } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(data.path, 3600)
+    .createSignedUrl(data.path, 604800)
 
   if (!urlData?.signedUrl) {
     throw new Error('Failed to generate signed URL')
