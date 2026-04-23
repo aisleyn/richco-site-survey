@@ -155,20 +155,44 @@ def fill_template(template_path, output_path, data):
         """Recursively search and replace in all text elements"""
         count = 0
         element_count = 0
-        # Look for text runs
-        for t_elem in element.iter(qn('w:t')):
-            element_count += 1
+        t_elems = list(element.iter(qn('w:t')))
+
+        print(f"Total text elements found: {len(t_elems)}", file=sys.stderr)
+
+        # Show first 20 text elements found
+        for i, t_elem in enumerate(t_elems[:20]):
             if t_elem.text:
-                # Show first 20 text elements found
-                if element_count <= 20:
-                    print(f"Text element {element_count}: {repr(t_elem.text[:80])}", file=sys.stderr)
-                for key, value in replacements.items():
-                    placeholder = f"{{{{{key}}}}}"
-                    if placeholder in t_elem.text:
-                        t_elem.text = t_elem.text.replace(placeholder, str(value))
-                        print(f"✓ Replaced '{key}' in text element", file=sys.stderr)
-                        count += 1
-        print(f"Total text elements found: {element_count}", file=sys.stderr)
+                print(f"Text element {i+1}: {repr(t_elem.text[:80])}", file=sys.stderr)
+
+        # Handle split placeholders by merging adjacent elements
+        i = 0
+        while i < len(t_elems):
+            t_elem = t_elems[i]
+            if t_elem.text and t_elem.text.strip() == '{{':
+                # Potential start of a placeholder, collect the next elements
+                collected = ['{{']
+                j = i + 1
+                while j < len(t_elems) and j < i + 10:  # Look ahead up to 10 elements
+                    next_text = t_elems[j].text or ''
+                    collected.append(next_text)
+                    if next_text.strip() == '}}':
+                        # Found the closing braces
+                        merged = ''.join(collected)
+                        for key, value in replacements.items():
+                            placeholder = f"{{{{{key}}}}}"
+                            if placeholder in merged:
+                                # Replace in the first element and clear the others
+                                t_elem.text = str(value)
+                                for k in range(i + 1, j + 1):
+                                    t_elems[k].text = ''
+                                print(f"✓ Replaced '{key}' (split across elements)", file=sys.stderr)
+                                count += 1
+                                i = j
+                                break
+                        break
+                    j += 1
+            i += 1
+
         return count
 
     found_count = search_and_replace_in_element(doc.element, replacements)
