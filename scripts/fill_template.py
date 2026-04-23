@@ -92,7 +92,7 @@ def fill_template(template_path, output_path, data):
 
         for key, value in replacements.items():
             if replace_text_in_paragraph(paragraph, key, value):
-                print(f"✓ Replaced '{key}' = '{value}' in paragraph {idx}", file=sys.stderr)
+                print(f"[OK] Replaced '{key}' = '{value}' in paragraph {idx}", file=sys.stderr)
                 replaced_count += 1
             elif key in ['Item.Name', 'Item.Client'] and para_text.strip():
                 # Debug logging for Item.Name and Item.Client
@@ -128,7 +128,7 @@ def fill_template(template_path, output_path, data):
                         print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
                     for key, value in replacements.items():
                         if replace_text_in_paragraph(paragraph, key, value):
-                            print(f"✓ Replaced '{key}' in header", file=sys.stderr)
+                            print(f"[OK] Replaced '{key}' in header", file=sys.stderr)
                             replaced_count += 1
 
         # Check footer
@@ -141,7 +141,7 @@ def fill_template(template_path, output_path, data):
                         print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
                     for key, value in replacements.items():
                         if replace_text_in_paragraph(paragraph, key, value):
-                            print(f"✓ Replaced '{key}' in footer", file=sys.stderr)
+                            print(f"[OK] Replaced '{key}' in footer", file=sys.stderr)
                             replaced_count += 1
 
     print(f"Total replacements after headers/footers: {replaced_count}", file=sys.stderr)
@@ -185,7 +185,7 @@ def fill_template(template_path, output_path, data):
                                 t_elem.text = str(value)
                                 for k in range(i + 1, j + 1):
                                     t_elems[k].text = ''
-                                print(f"✓ Replaced '{key}' (split across elements)", file=sys.stderr)
+                                print(f"[OK] Replaced '{key}' (split across elements)", file=sys.stderr)
                                 count += 1
                                 i = j
                                 break
