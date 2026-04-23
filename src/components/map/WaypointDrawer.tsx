@@ -144,8 +144,8 @@ export function WaypointDrawer({
       const note = await createWaypointNote(
         waypoint.id,
         profile.id,
-        profile.name || 'Unknown User',
-        profile.role || 'user',
+        profile.full_name || profile.email || 'Unknown User',
+        profile.role,
         newNote
       )
       if (note) {

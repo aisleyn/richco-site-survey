@@ -311,10 +311,6 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  private isClickingWaypoint(pointer: Phaser.Input.Pointer): boolean {
-    return !!this.getWaypointAtPointer(pointer)
-  }
-
   private getWaypointAtPointer(pointer: Phaser.Input.Pointer): string | null {
     for (const [id, sprite] of this.waypointSprites.entries()) {
       const dx = pointer.worldX - sprite.x
