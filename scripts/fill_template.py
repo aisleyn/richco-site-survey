@@ -81,16 +81,22 @@ def fill_template(template_path, output_path, data):
     print(f"Processing {len(doc.paragraphs)} paragraphs", file=sys.stderr)
     for idx, paragraph in enumerate(doc.paragraphs):
         para_text = ''.join(run.text for run in paragraph.runs)
-        if para_text.strip():
-            print(f"Para {idx}: {repr(para_text[:150])}", file=sys.stderr)
+
+        # Debug first 10 paragraphs with full details
+        if idx < 10:
+            print(f"Para {idx}: runs={len(paragraph.runs)}, text={repr(para_text[:150])}", file=sys.stderr)
+            if 'Item' in para_text:
+                for run_idx, run in enumerate(paragraph.runs):
+                    print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
+
         for key, value in replacements.items():
             if replace_text_in_paragraph(paragraph, key, value):
                 print(f"✓ Replaced '{key}' = '{value}' in paragraph {idx}", file=sys.stderr)
                 replaced_count += 1
-            elif key in ['Item.Name', 'Item.Client']:
+            elif key in ['Item.Name', 'Item.Client'] and para_text.strip():
                 # Debug logging for Item.Name and Item.Client
-                if para_text.strip():
-                    print(f"  (Did not find '{key}' in this paragraph)", file=sys.stderr)
+                if any(part in para_text for part in ['Item.Name', 'Item.Client', 'item.name', 'item.client']):
+                    print(f"  ! Found '{key}' text but replacement failed in paragraph {idx}", file=sys.stderr)
 
     # Also replace in tables
     print(f"Processing {len(doc.tables)} tables", file=sys.stderr)
