@@ -85,7 +85,8 @@ def fill_template(template_path, output_path, data):
         # Debug first 10 paragraphs with full details
         if idx < 10:
             print(f"Para {idx}: runs={len(paragraph.runs)}, text={repr(para_text[:150])}", file=sys.stderr)
-            if 'Item' in para_text:
+            # Always show individual runs for paragraphs with runs
+            if len(paragraph.runs) > 0:
                 for run_idx, run in enumerate(paragraph.runs):
                     print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
 
