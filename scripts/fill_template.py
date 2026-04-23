@@ -13,11 +13,13 @@ def replace_text_in_paragraph(paragraph, placeholder, value):
     """Replace placeholder in paragraph, handling split runs and braces"""
     full_text = ''.join(run.text for run in paragraph.runs)
 
-    # Try different formats: {{placeholder}}, {{Placeholder}}, {{PLACEHOLDER}}
+    # Try different formats: {{placeholder}}, {{Placeholder}}, {{PLACEHOLDER}}, and without braces
     patterns = [
         f'{{{{{placeholder}}}}}',  # {{Item.Name}}
         f'{{{{{placeholder.lower()}}}}}',  # {{item.name}}
         f'{{{{{placeholder.upper()}}}}}',  # {{ITEM.NAME}}
+        placeholder,  # Item.Name (without braces)
+        placeholder.lower(),  # item.name (without braces)
     ]
 
     found = False
@@ -80,11 +82,15 @@ def fill_template(template_path, output_path, data):
     for idx, paragraph in enumerate(doc.paragraphs):
         para_text = ''.join(run.text for run in paragraph.runs)
         if para_text.strip():
-            print(f"Para {idx}: {para_text[:100]}", file=sys.stderr)
+            print(f"Para {idx}: {repr(para_text[:150])}", file=sys.stderr)
         for key, value in replacements.items():
             if replace_text_in_paragraph(paragraph, key, value):
-                print(f"Replaced '{key}' in paragraph {idx}", file=sys.stderr)
+                print(f"✓ Replaced '{key}' = '{value}' in paragraph {idx}", file=sys.stderr)
                 replaced_count += 1
+            elif key in ['Item.Name', 'Item.Client']:
+                # Debug logging for Item.Name and Item.Client
+                if para_text.strip():
+                    print(f"  (Did not find '{key}' in this paragraph)", file=sys.stderr)
 
     # Also replace in tables
     print(f"Processing {len(doc.tables)} tables", file=sys.stderr)
