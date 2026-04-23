@@ -10,6 +10,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = 3002
 
+// Log to file as well as console
+const logFile = path.join(__dirname, 'template-server.log')
+const logStream = fs.createWriteStream(logFile, { flags: 'a' })
+
+function log(msg) {
+  const timestamp = new Date().toISOString()
+  const line = `[${timestamp}] ${msg}\n`
+  log(line)
+  logStream.write(line)
+}
+
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 
@@ -21,7 +32,7 @@ app.post('/api/fill-template', async (req, res) => {
       return res.status(400).json({ error: 'surveyData required' })
     }
 
-    console.log('Received request to fill template:', surveyData.projectName)
+    log('Received request to fill template:', surveyData.projectName)
 
     // Create a temporary directory for the output
     const tmpDir = os.tmpdir()
@@ -32,17 +43,17 @@ app.post('/api/fill-template', async (req, res) => {
     const templatePath = path.join(__dirname, 'public', 'Survey_Report_Template.docx')
     const scriptPath = path.join(__dirname, 'scripts', 'fill_template.py')
 
-    console.log('Template path:', templatePath)
-    console.log('Script path:', scriptPath)
-    console.log('Output path:', outputPath)
+    log('Template path:', templatePath)
+    log('Script path:', scriptPath)
+    log('Output path:', outputPath)
 
     // Verify template exists
     if (!fs.existsSync(templatePath)) {
-      console.error('Template not found at:', templatePath)
+      log('Template not found at:', templatePath)
       return res.status(404).json({ error: 'Template not found' })
     }
 
-    console.log('Starting Python process...')
+    log('Starting Python process...')
     // Call Python script
     const python = spawn('python3', [scriptPath, templatePath, outputPath, JSON.stringify(surveyData)])
 
@@ -51,24 +62,24 @@ app.post('/api/fill-template', async (req, res) => {
 
     python.stdout.on('data', (data) => {
       stdout += data.toString()
-      console.log('Python stdout:', data.toString())
+      log('Python stdout:', data.toString())
     })
 
     python.stderr.on('data', (data) => {
       stderr += data.toString()
-      console.error('Python stderr:', data.toString())
+      log('Python stderr:', data.toString())
     })
 
     python.on('error', (err) => {
-      console.error('Failed to spawn Python:', err)
+      log('Failed to spawn Python:', err)
       res.status(500).json({ error: `Failed to spawn Python: ${err.message}` })
     })
 
     python.on('close', (code) => {
-      console.log('Python process closed with code:', code)
+      log('Python process closed with code:', code)
 
       if (code !== 0) {
-        console.error('Python error:', stderr)
+        log('Python error:', stderr)
         return res.status(500).json({ error: `Template generation failed: ${stderr}` })
       }
 
@@ -84,24 +95,24 @@ app.post('/api/fill-template', async (req, res) => {
         res.setHeader('Content-Disposition', `attachment; filename="${surveyData.projectName}_${surveyData.areaName}_Report.docx"`)
         res.send(fileContent)
       } catch (err) {
-        console.error('File read error:', err)
+        log('File read error:', err)
         res.status(500).json({ error: 'Failed to read generated file' })
       }
     })
   } catch (error) {
-    console.error('Error:', error)
+    log('Error:', error)
     res.status(500).json({ error: error.message })
   }
 })
 
 const server = app.listen(PORT, () => {
-  console.log(`Template server running on http://localhost:${PORT}`)
+  log(`Template server running on http://localhost:${PORT}`)
 })
 
 server.on('error', (err) => {
-  console.error('Server error:', err)
+  log('Server error:', err)
 })
 
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err)
+  log('Uncaught exception:', err)
 })
