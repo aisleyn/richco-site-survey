@@ -102,26 +102,83 @@ def fill_template(template_path, output_path, data):
 
     print(f"Total text replacements made: {replaced_count}", file=sys.stderr)
 
-    # Handle images - look for Image placeholders and try to replace them
+    # Handle images - look for Item.Images of Area placeholder
     images_added = 0
     if data.get('images') and len(data['images']) > 0:
         print(f"Attempting to add {len(data['images'])} images", file=sys.stderr)
-        for idx, image_url in enumerate(data['images'][:3]):  # Limit to 3 images
-            # Try to find an image placeholder and replace it
-            for para_idx, paragraph in enumerate(doc.paragraphs):
-                para_text = ''.join(run.text for run in paragraph.runs)
-                if 'Image' in para_text and 'Item.Images' in para_text:
+        # Find the paragraph with Item.Images of Area placeholder
+        for para_idx, paragraph in enumerate(doc.paragraphs):
+            para_text = ''.join(run.text for run in paragraph.runs)
+            if 'Item.Images' in para_text or 'Images of Area' in para_text:
+                print(f"Found Images placeholder at paragraph {para_idx}: {para_text[:100]}", file=sys.stderr)
+                # Clear the placeholder text
+                for run in paragraph.runs:
+                    run.text = ''
+                # Add all images to this paragraph
+                for idx, image_url in enumerate(data['images'][:5]):  # Limit to 5 images
                     if add_image_to_paragraph(paragraph, image_url):
                         images_added += 1
                         print(f"Added image {idx + 1}/{len(data['images'])}", file=sys.stderr)
-                        break
-            else:
-                # If no Image placeholder found, try adding to last paragraph
-                if idx == 0 and len(doc.paragraphs) > 0:
-                    if add_image_to_paragraph(doc.paragraphs[-1], image_url):
-                        images_added += 1
+                break
+
+        # Also check in tables
+        if images_added == 0:
+            for table_idx, table in enumerate(doc.tables):
+                for row_idx, row in enumerate(table.rows):
+                    for cell_idx, cell in enumerate(row.cells):
+                        for para_idx, paragraph in enumerate(cell.paragraphs):
+                            para_text = ''.join(run.text for run in paragraph.runs)
+                            if 'Item.Images' in para_text or 'Images of Area' in para_text:
+                                print(f"Found Images placeholder in table {table_idx}, row {row_idx}, cell {cell_idx}", file=sys.stderr)
+                                # Clear the placeholder text
+                                for run in paragraph.runs:
+                                    run.text = ''
+                                # Add all images to this paragraph
+                                for idx, image_url in enumerate(data['images'][:5]):  # Limit to 5 images
+                                    if add_image_to_paragraph(paragraph, image_url):
+                                        images_added += 1
+                                break
 
     print(f"Total images added: {images_added}", file=sys.stderr)
+
+    # Handle scans - look for Item.Scans of Area placeholder
+    scans_added = 0
+    if data.get('scans') and len(data['scans']) > 0:
+        print(f"Attempting to add {len(data['scans'])} scans", file=sys.stderr)
+        # Find the paragraph with Item.Scans of Area placeholder
+        for para_idx, paragraph in enumerate(doc.paragraphs):
+            para_text = ''.join(run.text for run in paragraph.runs)
+            if 'Item.Scans' in para_text or 'Scans of Area' in para_text:
+                print(f"Found Scans placeholder at paragraph {para_idx}: {para_text[:100]}", file=sys.stderr)
+                # Clear the placeholder text
+                for run in paragraph.runs:
+                    run.text = ''
+                # Add all scans to this paragraph
+                for idx, scan_url in enumerate(data['scans'][:5]):  # Limit to 5 scans
+                    if add_image_to_paragraph(paragraph, scan_url):
+                        scans_added += 1
+                        print(f"Added scan {idx + 1}/{len(data['scans'])}", file=sys.stderr)
+                break
+
+        # Also check in tables
+        if scans_added == 0:
+            for table_idx, table in enumerate(doc.tables):
+                for row_idx, row in enumerate(table.rows):
+                    for cell_idx, cell in enumerate(row.cells):
+                        for para_idx, paragraph in enumerate(cell.paragraphs):
+                            para_text = ''.join(run.text for run in paragraph.runs)
+                            if 'Item.Scans' in para_text or 'Scans of Area' in para_text:
+                                print(f"Found Scans placeholder in table {table_idx}, row {row_idx}, cell {cell_idx}", file=sys.stderr)
+                                # Clear the placeholder text
+                                for run in paragraph.runs:
+                                    run.text = ''
+                                # Add all scans to this paragraph
+                                for idx, scan_url in enumerate(data['scans'][:5]):  # Limit to 5 scans
+                                    if add_image_to_paragraph(paragraph, scan_url):
+                                        scans_added += 1
+                                break
+
+    print(f"Total scans added: {scans_added}", file=sys.stderr)
 
     # Save the document
     print(f"Saving document to: {output_path}", file=sys.stderr)
