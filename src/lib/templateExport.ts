@@ -13,7 +13,7 @@ interface SurveyData {
 
 export async function generateSurveyFromTemplate(surveyData: SurveyData) {
   try {
-    const response = await fetch('http://localhost:3001/api/fill-template', {
+    const response = await fetch('http://localhost:3002/api/fill-template', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ surveyData }),
