@@ -5,10 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useAuthStore } from '../../store/authStore'
 import { getProjectById } from '../../services/projects'
-import { createSurvey, addSurveyMedia } from '../../services/surveys'
+import { createSurvey, addSurveyMedia, getSurveyById, updateSurvey } from '../../services/surveys'
 import { uploadFile } from '../../services/storage'
 import { MediaType } from '../../types'
-import type { Project } from '../../types'
+import type { Project, Survey } from '../../types'
 import { Card, Button, Input, Textarea, FileDropzone, Spinner } from '../../components/ui'
 
 const surveySchema = z.object({
@@ -27,10 +27,11 @@ const surveySchema = z.object({
 
 export default function SurveyFormPage() {
   const navigate = useNavigate()
-  const { projectId } = useParams<{ projectId: string }>()
+  const { projectId, surveyId } = useParams<{ projectId?: string; surveyId?: string }>()
   const { profile } = useAuthStore()
   const [project, setProject] = useState<Project | null>(null)
-  const [isLoading, setIsLoading] = useState(!!projectId)
+  const [survey, setSurvey] = useState<Survey | null>(null)
+  const [isLoading, setIsLoading] = useState(!!projectId || !!surveyId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [images, setImages] = useState<File[]>([])
@@ -39,24 +40,41 @@ export default function SurveyFormPage() {
 
   const { register, handleSubmit, formState: { errors: formErrors } } = useForm<any>({
     resolver: zodResolver(surveySchema),
-    defaultValues: {
-      project_id: projectId || '',
-    },
+    defaultValues: survey
+      ? {
+          project_id: survey.project_id,
+          area_name: survey.area_name,
+          survey_date: survey.survey_date,
+          area_size_sqft: survey.area_size_sqft,
+          survey_notes: survey.survey_notes,
+          suggested_system: survey.suggested_system,
+          install_notes: survey.install_notes,
+          client_name: survey.client_name,
+        }
+      : {
+          project_id: projectId || '',
+        },
   })
 
   useEffect(() => {
-    if (projectId) {
-      loadProject()
+    if (projectId || surveyId) {
+      loadData()
     }
-  }, [projectId])
+  }, [projectId, surveyId])
 
-  const loadProject = async () => {
-    if (!projectId) return
+  const loadData = async () => {
     try {
-      const p = await getProjectById(projectId)
-      setProject(p)
+      if (surveyId) {
+        const s = await getSurveyById(surveyId)
+        setSurvey(s)
+        const p = await getProjectById(s.project_id)
+        setProject(p)
+      } else if (projectId) {
+        const p = await getProjectById(projectId)
+        setProject(p)
+      }
     } catch (err) {
-      setError('Failed to load project')
+      setError('Failed to load data')
     } finally {
       setIsLoading(false)
     }
@@ -72,17 +90,20 @@ export default function SurveyFormPage() {
     setError(null)
 
     try {
-      const projectId = data.project_id
+      const projId = survey?.project_id || data.project_id
       const surveyData = {
         ...data,
-        project_id: projectId,
+        project_id: projId,
         client_name: project?.name || '',
-        images,
-        scans_3d: scans3d,
-        videos,
       }
 
-      const survey = await createSurvey(projectId, surveyData, profile.id)
+      let surveyResult: Survey
+      if (survey) {
+        await updateSurvey(survey.id, surveyData)
+        surveyResult = { ...survey, ...surveyData }
+      } else {
+        surveyResult = await createSurvey(projId, surveyData, profile.id)
+      }
 
       const mediaFiles = [
         ...images.map((f) => ({ file: f, type: MediaType.IMAGE })),
@@ -91,14 +112,14 @@ export default function SurveyFormPage() {
       ]
 
       for (const { file, type } of mediaFiles) {
-        const path = `${projectId}/${survey.id}/${Date.now()}-${file.name}`
+        const path = `${projId}/${surveyResult.id}/${Date.now()}-${file.name}`
         const uploaded = await uploadFile('survey-media', path, file)
-        await addSurveyMedia(survey.id, type, uploaded.signedUrl)
+        await addSurveyMedia(surveyResult.id, type, uploaded.signedUrl)
       }
 
-      navigate(`/staff/surveys/${survey.id}`)
+      navigate(`/staff/surveys/${surveyResult.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create survey')
+      setError(err instanceof Error ? err.message : `Failed to ${survey ? 'update' : 'create'} survey`)
     } finally {
       setIsSubmitting(false)
     }
@@ -121,7 +142,9 @@ export default function SurveyFormPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-white mb-8">Create Site Survey</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-8">
+        {survey ? 'Edit Survey' : 'Create Site Survey'}
+      </h1>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -183,14 +206,21 @@ export default function SurveyFormPage() {
             previewMode="list"
           />
 
-          <div className="flex gap-4 pt-6">
-            <Button type="submit" variant="primary" className="flex-1" isLoading={isSubmitting}>
-              Save Draft
+          <div className="flex flex-col sm:flex-row gap-4 pt-6">
+            <Button type="submit" variant="primary" className="w-full sm:flex-1" isLoading={isSubmitting}>
+              {survey ? 'Save Changes' : 'Save Draft'}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              onClick={() => navigate(-1)}
+              className="w-full sm:w-auto"
+              onClick={() => {
+                if (survey) {
+                  navigate(`/staff/surveys/${survey.id}`)
+                } else {
+                  navigate(-1)
+                }
+              }}
             >
               Cancel
             </Button>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { getSurveyById, getSurveyMedia, publishSurvey } from '../../services/surveys'
 import { generateSurveyPDF } from '../../lib/pdfExport'
 import type { Survey, SurveyMedia } from '../../types'
@@ -8,6 +8,7 @@ import { useToast } from '../../components/ui/Toast'
 
 export default function SurveyDetailPage() {
   const { surveyId } = useParams<{ surveyId: string }>()
+  const navigate = useNavigate()
   const addToast = useToast()
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [media, setMedia] = useState<SurveyMedia[]>([])
@@ -94,9 +95,14 @@ export default function SurveyDetailPage() {
         </div>
         <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
           {survey.status === 'draft' && (
-            <Button variant="primary" onClick={handlePublish} isLoading={isPublishing} className="w-full xs:w-auto">
-              Publish to Report
-            </Button>
+            <>
+              <Button variant="secondary" onClick={() => navigate(`/staff/surveys/${survey.id}/edit`)} className="w-full xs:w-auto">
+                ✏️ Edit
+              </Button>
+              <Button variant="primary" onClick={handlePublish} isLoading={isPublishing} className="w-full xs:w-auto">
+                Publish to Report
+              </Button>
+            </>
           )}
           {survey.status === 'published' && (
             <Button variant="primary" onClick={handleDownloadPDF} isLoading={isDownloading} className="w-full xs:w-auto">

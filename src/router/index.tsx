@@ -86,6 +86,10 @@ export const router = createBrowserRouter([
         element: <SurveyDetailPage />,
       },
       {
+        path: 'surveys/:surveyId/edit',
+        element: <SurveyFormPage />,
+      },
+      {
         path: 'projects/:projectId/flipbook',
         element: <FlipbookViewPage />,
       },

@@ -63,6 +63,29 @@ export async function createSurvey(
   return data
 }
 
+export async function updateSurvey(
+  surveyId: string,
+  values: Partial<SurveyFormValues>,
+): Promise<Survey> {
+  const { data, error } = await supabase
+    .from('surveys')
+    .update({
+      area_name: values.area_name,
+      survey_date: values.survey_date,
+      area_size_sqft: values.area_size_sqft,
+      survey_notes: values.survey_notes,
+      suggested_system: values.suggested_system,
+      install_notes: values.install_notes,
+      client_name: values.client_name,
+    })
+    .eq('id', surveyId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function addSurveyMedia(
   surveyId: string,
   mediaType: MediaType,
