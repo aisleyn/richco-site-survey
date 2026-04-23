@@ -152,15 +152,16 @@ export class MapScene extends Phaser.Scene {
         return
       }
 
-      // Fire waypoint click callback if NOT in move mode and clicked on waypoint
-      if (clickedWaypoint && !this.isMovingWaypoint) {
-        // Container handles this via pointerdown event
+      // In placement mode, always allow placing waypoints (even on existing ones)
+      if (this.isPlacingWaypoint) {
+        const { x, y } = this.worldToPercent(pointer.worldX, pointer.worldY)
+        this.callbacks?.onMapClick(x, y)
         return
       }
 
-      if (this.isPlacingWaypoint && !this.isClickingWaypoint(pointer)) {
-        const { x, y } = this.worldToPercent(pointer.worldX, pointer.worldY)
-        this.callbacks?.onMapClick(x, y)
+      // Fire waypoint click callback if NOT in move mode and clicked on waypoint
+      if (clickedWaypoint && !this.isMovingWaypoint) {
+        // Container handles this via pointerdown event
         return
       }
 
