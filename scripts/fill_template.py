@@ -205,36 +205,43 @@ if __name__ == '__main__':
 
     template_path = sys.argv[1]
     output_path = sys.argv[2]
-
-    # Also write logs to a file
     log_file = 'fill_template.log'
+
+    # Redirect stderr to also write to log file
+    class DualWriter:
+        def __init__(self, file1, file2):
+            self.file1 = file1
+            self.file2 = file2
+        def write(self, msg):
+            self.file1.write(msg)
+            self.file2.write(msg)
+            self.file2.flush()
+        def flush(self):
+            self.file1.flush()
+            self.file2.flush()
+
     with open(log_file, 'a') as lf:
-        lf.write(f"\n=== Starting fill_template.py at {sys.argv} ===\n")
+        lf.write(f"\n=== Starting fill_template.py ===\n")
+        original_stderr = sys.stderr
+        sys.stderr = DualWriter(original_stderr, lf)
 
-    try:
-        # Parse JSON data from argument
-        if len(sys.argv) > 3:
-            data = json.loads(sys.argv[3])
-        else:
-            data = json.load(sys.stdin)
+        try:
+            # Parse JSON data from argument
+            if len(sys.argv) > 3:
+                data = json.loads(sys.argv[3])
+            else:
+                data = json.load(sys.stdin)
 
-        msg = f"Starting template fill with data: {data}"
-        print(msg, file=sys.stderr)
-        with open(log_file, 'a') as lf:
-            lf.write(msg + "\n")
-
-        fill_template(template_path, output_path, data)
-        result = json.dumps({'success': True, 'output': output_path})
-        print(result)
-        with open(log_file, 'a') as lf:
-            lf.write(result + "\n")
-    except Exception as e:
-        error_msg = f"Error: {str(e)}"
-        print(error_msg, file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        with open(log_file, 'a') as lf:
-            lf.write(error_msg + "\n")
-            traceback.print_exc(file=lf)
-        print(json.dumps({'error': str(e)}), file=sys.stderr)
-        sys.exit(1)
+            print(f"Starting template fill", file=sys.stderr)
+            fill_template(template_path, output_path, data)
+            result = json.dumps({'success': True, 'output': output_path})
+            print(result)
+        except Exception as e:
+            error_msg = f"Error: {str(e)}"
+            print(error_msg, file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            print(json.dumps({'error': str(e)}), file=sys.stderr)
+            sys.exit(1)
+        finally:
+            sys.stderr = original_stderr
