@@ -38,6 +38,7 @@ export default function VendorManagementPage() {
   const [selectedVendorToEdit, setSelectedVendorToEdit] = useState<Vendor | null>(null)
   const [editingEmail, setEditingEmail] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -175,6 +176,37 @@ export default function VendorManagementPage() {
     }
   }
 
+  const handleDeleteVendor = async (vendorId: string) => {
+    if (!window.confirm('Are you sure you want to delete this vendor? This cannot be undone.')) {
+      return
+    }
+
+    setDeletingId(vendorId)
+    try {
+      const token = getAuthToken()
+      const headers: HeadersInit = {
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      }
+      // Delete vendor_projects associations first
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects?vendor_id=eq.${vendorId}`, {
+        method: 'DELETE',
+        headers,
+      })
+      // Then delete the vendor
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors?id=eq.${vendorId}`, {
+        method: 'DELETE',
+        headers,
+      })
+      setSelectedVendorToEdit(null)
+      loadData()
+    } catch (err) {
+      console.error('Failed to delete vendor', err)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   if (isLoading) return <Spinner size="lg" />
 
   return (
@@ -191,24 +223,29 @@ export default function VendorManagementPage() {
             </Card>
           ) : (
             vendors.map((vendor) => (
-              <button
-                key={vendor.id}
-                onClick={() => {
-                  setSelectedVendorToEdit(vendor)
-                  setEditingEmail(vendor.contact_email || '')
-                }}
-                className="w-full text-left"
-              >
-                <Card className="p-4 flex items-center justify-between cursor-pointer hover:border-white/20 transition-colors">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="w-3 h-3 rounded-full bg-green-500 status-dot"></div>
-                    <div>
-                      <p className="font-semibold text-white">{vendor.name}</p>
-                      <p className="text-sm text-secondary">{vendor.contact_email || 'No email set'}</p>
-                    </div>
+              <Card key={vendor.id} className="p-4 flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setSelectedVendorToEdit(vendor)
+                    setEditingEmail(vendor.contact_email || '')
+                  }}
+                  className="flex-1 text-left flex items-center gap-3 cursor-pointer hover:opacity-80"
+                >
+                  <div className="w-3 h-3 rounded-full bg-green-500 status-dot"></div>
+                  <div>
+                    <p className="font-semibold text-white">{vendor.name}</p>
+                    <p className="text-sm text-secondary">{vendor.contact_email || 'No email set'}</p>
                   </div>
-                </Card>
-              </button>
+                </button>
+                <Button
+                  onClick={() => handleDeleteVendor(vendor.id)}
+                  variant="danger"
+                  size="sm"
+                  isLoading={deletingId === vendor.id}
+                >
+                  Delete
+                </Button>
+              </Card>
             ))
           )}
         </div>

@@ -11,18 +11,19 @@ interface FlipbookProps {
 }
 
 export function Flipbook({ pages, onPageChange, className }: FlipbookProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [spreadIndex, setSpreadIndex] = useState(0)
 
   const handlePrevious = () => {
-    const newIndex = Math.max(0, currentIndex - 1)
-    setCurrentIndex(newIndex)
-    onPageChange?.(newIndex)
+    const newIndex = Math.max(0, spreadIndex - 1)
+    setSpreadIndex(newIndex)
+    onPageChange?.(newIndex * 2)
   }
 
   const handleNext = () => {
-    const newIndex = Math.min(pages.length - 1, currentIndex + 1)
-    setCurrentIndex(newIndex)
-    onPageChange?.(newIndex)
+    const maxSpreadIndex = Math.ceil(pages.length / 2) - 1
+    const newIndex = Math.min(maxSpreadIndex, spreadIndex + 1)
+    setSpreadIndex(newIndex)
+    onPageChange?.(newIndex * 2)
   }
 
   if (pages.length === 0) {
@@ -33,24 +34,28 @@ export function Flipbook({ pages, onPageChange, className }: FlipbookProps) {
     )
   }
 
-  const currentPage = pages[currentIndex]
-  const isFirstPage = currentIndex === 0
-  const isLastPage = currentIndex === pages.length - 1
+  const leftPageIndex = spreadIndex * 2
+  const rightPageIndex = leftPageIndex + 1
+  const leftPage = pages[leftPageIndex]
+  const rightPage = rightPageIndex < pages.length ? pages[rightPageIndex] : null
+
+  const isFirstSpread = spreadIndex === 0
+  const isLastSpread = rightPageIndex >= pages.length - 1
 
   return (
-    <div className={className}>
+    <div className={clsx('flex flex-col gap-6', className)}>
       {/* Month Tabs */}
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2">
         {pages.map((page, index) => (
           <button
             key={page.id}
             onClick={() => {
-              setCurrentIndex(index)
+              setSpreadIndex(Math.floor(index / 2))
               onPageChange?.(index)
             }}
             className={clsx(
               'whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-colors',
-              currentIndex === index
+              Math.floor(index / 2) === spreadIndex
                 ? 'bg-white text-black'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
             )}
@@ -60,56 +65,56 @@ export function Flipbook({ pages, onPageChange, className }: FlipbookProps) {
         ))}
       </div>
 
-      {/* Flipbook Container */}
-      <div className="bg-slate-50 rounded-lg shadow-lg p-8">
-        <div className="perspective max-w-4xl mx-auto">
-          {/* Book spine effect */}
-          <div className="bg-white rounded-r-lg shadow-2xl" style={{ minHeight: '500px' }}>
-            {/* Page container with 3D effect */}
-            <div className="relative h-full">
-              {/* Current page with flip animation */}
-              <div
-                className="absolute inset-0 origin-left transition-transform duration-500"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  transform: `rotateY(${currentIndex === 0 ? 0 : -5}deg)`,
-                }}
-              >
-                <FlipbookPage page={currentPage} />
+      {/* Book Container - Two Page Spread */}
+      <div className="bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 rounded-lg shadow-2xl p-6">
+        <div className="flex gap-6">
+          {/* Left Page */}
+          <div className="flex-1 bg-white rounded-sm shadow-lg overflow-hidden">
+            {leftPage ? (
+              <FlipbookPage page={leftPage} />
+            ) : (
+              <div className="p-8 min-h-96 flex items-center justify-center text-slate-400">
+                <p>Front Cover</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation Controls */}
-        <div className="flex items-center justify-between mt-8">
-          <Button
-            variant="secondary"
-            onClick={handlePrevious}
-            disabled={isFirstPage}
-            className="gap-2"
-          >
-            ← Previous
-          </Button>
-
-          <div className="text-sm text-slate-600">
-            Page {currentIndex + 1} of {pages.length}
+            )}
           </div>
 
-          <Button
-            variant="secondary"
-            onClick={handleNext}
-            disabled={isLastPage}
-            className="gap-2"
-          >
-            Next →
-          </Button>
+          {/* Right Page */}
+          <div className="flex-1 bg-white rounded-sm shadow-lg overflow-hidden">
+            {rightPage ? (
+              <FlipbookPage page={rightPage} />
+            ) : (
+              <div className="p-8 min-h-96 flex items-center justify-center text-slate-400">
+                <p>Back Cover</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation Controls */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="secondary"
+          onClick={handlePrevious}
+          disabled={isFirstSpread}
+          className="gap-2"
+        >
+          ← Previous
+        </Button>
+
+        <div className="text-sm text-slate-600">
+          Pages {leftPageIndex + 1}-{rightPage ? rightPageIndex + 1 : leftPageIndex + 1} of {pages.length}
         </div>
 
-        {/* Mobile swipe hint */}
-        <div className="mt-4 text-center text-xs text-slate-500">
-          Use arrow keys or buttons to navigate
-        </div>
+        <Button
+          variant="secondary"
+          onClick={handleNext}
+          disabled={isLastSpread}
+          className="gap-2"
+        >
+          Next →
+        </Button>
       </div>
     </div>
   )
