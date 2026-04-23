@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getSurveyById, getSurveyMedia, publishSurvey } from '../../services/surveys'
+import { generateSurveyPDF } from '../../lib/pdfExport'
 import type { Survey, SurveyMedia } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner } from '../../components/ui'
+import { useToast } from '../../components/ui/Toast'
 
 export default function SurveyDetailPage() {
   const { surveyId } = useParams<{ surveyId: string }>()
+  const addToast = useToast()
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [media, setMedia] = useState<SurveyMedia[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -40,14 +44,47 @@ export default function SurveyDetailPage() {
     }
   }
 
+  const handleDownloadPDF = async () => {
+    if (!survey) return
+    setIsDownloading(true)
+    try {
+      const imageMedia = media.filter((m) => m.media_type === 'image').map((m) => m.file_url)
+      const scanMedia = media.filter((m) => m.media_type === '3d_scan').map((m) => m.file_url)
+
+      await generateSurveyPDF({
+        projectName: survey.project_name,
+        areaName: survey.area_name,
+        surveyDate: survey.survey_date,
+        areaSize: survey.area_size_sqft?.toString() || 'N/A',
+        surveyNotes: survey.survey_notes || 'N/A',
+        recommendedSystem: survey.suggested_system || 'N/A',
+        notes: survey.install_notes || 'N/A',
+        images: imageMedia,
+        scans: scanMedia,
+      })
+
+      addToast({
+        type: 'success',
+        message: 'PDF downloaded successfully',
+      })
+    } catch (error) {
+      addToast({
+        type: 'error',
+        message: 'Failed to generate PDF',
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   if (isLoading) return <div className="flex items-center justify-center min-h-screen"><Spinner size="lg" /></div>
   if (!survey) return <div>Survey not found</div>
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">{survey.area_name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">{survey.area_name}</h1>
           <div className="flex items-center gap-2 mt-2">
             <Badge variant={survey.status}>{survey.status}</Badge>
             <span className="text-secondary text-sm">
@@ -55,11 +92,18 @@ export default function SurveyDetailPage() {
             </span>
           </div>
         </div>
-        {survey.status === 'draft' && (
-          <Button variant="primary" onClick={handlePublish} isLoading={isPublishing}>
-            Publish to Report
-          </Button>
-        )}
+        <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
+          {survey.status === 'draft' && (
+            <Button variant="primary" onClick={handlePublish} isLoading={isPublishing} className="w-full xs:w-auto">
+              Publish to Report
+            </Button>
+          )}
+          {survey.status === 'published' && (
+            <Button variant="primary" onClick={handleDownloadPDF} isLoading={isDownloading} className="w-full xs:w-auto">
+              📥 Download as PDF
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
