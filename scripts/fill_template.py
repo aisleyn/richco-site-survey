@@ -115,6 +115,37 @@ def fill_template(template_path, output_path, data):
 
     print(f"Total text replacements made: {replaced_count}", file=sys.stderr)
 
+    # Also check headers and footers
+    print(f"Checking {len(doc.sections)} sections for headers/footers", file=sys.stderr)
+    for sec_idx, section in enumerate(doc.sections):
+        # Check header
+        if section.header is not None:
+            for para_idx, paragraph in enumerate(section.header.paragraphs):
+                para_text = ''.join(run.text for run in paragraph.runs)
+                if para_text.strip():
+                    print(f"Header section {sec_idx}, para {para_idx}: {repr(para_text[:100])}", file=sys.stderr)
+                    for run_idx, run in enumerate(paragraph.runs):
+                        print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
+                    for key, value in replacements.items():
+                        if replace_text_in_paragraph(paragraph, key, value):
+                            print(f"✓ Replaced '{key}' in header", file=sys.stderr)
+                            replaced_count += 1
+
+        # Check footer
+        if section.footer is not None:
+            for para_idx, paragraph in enumerate(section.footer.paragraphs):
+                para_text = ''.join(run.text for run in paragraph.runs)
+                if para_text.strip():
+                    print(f"Footer section {sec_idx}, para {para_idx}: {repr(para_text[:100])}", file=sys.stderr)
+                    for run_idx, run in enumerate(paragraph.runs):
+                        print(f"  Run {run_idx}: {repr(run.text)}", file=sys.stderr)
+                    for key, value in replacements.items():
+                        if replace_text_in_paragraph(paragraph, key, value):
+                            print(f"✓ Replaced '{key}' in footer", file=sys.stderr)
+                            replaced_count += 1
+
+    print(f"Total replacements after headers/footers: {replaced_count}", file=sys.stderr)
+
     # Handle images - look for Item.Images of Area placeholder
     images_added = 0
     if data.get('images') and len(data['images']) > 0:
