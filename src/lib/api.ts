@@ -49,5 +49,10 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     throw new Error(error.message || `API error: ${response.status}`)
   }
 
+  // Handle 204 No Content responses (e.g., DELETE requests)
+  if (response.status === 204) {
+    return {} as T
+  }
+
   return response.json()
 }

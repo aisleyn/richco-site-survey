@@ -5,6 +5,10 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import os from 'os'
+import dotenv from 'dotenv'
+
+// Load environment variables from .env file
+dotenv.config()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -23,6 +27,18 @@ function log(msg) {
 
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
+
+// Import Supabase admin client
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  : null
 
 app.post('/api/fill-template', async (req, res) => {
   try {
@@ -105,12 +121,46 @@ app.post('/api/fill-template', async (req, res) => {
   }
 })
 
+app.post('/api/reset-password', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Admin client not configured. Set SUPABASE_SERVICE_ROLE_KEY in .env' })
+  }
+
+  try {
+    const { user_id, new_password } = req.body
+
+    if (!user_id || !new_password || new_password.length < 8) {
+      return res.status(400).json({ error: 'user_id and password (min 8 chars) required' })
+    }
+
+    log('Resetting password for user:', user_id)
+
+    const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+      password: new_password,
+    })
+
+    if (error) {
+      log('Password reset error:', error.message)
+      return res.status(400).json({ error: error.message })
+    }
+
+    log('Password reset successfully for user:', user_id)
+    res.json({ success: true, message: 'Password reset successfully' })
+  } catch (error) {
+    log('Password reset exception:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 const server = app.listen(PORT, () => {
   log(`Template server running on http://localhost:${PORT}`)
 })
 
 server.on('error', (err) => {
-  log('Server error:', err)
+  log('Server error:', JSON.stringify(err, null, 2))
+  if (err.code === 'EADDRINUSE') {
+    log(`Port ${PORT} is already in use. Try killing the process or using a different port.`)
+  }
 })
 
 process.on('uncaughtException', (err) => {

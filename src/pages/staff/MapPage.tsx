@@ -134,8 +134,16 @@ export default function MapPage() {
 
   const handleWaypointDelete = async (waypointId: string) => {
     try {
-      await deleteWaypoint(waypointId)
-      setWaypoints(waypoints.filter((w) => w.id !== waypointId))
+      console.log('Starting waypoint deletion for:', waypointId)
+      const result = await deleteWaypoint(waypointId)
+      console.log('Waypoint deleted successfully:', result)
+
+      // Update state with waypoint removed
+      setWaypoints((prev) => {
+        const updated = prev.filter((w) => w.id !== waypointId)
+        console.log('Updated waypoints array:', updated)
+        return updated
+      })
       setSelectedWaypoint(null)
       setIsDetailModalOpen(false)
       addToast({
@@ -143,6 +151,7 @@ export default function MapPage() {
         message: 'Waypoint removed',
       })
     } catch (err) {
+      console.error('Error deleting waypoint:', err)
       addToast({
         type: 'error',
         message: 'Failed to remove waypoint',
@@ -284,7 +293,7 @@ export default function MapPage() {
       {/* Waypoints List */}
       {waypoints.length > 0 && (
         <Card className="mt-8">
-          <h2 className="text-lg font-semibold text-black mb-4">Waypoints</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">Waypoints</h2>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {waypoints.map((wp) => (
               <div

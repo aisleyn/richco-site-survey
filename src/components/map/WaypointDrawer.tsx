@@ -129,10 +129,13 @@ export function WaypointDrawer({
   const handleDeleteWaypoint = async () => {
     if (!waypoint || !onWaypointDelete) return
     try {
+      console.log('Drawer: Deleting waypoint', waypoint.id)
       await onWaypointDelete(waypoint.id)
-      addToast({ type: 'success', message: 'Waypoint removed' })
+      console.log('Drawer: Waypoint delete completed')
+      // Parent already shows success toast and closes drawer, so just wait
       onClose()
     } catch (err) {
+      console.error('Drawer: Error deleting waypoint:', err)
       addToast({ type: 'error', message: 'Failed to remove waypoint' })
     }
   }

@@ -73,25 +73,21 @@ export default function UserManagementPage() {
 
     setIsUpdating(true)
     try {
-      // Call reset password function
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${getAuthToken() || ''}`,
-          },
-          body: JSON.stringify({
-            user_id: selectedUser.id,
-            new_password: newPassword,
-          }),
-        }
-      )
+      const response = await fetch('http://localhost:3002/api/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: selectedUser.id,
+          new_password: newPassword,
+        }),
+      })
+
+      const data = await response.json()
 
       if (!response.ok) {
-        const error = await response.json()
-        alert(`Error: ${error.message}`)
+        alert(`Error: ${data.error}`)
         return
       }
 
