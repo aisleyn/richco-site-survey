@@ -36,8 +36,6 @@ export default function ClientManagementPage() {
   const [selectedUserClientId, setSelectedUserClientId] = useState('')
   const [selectedVendorForAssignment, setSelectedVendorForAssignment] = useState('')
   const [isAssigning, setIsAssigning] = useState(false)
-  const [newClientName, setNewClientName] = useState('')
-  const [newClientEmail, setNewClientEmail] = useState('')
   const [selectedClientForProject, setSelectedClientForProject] = useState('')
   const [selectedProject, setSelectedProject] = useState('')
   const [selectedClientToEdit, setSelectedClientToEdit] = useState<Client | null>(null)
