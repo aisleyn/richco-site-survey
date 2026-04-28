@@ -152,6 +152,49 @@ app.post('/api/reset-password', async (req, res) => {
   }
 })
 
+app.post('/api/delete-user-by-email', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Admin client not configured' })
+  }
+
+  try {
+    const { email } = req.body
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' })
+    }
+
+    log('Deleting user with email:', email)
+
+    // List all users and find by email
+    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+
+    if (listError) {
+      log('Error listing users:', listError.message)
+      return res.status(400).json({ error: listError.message })
+    }
+
+    const user = users.find(u => u.email === email)
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id)
+
+    if (error) {
+      log('Error deleting user:', error.message)
+      return res.status(400).json({ error: error.message })
+    }
+
+    log('User deleted successfully:', email)
+    res.json({ success: true, message: `User ${email} deleted successfully` })
+  } catch (error) {
+    log('Delete user exception:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 const server = app.listen(PORT, () => {
   log(`Template server running on http://localhost:${PORT}`)
 })
