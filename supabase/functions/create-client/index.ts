@@ -47,6 +47,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Create profile record so client appears in user management
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .insert({
+        id: data.user.id,
+        email: email,
+        full_name: full_name || "",
+        role: "client",
+        created_at: new Date().toISOString(),
+      });
+
+    if (profileError) {
+      // Log the error but don't fail - user was created successfully
+      console.error("Error creating profile:", profileError);
+    }
+
     return new Response(
       JSON.stringify({
         user_id: data.user.id,
