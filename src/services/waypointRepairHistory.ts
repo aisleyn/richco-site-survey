@@ -12,26 +12,37 @@ export async function getWaypointHistory(
 
 export async function addRepairHistoryEntry(
   waypointId: string,
-  projectId: string,
+  _projectId: string,
   oldStatus: WaypointStatus | null,
   newStatus: WaypointStatus,
+  userId?: string,
   notes?: string
 ): Promise<WaypointRepairHistory> {
-  const data = await apiFetch<WaypointRepairHistory[]>(
-    'waypoint_repair_history',
-    {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({
-        waypoint_id: waypointId,
-        project_id: projectId,
-        old_status: oldStatus,
-        new_status: newStatus,
-        notes: notes || null,
-      }),
+  try {
+    const payload = {
+      waypoint_id: waypointId,
+      old_status: oldStatus,
+      new_status: newStatus,
+      changed_by: userId || 'unknown',
+      notes: notes || null,
     }
-  )
-  return data[0]
+    console.log('addRepairHistoryEntry: inserting with payload', payload)
+    const data = await apiFetch<WaypointRepairHistory[]>(
+      'waypoint_repair_history',
+      {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(payload),
+      }
+    )
+    console.log('addRepairHistoryEntry: insert succeeded, returned:', data)
+    return data[0]
+  } catch (err) {
+    console.error('addRepairHistoryEntry: FAILED with error:', err)
+    const errorMsg = err instanceof Error ? err.message : JSON.stringify(err)
+    console.error('Full error details:', errorMsg)
+    throw err
+  }
 }
 
 export async function getProjectRepairHistory(

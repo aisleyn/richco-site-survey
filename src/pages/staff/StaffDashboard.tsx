@@ -116,7 +116,7 @@ export default function StaffDashboard() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Link to="/staff/projects" className="w-full sm:w-auto">
+              <Link to="/staff/surveys/new" className="w-full sm:w-auto">
                 <Button className="w-full px-8 py-3 bg-white text-black hover:bg-gray-100 font-medium rounded-lg transition-colors">
                   Start Survey
                 </Button>

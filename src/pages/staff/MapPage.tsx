@@ -8,6 +8,7 @@ import {
   updateWaypointStatus,
   deleteWaypoint,
 } from '../../services/mapWaypoints'
+import { useAuthStore } from '../../store/authStore'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import { PdfUploadModal } from '../../components/map/PdfUploadModal'
 import { WaypointDrawer } from '../../components/map/WaypointDrawer'
@@ -19,6 +20,7 @@ import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 export default function MapPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const addToast = useToast()
+  const profile = useAuthStore((state) => state.profile)
   const [project, setProject] = useState<Project | null>(null)
   const [waypoints, setWaypoints] = useState<MapWaypoint[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -53,13 +55,24 @@ export default function MapPage() {
   const handleAddWaypoint = async (x: number, y: number) => {
     if (!projectId) return
     try {
+      console.log('MapPage: handleAddWaypoint, creating waypoint')
       const newWaypoint = await createWaypoint(projectId, `Area ${waypoints.length + 1}`, x, y)
-      setWaypoints([...waypoints, newWaypoint])
+      console.log('MapPage: handleAddWaypoint received new waypoint:', newWaypoint?.id)
+
+      // Use function-based setState to ensure we get the latest state
+      // This fixes the issue where deleted waypoints reappear
+      setWaypoints((prev) => {
+        console.log('MapPage: handleAddWaypoint setting waypoints, current count:', prev.length)
+        const updated = [...prev, newWaypoint]
+        console.log('MapPage: handleAddWaypoint new waypoints count:', updated.length, 'ids:', updated.map(w => w.id))
+        return updated
+      })
       addToast({
         type: 'success',
         message: 'Waypoint created',
       })
     } catch (err) {
+      console.error('MapPage: handleAddWaypoint error:', err)
       addToast({
         type: 'error',
         message: 'Failed to create waypoint',
@@ -68,15 +81,32 @@ export default function MapPage() {
   }
 
   const handleUpdateWaypoint = async (waypoint: MapWaypoint) => {
+    // Keep track of old waypoint in case we need to rollback
+    const oldWaypoint = waypoints.find((w) => w.id === waypoint.id)
+
     try {
-      await updateWaypoint(waypoint.id, {
+      // Update optimistically
+      setWaypoints(waypoints.map((w) => (w.id === waypoint.id ? waypoint : w)))
+
+      // Confirm with API
+      const updated = await updateWaypoint(waypoint.id, {
         area_name: waypoint.area_name,
         status: waypoint.status,
         x_percent: waypoint.x_percent,
         y_percent: waypoint.y_percent,
       })
-      setWaypoints(waypoints.map((w) => (w.id === waypoint.id ? waypoint : w)))
+
+      // Make sure the returned data is stored
+      setWaypoints(waypoints.map((w) => (w.id === updated.id ? updated : w)))
+      addToast({
+        type: 'success',
+        message: 'Waypoint saved',
+      })
     } catch (err) {
+      // Rollback on failure
+      if (oldWaypoint) {
+        setWaypoints(waypoints.map((w) => (w.id === waypoint.id ? oldWaypoint : w)))
+      }
       addToast({
         type: 'error',
         message: 'Failed to update waypoint',
@@ -93,11 +123,14 @@ export default function MapPage() {
   const handleStatusChange = async (newStatus: string) => {
     if (!selectedWaypoint) return
     try {
+      console.log('MapPage: changing status from', selectedWaypoint.status, 'to', newStatus)
       const updated = await updateWaypointStatus(
         selectedWaypoint.id,
         selectedWaypoint.project_id,
         newStatus as any,
+        profile?.id,
       )
+      console.log('MapPage: status update succeeded, updated waypoint:', updated)
       setWaypoints(waypoints.map((w) => (w.id === updated.id ? updated : w)))
       setSelectedWaypoint(updated)
       addToast({
@@ -105,9 +138,10 @@ export default function MapPage() {
         message: 'Status updated',
       })
     } catch (err) {
+      console.error('MapPage: status update failed:', err)
       addToast({
         type: 'error',
-        message: 'Failed to update status',
+        message: `Failed to update status: ${err instanceof Error ? err.message : 'Unknown error'}`,
       })
     }
   }
@@ -134,14 +168,16 @@ export default function MapPage() {
 
   const handleWaypointDelete = async (waypointId: string) => {
     try {
-      console.log('Starting waypoint deletion for:', waypointId)
-      const result = await deleteWaypoint(waypointId)
-      console.log('Waypoint deleted successfully:', result)
+      console.log('MapPage: Starting waypoint deletion for:', waypointId)
+
+      // Delete from API first - fail fast if delete fails
+      await deleteWaypoint(waypointId)
+      console.log('MapPage: API delete succeeded for', waypointId)
 
       // Update state with waypoint removed
       setWaypoints((prev) => {
         const updated = prev.filter((w) => w.id !== waypointId)
-        console.log('Updated waypoints array:', updated)
+        console.log('MapPage: Updated waypoints array, count:', updated.length)
         return updated
       })
       setSelectedWaypoint(null)
@@ -151,10 +187,31 @@ export default function MapPage() {
         message: 'Waypoint removed',
       })
     } catch (err) {
-      console.error('Error deleting waypoint:', err)
+      console.error('MapPage: Error deleting waypoint:', err)
       addToast({
         type: 'error',
-        message: 'Failed to remove waypoint',
+        message: `Failed to remove waypoint: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      })
+    }
+  }
+
+  const handleRenameWaypoint = async (newName: string) => {
+    if (!selectedWaypoint || !newName.trim()) return
+    try {
+      console.log('MapPage: renaming waypoint to', newName)
+      const updated = await updateWaypoint(selectedWaypoint.id, { area_name: newName })
+      console.log('MapPage: rename succeeded')
+      setWaypoints(waypoints.map((w) => (w.id === updated.id ? updated : w)))
+      setSelectedWaypoint(updated)
+      addToast({
+        type: 'success',
+        message: 'Waypoint renamed',
+      })
+    } catch (err) {
+      console.error('MapPage: rename failed:', err)
+      addToast({
+        type: 'error',
+        message: `Failed to rename: ${err instanceof Error ? err.message : 'Unknown error'}`,
       })
     }
   }
@@ -315,6 +372,7 @@ export default function MapPage() {
                       }}
                       onBlur={() => handleAreaNameChange(wp.id, wp.area_name)}
                       onKeyDown={(e) => {
+                        e.stopPropagation()
                         if (e.key === 'Enter') {
                           handleAreaNameChange(wp.id, wp.area_name)
                         }
@@ -380,6 +438,7 @@ export default function MapPage() {
         onStatusChange={handleStatusChange}
         onSurveyLink={handleSurveyLink}
         onWaypointDelete={handleWaypointDelete}
+        onRenameWaypoint={handleRenameWaypoint}
         projectId={projectId!}
       />
     </div>

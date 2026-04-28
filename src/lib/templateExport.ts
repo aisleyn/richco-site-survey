@@ -8,6 +8,7 @@ interface SurveyData {
   notes: string
   images: string[]
   scans: string[]
+  pdfs?: string[]
   clientName: string
 }
 

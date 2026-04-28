@@ -227,34 +227,8 @@ function createWaypointMarker(
   // Create HTML marker with ripple animation
   const html = `
     <div style="width: 24px; height: 24px; position: relative; cursor: pointer;">
-      <style>
-        @keyframes ripple-1 {
-          0% {
-            width: 24px;
-            height: 24px;
-            opacity: 0.3;
-          }
-          100% {
-            width: 60px;
-            height: 60px;
-            opacity: 0;
-          }
-        }
-        @keyframes ripple-2 {
-          0% {
-            width: 24px;
-            height: 24px;
-            opacity: 0.1;
-          }
-          100% {
-            width: 100px;
-            height: 100px;
-            opacity: 0;
-          }
-        }
-      </style>
-      <div style="position: absolute; border: 2px solid ${statusColors[waypoint.status]}; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%); animation: ripple-1 2s ease-out infinite;"></div>
-      <div style="position: absolute; border: 2px solid ${statusColors[waypoint.status]}; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%); animation: ripple-2 2s ease-out infinite; animation-delay: 0.4s;"></div>
+      <div class="ripple-1" style="position: absolute; border: 2px solid ${statusColors[waypoint.status]}; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
+      <div class="ripple-2" style="position: absolute; border: 2px solid ${statusColors[waypoint.status]}; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%);"></div>
       <div style="position: absolute; width: 12px; height: 12px; background: ${statusColors[waypoint.status]}; border-radius: 50%; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 10;"></div>
     </div>
   `

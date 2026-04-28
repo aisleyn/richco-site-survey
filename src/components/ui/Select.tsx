@@ -17,11 +17,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className, ...props }, ref) => {
     return (
       <div className="w-full">
-        {label && <label className="block text-sm font-medium text-white mb-1">{label}</label>}
+        {label && <label className="block text-sm font-medium text-black mb-1">{label}</label>}
         <select
           ref={ref}
           className={clsx(
-            'w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black',
+            'w-full px-3 py-2 border border-slate-200 rounded-lg text-black bg-white',
             'focus:outline-none focus:ring-2 focus:ring-brand-amber focus:border-transparent',
             'disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed',
             error && 'border-red-300 focus:ring-red-500',

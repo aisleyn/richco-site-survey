@@ -1,6 +1,6 @@
 // Types as string unions instead of enums (better tree-shaking)
 export type UserRole = 'richco_staff' | 'client'
-export type MediaType = 'image' | 'video' | '3d_scan'
+export type MediaType = 'image' | 'video' | '3d_scan' | 'pdf'
 export type SurveyStatus = 'draft' | 'published'
 export type WaypointStatus = 'needs_repair' | 'in_progress' | 'completed'
 export type WaypointPhotoType = 'before' | 'after' | 'progress' | 'general'
@@ -14,6 +14,7 @@ export const MediaType = {
   IMAGE: 'image' as const,
   VIDEO: 'video' as const,
   SCAN_3D: '3d_scan' as const,
+  PDF: 'pdf' as const,
 }
 
 export const SurveyStatus = {
@@ -132,6 +133,27 @@ export interface WaypointPhoto {
   caption: string | null
   photo_type: WaypointPhotoType
   submitted_at: string
+}
+
+export interface SurveyUpdate {
+  id: string
+  survey_id: string
+  waypoint_id: string | null
+  update_notes: string | null
+  area_name: string | null
+  area_size_sqft: number | null
+  suggested_system: string | null
+  install_notes: string | null
+  updated_by: string | null
+  updated_at: string
+}
+
+export interface SurveyUpdateMedia {
+  id: string
+  survey_update_id: string
+  media_type: string
+  file_url: string
+  uploaded_at: string
 }
 
 // Form Types

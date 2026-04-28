@@ -7,6 +7,11 @@ interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ label, error, className, ...props }, ref) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation()
+    props.onKeyDown?.(e)
+  }
+
   return (
     <div className="w-full">
       {label && <label className="block text-sm font-medium text-white mb-1">{label}</label>}
@@ -20,6 +25,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ label,
           error && 'border-red-300 focus:ring-red-500',
           className,
         )}
+        onKeyDown={handleKeyDown}
         {...props}
       />
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}

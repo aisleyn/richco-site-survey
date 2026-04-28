@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
-import type { ReportPage, Survey, SurveyMedia } from '../../types'
+import { format } from 'date-fns'
+import type { ReportPage, Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia } from '../../types'
 import { getSurveyById, getSurveyMedia } from '../../services/surveys'
-import { Spinner } from '../ui'
+import { getSurveyUpdates } from '../../services/surveyUpdates'
+import { Spinner, MediaPreviewModal } from '../ui'
 
 interface FlipbookPageProps {
   page: ReportPage
 }
 
 export function FlipbookPage({ page }: FlipbookPageProps) {
-  const [surveys, setSurveys] = useState<Array<{ survey: Survey; media: SurveyMedia[] }>>([])
+  const [surveys, setSurveys] = useState<Array<{ survey: Survey; media: SurveyMedia[]; updates: Array<SurveyUpdate & { media: SurveyUpdateMedia[] }> }>>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedMedia, setSelectedMedia] = useState<{ file_url: string; media_type: string } | null>(null)
 
   useEffect(() => {
     loadPageSurveys()
@@ -21,6 +24,7 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
         page.survey_ids.map(async (surveyId) => ({
           survey: await getSurveyById(surveyId),
           media: await getSurveyMedia(surveyId),
+          updates: await getSurveyUpdates(surveyId),
         })),
       )
       setSurveys(surveyData)
@@ -51,7 +55,7 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
 
       {/* Surveys */}
       <div className="space-y-8">
-        {surveys.map(({ survey, media }, idx) => (
+        {surveys.map(({ survey, media, updates }, idx) => (
           <div key={survey.id} className={idx > 0 ? 'pt-8 border-t border-slate-200' : ''}>
             {/* Survey Header */}
             <div className="mb-6">
@@ -102,7 +106,8 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
                   {media.map((m) => (
                     <div
                       key={m.id}
-                      className="bg-slate-100 rounded border border-slate-200 overflow-hidden"
+                      className="bg-slate-100 rounded border border-slate-200 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => setSelectedMedia(m)}
                     >
                       {m.media_type === 'image' ? (
                         <img
@@ -114,6 +119,12 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
                         <div className="w-full h-32 flex items-center justify-center bg-slate-200">
                           <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M5 3a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5zm12 8l-7 4v-8l7 4z" />
+                          </svg>
+                        </div>
+                      ) : m.media_type === 'pdf' ? (
+                        <div className="w-full h-32 flex items-center justify-center bg-slate-200">
+                          <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-8-6z" />
                           </svg>
                         </div>
                       ) : (
@@ -128,6 +139,108 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
                 </div>
               </div>
             )}
+
+            {/* Survey Updates */}
+            {updates && updates.length > 0 && (
+              <div className="mt-8 pt-8 border-t border-slate-200">
+                <label className="text-xs font-semibold text-slate-600 uppercase mb-4 block">
+                  Updates
+                </label>
+                <div className="space-y-6">
+                  {updates.map((update) => (
+                    <div key={update.id} className="bg-slate-50 rounded border border-slate-200 p-4">
+                      <p className="text-xs text-slate-500 mb-4">
+                        {format(new Date(update.updated_at), 'MMM d, yyyy h:mm a')}
+                      </p>
+                      <div className="space-y-3">
+                        {update.update_notes && (
+                          <div>
+                            <label className="text-xs font-semibold text-slate-600 uppercase">
+                              Update Notes
+                            </label>
+                            <p className="text-sm text-black mt-1">{update.update_notes}</p>
+                          </div>
+                        )}
+                        {update.area_name && (
+                          <div>
+                            <label className="text-xs font-semibold text-slate-600 uppercase">
+                              Area Name
+                            </label>
+                            <p className="text-sm text-black mt-1">{update.area_name}</p>
+                          </div>
+                        )}
+                        {update.area_size_sqft && (
+                          <div>
+                            <label className="text-xs font-semibold text-slate-600 uppercase">
+                              Area Size
+                            </label>
+                            <p className="text-sm text-black mt-1">{update.area_size_sqft} sqft</p>
+                          </div>
+                        )}
+                        {update.suggested_system && (
+                          <div>
+                            <label className="text-xs font-semibold text-slate-600 uppercase">
+                              Suggested System
+                            </label>
+                            <p className="text-sm text-black mt-1">{update.suggested_system}</p>
+                          </div>
+                        )}
+                        {update.install_notes && (
+                          <div>
+                            <label className="text-xs font-semibold text-slate-600 uppercase">
+                              Installation Notes
+                            </label>
+                            <p className="text-sm text-black mt-1">{update.install_notes}</p>
+                          </div>
+                        )}
+                        {update.media && update.media.length > 0 && (
+                          <div>
+                            <label className="text-xs font-semibold text-slate-600 uppercase mb-2 block">
+                              Media ({update.media.length})
+                            </label>
+                            <div className="grid grid-cols-3 gap-3">
+                              {update.media.map((m) => (
+                                <div
+                                  key={m.id}
+                                  className="bg-slate-100 rounded border border-slate-200 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setSelectedMedia(m)}
+                                >
+                                  {m.media_type === 'image' ? (
+                                    <img
+                                      src={m.file_url}
+                                      alt="update media"
+                                      className="w-full h-32 object-cover"
+                                    />
+                                  ) : m.media_type === 'video' ? (
+                                    <div className="w-full h-32 flex items-center justify-center bg-slate-200">
+                                      <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M5 3a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2H5zm12 8l-7 4v-8l7 4z" />
+                                      </svg>
+                                    </div>
+                                  ) : m.media_type === 'pdf' ? (
+                                    <div className="w-full h-32 flex items-center justify-center bg-slate-200">
+                                      <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-8-6z" />
+                                      </svg>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full h-32 flex items-center justify-center bg-slate-200">
+                                      <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M13 6H5v14h14V9h-6V6z" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -137,6 +250,12 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
         <span>Page {page.page_number}</span>
         <span>{new Date(page.published_at).toLocaleDateString()}</span>
       </div>
+
+      <MediaPreviewModal
+        isOpen={!!selectedMedia}
+        media={selectedMedia}
+        onClose={() => setSelectedMedia(null)}
+      />
     </div>
   )
 }

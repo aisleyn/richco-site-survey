@@ -50,6 +50,10 @@ export const router = createBrowserRouter([
         element: <SurveysPage />,
       },
       {
+        path: 'surveys/new',
+        element: <SurveyFormPage />,
+      },
+      {
         path: 'reports',
         element: <ReportsPage />,
       },

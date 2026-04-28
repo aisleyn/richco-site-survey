@@ -4,12 +4,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useAuthStore } from '../../store/authStore'
-import { getProjectById } from '../../services/projects'
+import { getProjectById, getProjects } from '../../services/projects'
 import { createSurvey, addSurveyMedia, getSurveyById, updateSurvey } from '../../services/surveys'
 import { uploadFile } from '../../services/storage'
 import { MediaType } from '../../types'
 import type { Project, Survey } from '../../types'
-import { Card, Button, Input, Textarea, FileDropzone, Spinner } from '../../components/ui'
+import { Card, Button, Input, Textarea, FileDropzone, Spinner, Select } from '../../components/ui'
 
 const surveySchema = z.object({
   project_id: z.string().min(1, 'Project is required'),
@@ -31,6 +31,7 @@ export default function SurveyFormPage() {
   const { profile } = useAuthStore()
   const [project, setProject] = useState<Project | null>(null)
   const [survey, setSurvey] = useState<Survey | null>(null)
+  const [projects, setProjects] = useState<Project[]>([])
   const [isLoading, setIsLoading] = useState(!!projectId || !!surveyId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -59,8 +60,22 @@ export default function SurveyFormPage() {
   useEffect(() => {
     if (projectId || surveyId) {
       loadData()
+    } else {
+      // Load available projects when no projectId is provided
+      loadProjects()
     }
   }, [projectId, surveyId])
+
+  const loadProjects = async () => {
+    try {
+      const allProjects = await getProjects()
+      setProjects(allProjects)
+    } catch (err) {
+      console.error('Failed to load projects:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const loadData = async () => {
     try {
@@ -105,10 +120,14 @@ export default function SurveyFormPage() {
         surveyResult = await createSurvey(projId, surveyData, profile.id)
       }
 
+      const isPdf = (file: File): boolean => {
+        return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      }
+
       const mediaFiles = [
-        ...images.map((f) => ({ file: f, type: MediaType.IMAGE })),
-        ...scans3d.map((f) => ({ file: f, type: MediaType.SCAN_3D })),
-        ...videos.map((f) => ({ file: f, type: MediaType.VIDEO })),
+        ...images.map((f) => ({ file: f, type: (isPdf(f) ? MediaType.PDF : MediaType.IMAGE) as any })),
+        ...scans3d.map((f) => ({ file: f, type: (isPdf(f) ? MediaType.PDF : MediaType.SCAN_3D) as any })),
+        ...videos.map((f) => ({ file: f, type: (isPdf(f) ? MediaType.PDF : MediaType.VIDEO) as any })),
       ]
 
       for (const { file, type } of mediaFiles) {
@@ -155,7 +174,15 @@ export default function SurveyFormPage() {
       <Card className="max-w-2xl">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {!projectId && (
-            <Input label="Project" placeholder="Select a project" disabled {...register('project_id')} />
+            <Select
+              label="Project"
+              options={[
+                { value: '', label: 'Select a project...' },
+                ...projects.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+              error={getErrorMessage(formErrors.project_id)}
+              {...register('project_id')}
+            />
           )}
 
           <Input label="Area Name / Room Number" error={getErrorMessage(formErrors.area_name)} {...register('area_name')} />
@@ -182,7 +209,7 @@ export default function SurveyFormPage() {
           <Textarea label="Installation Notes" {...register('install_notes')} />
 
           <FileDropzone
-            accept="image/*"
+            accept=""
             multiple={true}
             onFilesSelected={setImages}
             label="Images of Area"
@@ -191,7 +218,7 @@ export default function SurveyFormPage() {
           />
 
           <FileDropzone
-            accept=".obj,.glb,.ply,.zip,.e57,.rcp,.pts,.las"
+            accept=""
             multiple={false}
             onFilesSelected={setScans3d}
             label="3D Scan File (optional)"
@@ -199,7 +226,7 @@ export default function SurveyFormPage() {
           />
 
           <FileDropzone
-            accept="video/*"
+            accept=""
             multiple={true}
             onFilesSelected={setVideos}
             label="Videos of Area (optional)"

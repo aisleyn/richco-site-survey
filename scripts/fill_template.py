@@ -45,7 +45,11 @@ def replace_text_in_paragraph(paragraph, placeholder, value):
     return True
 
 def add_image_to_paragraph(paragraph, image_url):
-    """Add image from URL to paragraph"""
+    """Add image from URL to paragraph, or PDF link if it's a PDF"""
+    # Check if this is a PDF
+    if '.pdf' in image_url.lower():
+        return add_pdf_link_to_paragraph(paragraph, image_url)
+
     try:
         print(f"[DEBUG] Fetching image from URL...", file=sys.stderr)
         response = requests.get(image_url, timeout=10)
@@ -61,6 +65,38 @@ def add_image_to_paragraph(paragraph, image_url):
     except Exception as e:
         print(f"Warning: Could not insert image {image_url[:100]}: {e}", file=sys.stderr)
     return False
+
+def add_pdf_link_to_paragraph(paragraph, pdf_url):
+    """Add PDF link/reference to paragraph"""
+    from docx.shared import RGBColor, Pt
+
+    # Extract filename from URL for display text
+    filename = pdf_url.split('/')[-1].split('?')[0] or 'PDF Document'
+
+    try:
+        print(f"[DEBUG] Adding PDF reference: {pdf_url[:100]}", file=sys.stderr)
+
+        # Add filename as blue underlined text (like a hyperlink)
+        run = paragraph.add_run(f'📄 {filename}')
+        run.font.underline = True
+        run.font.color.rgb = RGBColor(5, 99, 193)  # Standard hyperlink blue
+
+        # Add a newline and URL reference below
+        paragraph.add_run('\n')
+        url_run = paragraph.add_run(f'URL: {pdf_url.split("?")[0][:80]}...')
+        url_run.font.size = Pt(8)
+        url_run.italic = True
+
+        print(f"[DEBUG] PDF reference added successfully", file=sys.stderr)
+        return True
+    except Exception as e:
+        print(f"Warning: Could not add PDF reference: {e}", file=sys.stderr)
+        # Last resort fallback
+        try:
+            paragraph.add_run(f'PDF: {filename} - {pdf_url}\n')
+            return True
+        except:
+            return False
 
 def fill_template(template_path, output_path, data):
     """Fill a Word template with survey data"""
@@ -277,6 +313,51 @@ def fill_template(template_path, output_path, data):
                                 break
 
     print(f"Total scans added: {scans_added}", file=sys.stderr)
+
+    # Handle PDFs - look for Item.PDFs placeholder
+    pdfs_added = 0
+    if data.get('pdfs') and len(data['pdfs']) > 0:
+        print(f"Attempting to add {len(data['pdfs'])} PDFs", file=sys.stderr)
+        print(f"PDF URLs: {data['pdfs']}", file=sys.stderr)
+        # Find the paragraph with Item.PDFs placeholder
+        for para_idx, paragraph in enumerate(doc.paragraphs):
+            para_text = ''.join(run.text for run in paragraph.runs)
+            if 'Item.PDFs' in para_text or 'PDFs' in para_text or 'Drawings' in para_text:
+                print(f"Found PDFs placeholder at paragraph {para_idx}: {para_text[:100]}", file=sys.stderr)
+                # Clear the placeholder text
+                for run in paragraph.runs:
+                    run.text = ''
+                # Add all PDFs to this paragraph
+                for idx, pdf_url in enumerate(data['pdfs'][:10]):  # Limit to 10 PDFs
+                    print(f"Attempting to add PDF {idx + 1}: {pdf_url}", file=sys.stderr)
+                    if add_pdf_link_to_paragraph(paragraph, pdf_url):
+                        pdfs_added += 1
+                        paragraph.add_run('\n')  # Add newline between PDFs
+                        print(f"Successfully added PDF {idx + 1}/{len(data['pdfs'])}", file=sys.stderr)
+                break
+
+        # Also check in tables
+        if pdfs_added == 0:
+            for table_idx, table in enumerate(doc.tables):
+                for row_idx, row in enumerate(table.rows):
+                    for cell_idx, cell in enumerate(row.cells):
+                        for para_idx, paragraph in enumerate(cell.paragraphs):
+                            para_text = ''.join(run.text for run in paragraph.runs)
+                            if 'Item.PDFs' in para_text or 'PDFs' in para_text or 'Drawings' in para_text:
+                                print(f"Found PDFs placeholder in table {table_idx}, row {row_idx}, cell {cell_idx}", file=sys.stderr)
+                                # Clear the placeholder text
+                                for run in paragraph.runs:
+                                    run.text = ''
+                                # Add all PDFs to this paragraph
+                                for idx, pdf_url in enumerate(data['pdfs'][:10]):  # Limit to 10 PDFs
+                                    print(f"Attempting to add PDF {idx + 1} to table: {pdf_url}", file=sys.stderr)
+                                    if add_pdf_link_to_paragraph(paragraph, pdf_url):
+                                        pdfs_added += 1
+                                        paragraph.add_run('\n')  # Add newline between PDFs
+                                        print(f"Successfully added PDF {idx + 1}/{len(data['pdfs'])} to table", file=sys.stderr)
+                                break
+
+    print(f"Total PDFs added: {pdfs_added}", file=sys.stderr)
 
     # Save the document
     print(f"Saving document to: {output_path}", file=sys.stderr)

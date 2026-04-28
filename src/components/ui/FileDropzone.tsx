@@ -20,7 +20,7 @@ export function FileDropzone({
   label,
   error,
 }: FileDropzoneProps) {
-  const inputIdRef = useRef(`file-input-${Math.random().toString(36).substr(2, 9)}`)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragActive, setIsDragActive] = useState(false)
   const [files, setFiles] = useState<File[]>([])
 
@@ -67,7 +67,7 @@ export function FileDropzone({
   }
 
   const handleZoneClick = () => {
-    document.getElementById(inputIdRef.current)?.click()
+    fileInputRef.current?.click()
   }
 
   const isImage = (file: File) => file.type.startsWith('image/')
@@ -91,18 +91,15 @@ export function FileDropzone({
         )}
       >
         <input
+          ref={fileInputRef}
           type="file"
           accept={accept}
           multiple={multiple}
           onChange={handleInputChange}
           className="hidden"
-          id={inputIdRef.current}
         />
 
-        <label
-          htmlFor={inputIdRef.current}
-          className="flex flex-col items-center justify-center cursor-pointer"
-        >
+        <label className="flex flex-col items-center justify-center cursor-pointer">
           <svg className="w-8 h-8 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"

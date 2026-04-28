@@ -148,3 +148,39 @@
   height: 8px;
   border-radius: 50%;
 }
+
+/* Waypoint marker animations */
+@keyframes ripple-1 {
+  0% {
+    width: 24px;
+    height: 24px;
+    opacity: 0.3;
+  }
+  100% {
+    width: 60px;
+    height: 60px;
+    opacity: 0;
+  }
+}
+
+@keyframes ripple-2 {
+  0% {
+    width: 24px;
+    height: 24px;
+    opacity: 0.1;
+  }
+  100% {
+    width: 100px;
+    height: 100px;
+    opacity: 0;
+  }
+}
+
+.leaflet-waypoint-marker .ripple-1 {
+  animation: ripple-1 2s ease-out infinite;
+}
+
+.leaflet-waypoint-marker .ripple-2 {
+  animation: ripple-2 2s ease-out infinite;
+  animation-delay: 0.4s;
+}

@@ -15,21 +15,30 @@ export async function createWaypoint(
   xPercent: number,
   yPercent: number,
 ): Promise<MapWaypoint> {
-  const data = await apiFetch<MapWaypoint[]>(
-    'map_waypoints',
-    {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({
-        project_id: projectId,
-        area_name: areaName,
-        x_percent: xPercent,
-        y_percent: yPercent,
-        status: 'needs_repair',
-      }),
-    }
-  )
-  return data[0]
+  try {
+    console.log('createWaypoint: creating new waypoint')
+    const data = await apiFetch<MapWaypoint[]>(
+      'map_waypoints',
+      {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          project_id: projectId,
+          area_name: areaName,
+          x_percent: xPercent,
+          y_percent: yPercent,
+          status: 'needs_repair',
+        }),
+      }
+    )
+    console.log('createWaypoint: API returned', data.length, 'items:', data)
+    const waypoint = data[0]
+    console.log('createWaypoint: returning waypoint:', waypoint?.id)
+    return waypoint
+  } catch (err) {
+    console.error('createWaypoint error:', err)
+    throw err
+  }
 }
 
 export async function updateWaypoint(
@@ -48,30 +57,49 @@ export async function updateWaypoint(
 }
 
 export async function deleteWaypoint(id: string): Promise<void> {
-  await apiFetch(`map_waypoints?id=eq.${id}`, { method: 'DELETE' })
+  try {
+    console.log('deleteWaypoint: deleting', id)
+    await apiFetch(`map_waypoints?id=eq.${id}`, { method: 'DELETE' })
+    console.log('deleteWaypoint: successfully deleted', id)
+  } catch (err) {
+    console.error('deleteWaypoint error:', err)
+    throw err
+  }
 }
 
 export async function updateWaypointStatus(
   id: string,
   projectId: string,
   newStatus: WaypointStatus,
-  notes?: string,
+  userId?: string,
 ): Promise<MapWaypoint> {
-  const currentWaypoint = await apiFetch<MapWaypoint[]>(
-    `map_waypoints?id=eq.${id}&select=status`
-  )
+  try {
+    console.log('updateWaypointStatus: getting current status for', id)
+    // Get current waypoint status efficiently
+    const currentWaypoint = await apiFetch<MapWaypoint[]>(
+      `map_waypoints?id=eq.${id}&select=id,status`
+    )
+    const oldStatus = currentWaypoint[0]?.status || null
+    console.log('updateWaypointStatus: old status:', oldStatus, 'new status:', newStatus)
 
-  const data = await updateWaypoint(id, { status: newStatus })
+    // Update the status - this is the critical operation
+    console.log('updateWaypointStatus: calling updateWaypoint')
+    const data = await updateWaypoint(id, { status: newStatus })
+    console.log('updateWaypointStatus: update succeeded, waypoint:', data)
 
-  await addRepairHistoryEntry(
-    id,
-    projectId,
-    currentWaypoint[0]?.status,
-    newStatus,
-    notes,
-  )
+    // Track status change in repair history
+    try {
+      await addRepairHistoryEntry(id, projectId, oldStatus, newStatus, userId)
+      console.log('updateWaypointStatus: repair history entry added')
+    } catch (historyErr) {
+      console.warn('updateWaypointStatus: failed to add repair history (non-blocking):', historyErr)
+    }
 
-  return data
+    return data
+  } catch (err) {
+    console.error('updateWaypointStatus error:', err)
+    throw err
+  }
 }
 
 export async function updateWaypointNotes(

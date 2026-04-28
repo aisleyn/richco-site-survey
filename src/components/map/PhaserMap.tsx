@@ -123,8 +123,9 @@ export const PhaserMap = forwardRef<PhaserMapHandle, PhaserMapProps>(
       })
       console.log('PhaserMap: available scenes after start:', game.scene.getScenes().map((s: any) => s.key))
 
-      // Wait for scene to exist and get reference
+      // Wait for scene to exist and get reference - be more aggressive
       let attempts = 0
+      sceneRef.current = null // Clear any stale reference
       const timer = setInterval(() => {
         attempts++
         const scene = game.scene.getScene('MapScene') as MapScene | null
@@ -132,20 +133,38 @@ export const PhaserMap = forwardRef<PhaserMapHandle, PhaserMapProps>(
           console.log('PhaserMap: scene is now available after', attempts, 'attempts')
           sceneRef.current = scene
           clearInterval(timer)
-        } else if (attempts > 50) {
-          console.error('PhaserMap: timeout waiting for scene')
+        } else if (attempts > 100) {
+          console.error('PhaserMap: timeout waiting for scene after 1000ms')
           clearInterval(timer)
         }
       }, 10)
 
-      return () => clearInterval(timer)
+      return () => {
+        clearInterval(timer)
+        // Don't clear sceneRef on cleanup - keep it for waypoint syncing
+      }
     }, [imageUrl])
 
-    // Sync waypoints (only after scene is initialized)
+    // Sync waypoints whenever they change and scene is ready
     useEffect(() => {
-      if (sceneRef.current && waypoints.length > 0) {
-        sceneRef.current.syncWaypoints(waypoints)
+      let attempts = 0
+      const maxAttempts = 20 // Try for up to 2 seconds
+
+      const trySync = () => {
+        attempts++
+        if (sceneRef.current) {
+          console.log('PhaserMap: syncing waypoints, count:', waypoints.length)
+          sceneRef.current.syncWaypoints(waypoints)
+        } else if (attempts < maxAttempts) {
+          // Scene not ready yet, retry in 100ms
+          console.log('PhaserMap: waiting for scene to be ready (attempt', attempts, ')')
+          setTimeout(trySync, 100)
+        } else {
+          console.warn('PhaserMap: gave up waiting for scene, waypoints may not display')
+        }
       }
+
+      trySync()
     }, [waypoints])
 
     // Sync placement mode
