@@ -1,6 +1,5 @@
 const CACHE_NAME = 'richco-survey-v1'
 const urlsToCache = [
-  '/',
   '/index.html',
   '/favicon.svg',
   '/manifest.json',
@@ -13,7 +12,7 @@ self.addEventListener('install', event => {
       return cache.addAll(urlsToCache).catch(err => {
         console.log('Cache addAll error:', err)
       })
-    })
+    }).then(() => self.skipWaiting())
   )
 })
 
@@ -42,6 +41,9 @@ self.addEventListener('fetch', event => {
     return
   }
 
+  const url = new URL(event.request.url)
+  const isNavigationRequest = event.request.mode === 'navigate'
+
   event.respondWith(
     caches.match(event.request).then(response => {
       if (response) {
@@ -63,7 +65,11 @@ self.addEventListener('fetch', event => {
 
         return response
       }).catch(() => {
-        // Return a fallback if offline and no cache available
+        // For navigation requests (app shell), return index.html from cache
+        if (isNavigationRequest) {
+          return caches.match('/index.html')
+        }
+        // For other requests, return offline message
         return new Response('Offline - please check your connection', {
           status: 503,
           statusText: 'Service Unavailable',

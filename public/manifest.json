@@ -2,10 +2,10 @@
   "name": "Richco Site Survey",
   "short_name": "Survey",
   "description": "Professional site survey and client repair request management system",
-  "start_url": "/",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#1f2937",
   "theme_color": "#1f2937",
   "orientation": "portrait-primary",
   "icons": [
