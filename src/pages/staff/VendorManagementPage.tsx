@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Input, Spinner } from '../../components/ui'
+import type { Profile } from '../../types'
 
 function getAuthToken(): string | null {
   const projectId = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0]
@@ -30,7 +31,11 @@ export default function ClientManagementPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [vendorProjects, setVendorProjects] = useState<VendorProject[]>([])
+  const [userClients, setUserClients] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedUserClientId, setSelectedUserClientId] = useState('')
+  const [selectedVendorForAssignment, setSelectedVendorForAssignment] = useState('')
+  const [isAssigning, setIsAssigning] = useState(false)
   const [newClientName, setNewClientName] = useState('')
   const [newClientEmail, setNewClientEmail] = useState('')
   const [selectedClientForProject, setSelectedClientForProject] = useState('')
@@ -52,27 +57,31 @@ export default function ClientManagementPage() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
 
-      const [clientsRes, projectsRes, clientProjectsRes] = await Promise.all([
+      const [clientsRes, projectsRes, clientProjectsRes, userClientsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors`, { headers }),
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/projects`, { headers }),
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects`, { headers }),
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?role=eq.client`, { headers }),
       ])
 
       const clientsData = clientsRes.ok ? await clientsRes.json() : []
       const projectsData = projectsRes.ok ? await projectsRes.json() : []
       const clientProjectsData = clientProjectsRes.ok ? await clientProjectsRes.json() : []
+      const userClientsData = userClientsRes.ok ? await userClientsRes.json() : []
 
       setClients(Array.isArray(clientsData) ? clientsData : [])
       setProjects(Array.isArray(projectsData) ? projectsData : [])
       setVendorProjects(Array.isArray(clientProjectsData) ? clientProjectsData : [])
+      setUserClients(Array.isArray(userClientsData) ? userClientsData : [])
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleAddClient = async () => {
-    if (!newClientName.trim()) return
+  const handleAssignVendor = async () => {
+    if (!selectedUserClientId || !selectedVendorForAssignment) return
 
+    setIsAssigning(true)
     try {
       const token = getAuthToken()
       const headers: HeadersInit = {
@@ -80,22 +89,42 @@ export default function ClientManagementPage() {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          name: newClientName,
-          contact_email: newClientEmail || null,
-        }),
-      })
 
-      if (response.ok) {
-        setNewClientName('')
-        setNewClientEmail('')
-        loadData()
+      // Get vendor's first project
+      const vendorProjectsResp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects?vendor_id=eq.${selectedVendorForAssignment}&limit=1`,
+        { headers }
+      )
+      const vendorProjects = await vendorProjectsResp.json()
+      const assignedProjectId = vendorProjects.length > 0 ? vendorProjects[0].project_id : null
+
+      // Update profile with vendor and project
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/profiles?id=eq.${selectedUserClientId}`,
+        {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            vendor_id: selectedVendorForAssignment,
+            project_id: assignedProjectId,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        alert('Failed to assign vendor')
+        return
       }
+
+      alert('Vendor assigned successfully')
+      setSelectedUserClientId('')
+      setSelectedVendorForAssignment('')
+      loadData()
     } catch (err) {
-      console.error('Failed to add client', err)
+      console.error('Failed to assign vendor', err)
+      alert('Failed to assign vendor')
+    } finally {
+      setIsAssigning(false)
     }
   }
 
@@ -251,28 +280,8 @@ export default function ClientManagementPage() {
         </div>
       </div>
 
-      {/* Add and Edit Sections */}
+      {/* Assign and Link Sections */}
       <div>
-        <Card className="p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Add Client</h2>
-          <div className="space-y-3">
-            <Input
-              placeholder="Client name"
-              value={newClientName}
-              onChange={(e) => setNewClientName(e.target.value)}
-            />
-            <Input
-              placeholder="Contact email"
-              type="email"
-              value={newClientEmail}
-              onChange={(e) => setNewClientEmail(e.target.value)}
-            />
-            <Button onClick={handleAddClient} variant="primary" className="w-full">
-              Add Client
-            </Button>
-          </div>
-        </Card>
-
         {selectedClientToEdit && (
           <Card className="p-6 mb-6">
             <h2 className="text-xl font-semibold text-white mb-4">Edit Client Email</h2>
@@ -304,6 +313,46 @@ export default function ClientManagementPage() {
             </div>
           </Card>
         )}
+
+        <Card className="p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4">Assign Client User to Vendor</h2>
+          <div className="space-y-4">
+            <select
+              value={selectedUserClientId}
+              onChange={(e) => setSelectedUserClientId(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+            >
+              <option value="">Select client user...</option>
+              {userClients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.email}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedVendorForAssignment}
+              onChange={(e) => setSelectedVendorForAssignment(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+            >
+              <option value="">Select vendor...</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                </option>
+              ))}
+            </select>
+
+            <Button
+              onClick={handleAssignVendor}
+              variant="primary"
+              className="w-full"
+              isLoading={isAssigning}
+            >
+              Assign Vendor
+            </Button>
+          </div>
+        </Card>
 
         <Card className="p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">Link Client to Project</h2>
