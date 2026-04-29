@@ -65,6 +65,10 @@ export async function createSurvey(
     .single()
 
   if (error) throw error
+
+  // Add survey to report page preview so it shows in flipbook immediately
+  await upsertReportPage(projectId, data.id)
+
   return data
 }
 
