@@ -50,7 +50,7 @@ export function InteractiveMap({
       maxZoom: 4,
       zoom: 1,
       center: [50, 50],
-      touchZoom: true,
+      touchZoom: false,
       doubleClickZoom: true,
     })
 
