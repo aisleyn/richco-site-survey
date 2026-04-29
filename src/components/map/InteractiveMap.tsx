@@ -213,37 +213,39 @@ export function InteractiveMap({
 }
 
 function setupDragToZoom(map: L.Map, container: HTMLElement) {
-  let startY = 0
+  let lastDistance = 0
   let isZooming = false
-  const zoomSensitivity = 100
+  const zoomSensitivity = 500
+
+  const getDistance = (touch1: Touch, touch2: Touch) => {
+    const dx = touch1.clientX - touch2.clientX
+    const dy = touch1.clientY - touch2.clientY
+    return Math.sqrt(dx * dx + dy * dy)
+  }
 
   const handleTouchStart = (e: TouchEvent) => {
     if (e.touches.length === 2) {
       isZooming = true
-      const touch1Y = e.touches[0].clientY
-      const touch2Y = e.touches[1].clientY
-      startY = (touch1Y + touch2Y) / 2
+      lastDistance = getDistance(e.touches[0], e.touches[1])
     }
   }
 
   const handleTouchMove = (e: TouchEvent) => {
     if (!isZooming || e.touches.length !== 2) return
 
-    const touch1Y = e.touches[0].clientY
-    const touch2Y = e.touches[1].clientY
-    const currentY = (touch1Y + touch2Y) / 2
-    const distance = currentY - startY
+    const currentDistance = getDistance(e.touches[0], e.touches[1])
+    const distanceDelta = currentDistance - lastDistance
 
-    if (Math.abs(distance) > 5) {
+    if (Math.abs(distanceDelta) > 2) {
       e.preventDefault()
-      const zoomChange = -distance / zoomSensitivity
+      const zoomChange = distanceDelta / zoomSensitivity
       const currentZoom = map.getZoom()
       const newZoom = Math.min(
         map.getMaxZoom(),
         Math.max(map.getMinZoom(), currentZoom + zoomChange)
       )
       map.setZoom(newZoom)
-      startY = currentY
+      lastDistance = currentDistance
     }
   }
 
