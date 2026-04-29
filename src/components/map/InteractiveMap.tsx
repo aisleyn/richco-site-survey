@@ -50,6 +50,8 @@ export function InteractiveMap({
       maxZoom: 4,
       zoom: 1,
       center: [50, 50],
+      touchZoom: true,
+      doubleClickZoom: true,
     })
 
     // Add image overlay
@@ -58,6 +60,9 @@ export function InteractiveMap({
 
     // Create markers group
     markersGroup.current = L.featureGroup().addTo(map.current)
+
+    // Add drag-to-zoom support for mobile
+    setupDragToZoom(map.current, mapContainer.current)
 
     setIsLoading(false)
 
@@ -205,6 +210,56 @@ export function InteractiveMap({
       )}
     </div>
   )
+}
+
+function setupDragToZoom(map: L.Map, container: HTMLElement) {
+  let startY = 0
+  let isZooming = false
+  const zoomSensitivity = 100
+
+  const handleTouchStart = (e: TouchEvent) => {
+    if (e.touches.length === 2) {
+      isZooming = true
+      const touch1Y = e.touches[0].clientY
+      const touch2Y = e.touches[1].clientY
+      startY = (touch1Y + touch2Y) / 2
+    }
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isZooming || e.touches.length !== 2) return
+
+    const touch1Y = e.touches[0].clientY
+    const touch2Y = e.touches[1].clientY
+    const currentY = (touch1Y + touch2Y) / 2
+    const distance = currentY - startY
+
+    if (Math.abs(distance) > 5) {
+      e.preventDefault()
+      const zoomChange = -distance / zoomSensitivity
+      const currentZoom = map.getZoom()
+      const newZoom = Math.min(
+        map.getMaxZoom(),
+        Math.max(map.getMinZoom(), currentZoom + zoomChange)
+      )
+      map.setZoom(newZoom)
+      startY = currentY
+    }
+  }
+
+  const handleTouchEnd = () => {
+    isZooming = false
+  }
+
+  container.addEventListener('touchstart', handleTouchStart, { passive: true })
+  container.addEventListener('touchmove', handleTouchMove, { passive: false })
+  container.addEventListener('touchend', handleTouchEnd, { passive: true })
+
+  return () => {
+    container.removeEventListener('touchstart', handleTouchStart)
+    container.removeEventListener('touchmove', handleTouchMove)
+    container.removeEventListener('touchend', handleTouchEnd)
+  }
 }
 
 function createWaypointMarker(

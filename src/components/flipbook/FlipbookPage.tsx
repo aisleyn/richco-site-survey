@@ -12,6 +12,7 @@ interface FlipbookPageProps {
 export function FlipbookPage({ page }: FlipbookPageProps) {
   const [surveys, setSurveys] = useState<Array<{ survey: Survey; media: SurveyMedia[]; updates: Array<SurveyUpdate & { media: SurveyUpdateMedia[] }> }>>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedMedia, setSelectedMedia] = useState<{ file_url: string; media_type: string } | null>(null)
 
   useEffect(() => {
@@ -20,14 +21,42 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
 
   const loadPageSurveys = async () => {
     try {
-      const surveyData = await Promise.all(
-        page.survey_ids.map(async (surveyId) => ({
-          survey: await getSurveyById(surveyId),
-          media: await getSurveyMedia(surveyId),
-          updates: await getSurveyUpdates(surveyId),
-        })),
-      )
+      console.log('Loading surveys for page:', page.id, 'with survey IDs:', page.survey_ids)
+
+      if (!page.survey_ids || page.survey_ids.length === 0) {
+        console.log('No survey IDs found for this page')
+        setSurveys([])
+        return
+      }
+
+      const surveyDataPromises = page.survey_ids.map(async (surveyId) => {
+        try {
+          const survey = await getSurveyById(surveyId)
+          if (!survey) {
+            console.warn(`Survey ${surveyId} not found, skipping`)
+            return null
+          }
+          const media = await getSurveyMedia(surveyId)
+          const updates = await getSurveyUpdates(surveyId)
+          console.log(`Loaded survey ${surveyId}:`, survey)
+          return { survey, media, updates }
+        } catch (err) {
+          console.error(`Failed to load survey ${surveyId}:`, err)
+          throw err
+        }
+      })
+
+      const surveyDataResults = await Promise.all(surveyDataPromises)
+      const surveyData = surveyDataResults.filter((s) => s !== null)
+      console.log('All surveys loaded:', surveyData)
       setSurveys(surveyData)
+      setError(null)
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      console.error('❌ Error loading page surveys:', err)
+      console.error('Error details:', errorMsg)
+      setError(`Error loading surveys: ${errorMsg}`)
+      setSurveys([])
     } finally {
       setIsLoading(false)
     }
@@ -37,6 +66,24 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 bg-red-50 rounded border border-red-200">
+        <p className="text-red-700 font-semibold">Error loading surveys</p>
+        <p className="text-red-600 text-sm mt-1">{error}</p>
+      </div>
+    )
+  }
+
+  if (surveys.length === 0) {
+    return (
+      <div className="p-8 bg-yellow-50 rounded border border-yellow-200">
+        <p className="text-yellow-700 font-semibold">No surveys found</p>
+        <p className="text-yellow-600 text-sm mt-1">This report page has no surveys. Check that surveys are linked to this page.</p>
       </div>
     )
   }
@@ -57,44 +104,64 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
       <div className="space-y-8">
         {surveys.map(({ survey, media, updates }, idx) => (
           <div key={survey.id} className={idx > 0 ? 'pt-8 border-t border-slate-200' : ''}>
-            {/* Survey Header */}
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-black">
-                {survey.area_name}
-              </h3>
-              <p className="text-sm text-slate-600 mt-1">
-                {new Date(survey.survey_date).toLocaleDateString()}
-                {survey.area_size_sqft && ` • ${survey.area_size_sqft} sqft`}
-              </p>
-            </div>
+            {/* Check if this is an initial issue */}
+            {!survey.suggested_system && !survey.install_notes ? (
+              <>
+                {/* Initial Issue Header */}
+                <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                  <h3 className="text-lg font-bold text-blue-900">
+                    🔍 Initial Issue: {survey.area_name}
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-2">
+                    {new Date(survey.survey_date).toLocaleDateString()}
+                  </p>
+                  {survey.survey_notes && (
+                    <p className="text-sm text-black mt-3">{survey.survey_notes}</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Regular Survey Header */}
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-black">
+                    {survey.area_name}
+                  </h3>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {new Date(survey.survey_date).toLocaleDateString()}
+                    {survey.area_size_sqft && ` • ${survey.area_size_sqft} sqft`}
+                  </p>
+                </div>
 
-            {/* Survey Details Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {survey.survey_notes && (
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase">
-                    Survey Notes
-                  </label>
-                  <p className="text-sm text-black mt-1">{survey.survey_notes}</p>
+                {/* Survey Details Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {survey.survey_notes && (
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600 uppercase">
+                        Survey Notes
+                      </label>
+                      <p className="text-sm text-black mt-1">{survey.survey_notes}</p>
+                    </div>
+                  )}
+                  {survey.suggested_system && (
+                    <div>
+                      <label className="text-xs font-semibold text-slate-600 uppercase">
+                        Suggested System
+                      </label>
+                      <p className="text-sm text-white mt-1">{survey.suggested_system}</p>
+                    </div>
+                  )}
+                  {survey.install_notes && (
+                    <div className="col-span-2">
+                      <label className="text-xs font-semibold text-slate-600 uppercase">
+                        Installation Notes
+                      </label>
+                      <p className="text-sm text-white mt-1">{survey.install_notes}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {survey.suggested_system && (
-                <div>
-                  <label className="text-xs font-semibold text-slate-600 uppercase">
-                    Suggested System
-                  </label>
-                  <p className="text-sm text-white mt-1">{survey.suggested_system}</p>
-                </div>
-              )}
-              {survey.install_notes && (
-                <div className="col-span-2">
-                  <label className="text-xs font-semibold text-slate-600 uppercase">
-                    Installation Notes
-                  </label>
-                  <p className="text-sm text-white mt-1">{survey.install_notes}</p>
-                </div>
-              )}
-            </div>
+              </>
+            )}
 
             {/* Media Gallery */}
             {media.length > 0 && (
@@ -144,7 +211,7 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
             {updates && updates.length > 0 && (
               <div className="mt-8 pt-8 border-t border-slate-200">
                 <label className="text-xs font-semibold text-slate-600 uppercase mb-4 block">
-                  Updates
+                  Surveys
                 </label>
                 <div className="space-y-6">
                   {updates.map((update) => (

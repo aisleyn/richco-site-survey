@@ -28,7 +28,7 @@ export async function createProject(values: ProjectFormValues): Promise<Project>
     .insert([
       {
         name: values.name,
-        client_id: values.client_id,
+        client_id: 'f8c5ffd1-202b-4ade-94db-088494aa1ad5',
       },
     ])
     .select()

@@ -16,7 +16,8 @@ export async function addRepairHistoryEntry(
   oldStatus: WaypointStatus | null,
   newStatus: WaypointStatus,
   userId?: string,
-  notes?: string
+  notes?: string,
+  surveyId?: string
 ): Promise<WaypointRepairHistory> {
   try {
     const payload = {
@@ -25,6 +26,7 @@ export async function addRepairHistoryEntry(
       new_status: newStatus,
       changed_by: userId || 'unknown',
       notes: notes || null,
+      survey_id: surveyId || null,
     }
     console.log('addRepairHistoryEntry: inserting with payload', payload)
     const data = await apiFetch<WaypointRepairHistory[]>(

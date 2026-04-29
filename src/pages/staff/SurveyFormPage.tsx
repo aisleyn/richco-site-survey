@@ -81,6 +81,10 @@ export default function SurveyFormPage() {
     try {
       if (surveyId) {
         const s = await getSurveyById(surveyId)
+        if (!s) {
+          setError('Survey not found')
+          return
+        }
         setSurvey(s)
         const p = await getProjectById(s.project_id)
         setProject(p)

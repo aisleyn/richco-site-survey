@@ -14,11 +14,16 @@ export async function getSurveysByProject(projectId: string): Promise<Survey[]> 
   return data || []
 }
 
-export async function getSurveyById(id: string): Promise<Survey> {
-  const { data, error } = await supabase.from('surveys').select('*').eq('id', id).single()
+export async function getSurveyById(id: string): Promise<Survey | null> {
+  const { data, error } = await supabase.from('surveys').select('*').eq('id', id)
 
+  // Handle case where survey doesn't exist (PGRST116 error)
+  if (error && error.code === 'PGRST116') {
+    return null
+  }
   if (error) throw error
-  return data
+
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function getSurveyMedia(surveyId: string): Promise<SurveyMedia[]> {

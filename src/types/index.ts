@@ -43,7 +43,7 @@ export interface Profile {
 export interface Project {
   id: string
   name: string
-  client_id: string
+  client_id: string | null
   map_image_url: string | null
   created_at: string
   archived?: boolean
@@ -122,6 +122,7 @@ export interface WaypointRepairHistory {
   changed_by: string
   changed_at: string
   notes: string | null
+  survey_id: string | null
 }
 
 export interface WaypointPhoto {
@@ -173,7 +174,6 @@ export interface SurveyFormValues {
 
 export interface ProjectFormValues {
   name: string
-  client_id: string
 }
 
 export interface ClientSubmissionFormValues {

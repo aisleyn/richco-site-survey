@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import { PdfUploadModal } from '../../components/map/PdfUploadModal'
 import { WaypointDrawer } from '../../components/map/WaypointDrawer'
+import { WaypointInitialModal } from '../../components/map/WaypointInitialModal'
 import { Card, Button, Spinner, Input } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
 import type { Project, MapWaypoint } from '../../types'
@@ -28,6 +29,8 @@ export default function MapPage() {
   const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [editingAreaName, setEditingAreaName] = useState<string | null>(null)
+  const [newWaypoint, setNewWaypoint] = useState<MapWaypoint | null>(null)
+  const [isInitialModalOpen, setIsInitialModalOpen] = useState(false)
   const [isPlacingWaypoint, setIsPlacingWaypoint] = useState(false)
   const [isMovingWaypoint, setIsMovingWaypoint] = useState(false)
   const phaserMapRef = useRef<PhaserMapHandle>(null)
@@ -56,21 +59,21 @@ export default function MapPage() {
     if (!projectId) return
     try {
       console.log('MapPage: handleAddWaypoint, creating waypoint')
-      const newWaypoint = await createWaypoint(projectId, `Area ${waypoints.length + 1}`, x, y)
-      console.log('MapPage: handleAddWaypoint received new waypoint:', newWaypoint?.id)
+      const createdWaypoint = await createWaypoint(projectId, `Area ${waypoints.length + 1}`, x, y)
+      console.log('MapPage: handleAddWaypoint received new waypoint:', createdWaypoint?.id)
 
       // Use function-based setState to ensure we get the latest state
       // This fixes the issue where deleted waypoints reappear
       setWaypoints((prev) => {
         console.log('MapPage: handleAddWaypoint setting waypoints, current count:', prev.length)
-        const updated = [...prev, newWaypoint]
+        const updated = [...prev, createdWaypoint]
         console.log('MapPage: handleAddWaypoint new waypoints count:', updated.length, 'ids:', updated.map(w => w.id))
         return updated
       })
-      addToast({
-        type: 'success',
-        message: 'Waypoint created',
-      })
+
+      // Show initial details modal for new waypoint
+      setNewWaypoint(createdWaypoint)
+      setIsInitialModalOpen(true)
     } catch (err) {
       console.error('MapPage: handleAddWaypoint error:', err)
       addToast({
@@ -115,12 +118,24 @@ export default function MapPage() {
   }
 
 
-  const handleWaypointClick = (waypoint: MapWaypoint) => {
-    setSelectedWaypoint(waypoint)
+  const handleWaypointClick = async (waypoint: MapWaypoint) => {
+    // Reload waypoint from database to get latest linked_survey_id
+    try {
+      const allWaypoints = await getWaypointsByProject(projectId!)
+      const fresh = allWaypoints.find((w) => w.id === waypoint.id)
+      if (fresh) {
+        setSelectedWaypoint(fresh)
+      } else {
+        setSelectedWaypoint(waypoint)
+      }
+    } catch (err) {
+      console.error('Failed to refresh waypoint:', err)
+      setSelectedWaypoint(waypoint)
+    }
     setIsDetailModalOpen(true)
   }
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: string, surveyId?: string) => {
     if (!selectedWaypoint) return
     try {
       console.log('MapPage: changing status from', selectedWaypoint.status, 'to', newStatus)
@@ -129,6 +144,7 @@ export default function MapPage() {
         selectedWaypoint.project_id,
         newStatus as any,
         profile?.id,
+        surveyId,
       )
       console.log('MapPage: status update succeeded, updated waypoint:', updated)
       setWaypoints(waypoints.map((w) => (w.id === updated.id ? updated : w)))
@@ -441,6 +457,38 @@ export default function MapPage() {
         onRenameWaypoint={handleRenameWaypoint}
         projectId={projectId!}
       />
+
+      {/* Initial Waypoint Details Modal */}
+      {newWaypoint && (
+        <WaypointInitialModal
+          isOpen={isInitialModalOpen}
+          waypointId={newWaypoint.id}
+          waypointName={newWaypoint.area_name}
+          projectId={projectId!}
+          onNameUpdate={(newName) => {
+            setNewWaypoint({ ...newWaypoint, area_name: newName })
+            setWaypoints((prev) =>
+              prev.map((w) => (w.id === newWaypoint.id ? { ...w, area_name: newName } : w))
+            )
+          }}
+          onSurveyLinked={(surveyId) => {
+            // Auto-link the survey to the waypoint
+            const waypointId = newWaypoint.id
+            setNewWaypoint({ ...newWaypoint, linked_survey_id: surveyId })
+            setWaypoints((prev) =>
+              prev.map((w) => (w.id === waypointId ? { ...w, linked_survey_id: surveyId } : w))
+            )
+            // Update selected waypoint if it's the same one
+            if (selectedWaypoint?.id === waypointId) {
+              setSelectedWaypoint({ ...selectedWaypoint, linked_survey_id: surveyId })
+            }
+          }}
+          onClose={() => {
+            setIsInitialModalOpen(false)
+            setNewWaypoint(null)
+          }}
+        />
+      )}
     </div>
   )
 }

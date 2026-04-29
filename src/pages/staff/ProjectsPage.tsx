@@ -5,17 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { supabase } from '../../lib/supabase'
 import { getProjects, createProject } from '../../services/projects'
-import type { Project, Profile, ProjectFormValues } from '../../types'
-import { Card, Button, Input, Select, Modal, EmptyState, SkeletonGrid } from '../../components/ui'
+import type { Project, ProjectFormValues } from '../../types'
+import { Card, Button, Input, Modal, EmptyState, SkeletonGrid } from '../../components/ui'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
-  client_id: z.string().min(1, 'Client is required'),
 })
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
-  const [clients, setClients] = useState<Profile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -36,12 +34,8 @@ export default function ProjectsPage() {
   const loadData = async () => {
     try {
       setIsLoading(true)
-      const [projectsData, clientsData] = await Promise.all([
-        getProjects(),
-        supabase.from('profiles').select('*').eq('role', 'client'),
-      ])
+      const projectsData = await getProjects()
       setProjects(projectsData)
-      setClients(clientsData.data || [])
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects')
@@ -241,16 +235,6 @@ export default function ProjectsPage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Project">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Project Name" error={errors.name?.message} {...register('name')} />
-          <Select
-            label="Client"
-            options={clients.map((c) => ({
-              value: c.id,
-              label: c.full_name || c.email,
-            }))}
-            placeholder="Select a client"
-            error={errors.client_id?.message}
-            {...register('client_id')}
-          />
           <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting}>
             Create Project
           </Button>

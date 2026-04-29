@@ -1,9 +1,9 @@
 import { apiFetch } from '../lib/api'
 import type { Survey, SurveyMedia } from '../types'
 
-export async function getSurveyById(id: string): Promise<Survey> {
+export async function getSurveyById(id: string): Promise<Survey | null> {
   const data = await apiFetch<Survey[]>(`surveys?id=eq.${id}`)
-  return data[0]
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function getSurveyMedia(surveyId: string): Promise<SurveyMedia[]> {

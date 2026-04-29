@@ -57,6 +57,35 @@ export async function addSurveyUpdateMedia(
   return data[0]
 }
 
+export async function updateSurveyUpdate(
+  updateId: string,
+  updateData: {
+    update_notes?: string
+    area_name?: string
+    area_size_sqft?: number | null
+    suggested_system?: string
+    install_notes?: string
+  },
+): Promise<SurveyUpdate> {
+  const payload: any = {}
+
+  if (updateData.update_notes !== undefined) payload.update_notes = updateData.update_notes
+  if (updateData.area_name !== undefined) payload.area_name = updateData.area_name
+  if (updateData.area_size_sqft !== undefined) payload.area_size_sqft = updateData.area_size_sqft
+  if (updateData.suggested_system !== undefined) payload.suggested_system = updateData.suggested_system
+  if (updateData.install_notes !== undefined) payload.install_notes = updateData.install_notes
+
+  const data = await apiFetch<SurveyUpdate[]>(
+    `survey_updates?id=eq.${updateId}`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify(payload),
+    }
+  )
+  return data[0]
+}
+
 export async function getSurveyUpdates(
   surveyId: string,
 ): Promise<(SurveyUpdate & { media: SurveyUpdateMedia[] })[]> {

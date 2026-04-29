@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { Badge, Button, Input, Select, Spinner, Textarea, useToast, MediaPreviewModal } from '../ui'
 import { WaypointSurveyUpdateModal } from './WaypointSurveyUpdateModal'
@@ -14,7 +15,7 @@ interface WaypointDrawerProps {
   waypoint: MapWaypoint | null
   isOpen: boolean
   onClose: () => void
-  onStatusChange: (newStatus: WaypointStatus) => Promise<void>
+  onStatusChange: (newStatus: WaypointStatus, surveyId?: string) => Promise<void>
   onSurveyLink: (surveyId: string | null) => Promise<void>
   onWaypointDelete?: (waypointId: string) => Promise<void>
   onRenameWaypoint?: (newName: string) => Promise<void>
@@ -32,6 +33,7 @@ export function WaypointDrawer({
   projectId,
 }: WaypointDrawerProps) {
   const { profile } = useAuthStore()
+  const navigate = useNavigate()
   const isStaff = profile?.role === 'richco_staff'
   const addToast = useToast()
 
@@ -104,14 +106,22 @@ export function WaypointDrawer({
 
 
   const handleStatusChange = async (newStatus: string) => {
-    // If survey is linked and changing to in_progress or completed, open modal
-    if (waypoint?.linked_survey_id && (newStatus === 'in_progress' || newStatus === 'completed')) {
+    // Require survey for in_progress or completed status changes
+    if (newStatus === 'in_progress' || newStatus === 'completed') {
+      if (!waypoint?.linked_survey_id) {
+        addToast({
+          type: 'error',
+          message: 'Please link a survey before marking as ' + newStatus.replace('_', ' '),
+        })
+        return
+      }
+      // Open modal to submit survey update
       setPendingStatus(newStatus as WaypointStatus)
       setIsSurveyModalOpen(true)
       return
     }
 
-    // Otherwise proceed with direct status change
+    // Otherwise proceed with direct status change (needs_repair doesn't require survey)
     await applyStatusChange(newStatus as WaypointStatus)
   }
 
@@ -119,7 +129,7 @@ export function WaypointDrawer({
     try {
       console.log('WaypointDrawer: status change requested, old:', waypoint?.status, 'new:', newStatus)
       setStatusChanging(true)
-      await onStatusChange(newStatus)
+      await onStatusChange(newStatus, waypoint?.linked_survey_id || undefined)
       console.log('WaypointDrawer: status change completed')
       // Reload repair history to show the new status change
       if (waypoint) {
@@ -298,8 +308,8 @@ export function WaypointDrawer({
             </div>
           )}
 
-          {/* Link to Survey (staff only) */}
-          {isStaff && (
+          {/* Link to Survey (staff only) - only show if no survey is linked */}
+          {isStaff && !waypoint.linked_survey_id && (
             <div>
               <Select
                 label="Link to Survey"
@@ -317,11 +327,23 @@ export function WaypointDrawer({
           {survey && waypoint.linked_survey_id && (
             <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-200">
               <div>
-                <p className="text-xs font-semibold text-black uppercase">Survey Details</p>
-                <p className="text-sm text-black mt-1">{survey.survey_notes}</p>
+                {/* Check if this is an initial issue (created without suggested_system or install_notes) */}
+                {!survey.suggested_system && !survey.install_notes ? (
+                  <>
+                    <p className="text-sm font-bold text-black uppercase">🔍 Initial Issue: {survey.area_name}</p>
+                    {survey.survey_notes && (
+                      <p className="text-sm text-black mt-2">{survey.survey_notes}</p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-black uppercase">Survey Details</p>
+                    <p className="text-sm text-black mt-1">{survey.survey_notes}</p>
+                  </>
+                )}
               </div>
 
-              {survey.area_size_sqft && (
+              {survey.area_size_sqft && survey.suggested_system && (
                 <div>
                   <p className="text-xs font-semibold text-black uppercase">Area Size</p>
                   <p className="text-sm text-black">{survey.area_size_sqft} sqft</p>
@@ -384,6 +406,15 @@ export function WaypointDrawer({
                   </div>
                 </div>
               )}
+
+              <Button
+                variant="primary"
+                size="sm"
+                className="w-full mt-4"
+                onClick={() => navigate(`/staff/surveys/${survey.id}`)}
+              >
+                View Full Survey
+              </Button>
             </div>
           )}
 
@@ -444,16 +475,16 @@ export function WaypointDrawer({
             </div>
           </div>
 
-          {/* Waypoint Notes */}
+          {/* Comments */}
           <div>
-            <p className="text-sm font-semibold text-black mb-3">Updates & Notes</p>
+            <p className="text-sm font-semibold text-black mb-3">Comments</p>
 
-            {/* Add Note Form */}
+            {/* Add Comment */}
             <div className="mb-4 space-y-2">
               <Textarea
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Add an update or note..."
+                placeholder="Add a comment..."
                 rows={2}
                 className="w-full"
               />
@@ -464,11 +495,11 @@ export function WaypointDrawer({
                 isLoading={isAddingNote}
                 className="w-full"
               >
-                {isAddingNote ? 'Adding...' : 'Add Note'}
+                {isAddingNote ? 'Adding...' : 'Add Comment'}
               </Button>
             </div>
 
-            {/* Notes List */}
+            {/* Comments List */}
             {waypointNotes.length > 0 ? (
               <div className="space-y-3 max-h-64 overflow-y-auto">
                 {waypointNotes.map((note) => (
@@ -487,7 +518,7 @@ export function WaypointDrawer({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-slate-500 italic">No notes yet. Be the first to add one!</p>
+              <p className="text-sm text-slate-500 italic">No comments yet. Be the first to add one!</p>
             )}
           </div>
 
@@ -534,6 +565,11 @@ export function WaypointDrawer({
                     </p>
                     {entry.changed_by && (
                       <p className="text-xs text-slate-500 mt-1">by {entry.changed_by}</p>
+                    )}
+                    {entry.survey_id && (
+                      <p className="text-xs text-blue-600 mt-2">
+                        📋 Linked to survey
+                      </p>
                     )}
                   </div>
                 ))

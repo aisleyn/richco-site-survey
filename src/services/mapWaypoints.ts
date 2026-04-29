@@ -58,9 +58,27 @@ export async function updateWaypoint(
 
 export async function deleteWaypoint(id: string): Promise<void> {
   try {
-    console.log('deleteWaypoint: deleting', id)
+    console.log('deleteWaypoint: deleting waypoint', id)
+
+    // Delete waypoint-specific records (photos, notes, repair history)
+    // Note: survey_updates will automatically have waypoint_id set to NULL via CASCADE
+    const tablesToDelete = [
+      'waypoint_photos',
+      'waypoint_notes',
+      'waypoint_repair_history',
+    ]
+
+    for (const table of tablesToDelete) {
+      try {
+        await apiFetch(`${table}?waypoint_id=eq.${id}`, { method: 'DELETE' })
+      } catch (err) {
+        // No records to delete, continue
+      }
+    }
+
+    // Delete the waypoint (survey history is preserved, waypoint_id set to NULL by constraint)
     await apiFetch(`map_waypoints?id=eq.${id}`, { method: 'DELETE' })
-    console.log('deleteWaypoint: successfully deleted', id)
+    console.log('deleteWaypoint: successfully deleted waypoint', id)
   } catch (err) {
     console.error('deleteWaypoint error:', err)
     throw err
@@ -72,6 +90,7 @@ export async function updateWaypointStatus(
   projectId: string,
   newStatus: WaypointStatus,
   userId?: string,
+  surveyId?: string,
 ): Promise<MapWaypoint> {
   try {
     console.log('updateWaypointStatus: getting current status for', id)
@@ -89,7 +108,7 @@ export async function updateWaypointStatus(
 
     // Track status change in repair history
     try {
-      await addRepairHistoryEntry(id, projectId, oldStatus, newStatus, userId)
+      await addRepairHistoryEntry(id, projectId, oldStatus, newStatus, userId, undefined, surveyId)
       console.log('updateWaypointStatus: repair history entry added')
     } catch (historyErr) {
       console.warn('updateWaypointStatus: failed to add repair history (non-blocking):', historyErr)
@@ -107,4 +126,22 @@ export async function updateWaypointNotes(
   notes: string,
 ): Promise<MapWaypoint> {
   return updateWaypoint(id, { repair_notes: notes })
+}
+
+export async function deleteWaypointByLinkedSurvey(surveyId: string): Promise<void> {
+  try {
+    console.log('deleteWaypointByLinkedSurvey: finding waypoint for survey', surveyId)
+    // Find waypoint linked to this survey
+    const waypoints = await apiFetch<MapWaypoint[]>(
+      `map_waypoints?linked_survey_id=eq.${surveyId}`
+    )
+    if (waypoints && waypoints.length > 0) {
+      const waypoint = waypoints[0]
+      console.log('deleteWaypointByLinkedSurvey: found waypoint', waypoint.id, 'deleting it')
+      await deleteWaypoint(waypoint.id)
+    }
+  } catch (err) {
+    console.error('deleteWaypointByLinkedSurvey error:', err)
+    throw err
+  }
 }

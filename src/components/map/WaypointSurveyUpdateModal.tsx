@@ -125,7 +125,7 @@ export function WaypointSurveyUpdateModal({
       <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <Card className="w-full max-w-2xl my-auto">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Update Survey</h2>
@@ -138,7 +138,7 @@ export function WaypointSurveyUpdateModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6" onKeyDown={(e) => e.stopPropagation()}>
             <Input
               label="Area Name / Room Number"
               error={getErrorMessage(formErrors.area_name)}
