@@ -51,6 +51,11 @@ self.addEventListener('fetch', event => {
       }
 
       return fetch(event.request).then(response => {
+        // For navigation requests, return index.html on any error (404, 500, etc.)
+        if (isNavigationRequest && (!response || response.status >= 400)) {
+          return caches.match('/index.html')
+        }
+
         // Don't cache non-successful responses
         if (!response || response.status !== 200 || response.type === 'error') {
           return response
