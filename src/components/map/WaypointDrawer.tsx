@@ -596,6 +596,7 @@ export function WaypointDrawer({
       </div>
 
       {/* Survey Update Modal (In Progress) */}
+      {console.log('WaypointDrawer: rendering, survey=', !!survey, 'pendingStatus=', pendingStatus, 'isSurveyModalOpen=', isSurveyModalOpen)}
       {survey && pendingStatus === 'in_progress' && (
         <WaypointSurveyUpdateModal
           isOpen={isSurveyModalOpen}
