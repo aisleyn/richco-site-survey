@@ -26,7 +26,8 @@ export async function addRepairHistoryEntry(
       new_status: newStatus,
       changed_by: userId || 'unknown',
       notes: notes || null,
-      survey_id: surveyId || null,
+      // TODO: Add survey_id column to waypoint_repair_history table when ready
+      // survey_id: surveyId || null,
     }
     console.log('addRepairHistoryEntry: inserting with payload', payload)
     const data = await apiFetch<WaypointRepairHistory[]>(
