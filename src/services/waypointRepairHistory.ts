@@ -17,7 +17,7 @@ export async function addRepairHistoryEntry(
   newStatus: WaypointStatus,
   userId?: string,
   notes?: string,
-  surveyId?: string
+  _surveyId?: string
 ): Promise<WaypointRepairHistory> {
   try {
     const payload = {
