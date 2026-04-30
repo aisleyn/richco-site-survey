@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { Badge, Button, Input, Select, Spinner, Textarea, useToast, MediaPreviewModal } from '../ui'
 import { WaypointSurveyUpdateModal } from './WaypointSurveyUpdateModal'
+import { WaypointCompletionModal } from './WaypointCompletionModal'
 import { getWaypointHistory } from '../../services/waypointRepairHistory'
 import { getSurveyById, getSurveyMedia, getSurveysByProject } from '../../services/surveysRest'
 import { getSubmissionsByWaypoint, getClientSubmissionMedia } from '../../services/clientSubmissionsRest'
@@ -594,13 +595,28 @@ export function WaypointDrawer({
         </div>
       </div>
 
-      {/* Survey Update Modal */}
-      {survey && pendingStatus && (
+      {/* Survey Update Modal (In Progress) */}
+      {survey && pendingStatus === 'in_progress' && (
         <WaypointSurveyUpdateModal
           isOpen={isSurveyModalOpen}
           survey={survey}
           waypoint={waypoint}
           pendingStatus={pendingStatus}
+          projectId={projectId}
+          onSubmit={handleSurveyUpdateSubmit}
+          onClose={() => {
+            setIsSurveyModalOpen(false)
+            setPendingStatus(null)
+          }}
+        />
+      )}
+
+      {/* Completion Modal (Completed) */}
+      {survey && pendingStatus === 'completed' && (
+        <WaypointCompletionModal
+          isOpen={isSurveyModalOpen}
+          survey={survey}
+          waypoint={waypoint}
           projectId={projectId}
           onSubmit={handleSurveyUpdateSubmit}
           onClose={() => {

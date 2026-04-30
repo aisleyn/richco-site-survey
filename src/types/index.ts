@@ -145,6 +145,7 @@ export interface SurveyUpdate {
   area_size_sqft: number | null
   suggested_system: string | null
   install_notes: string | null
+  completion_date?: string | null
   updated_by: string | null
   updated_at: string
 }

@@ -35,6 +35,7 @@ export function WaypointInitialModal({
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  console.log('WaypointInitialModal: rendering, isOpen=', isOpen, 'waypointId=', waypointId)
   if (!isOpen) return null
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -282,6 +282,8 @@ export default function MapPage() {
     return <div>Project not found</div>
   }
 
+  console.log('MapPage: rendering, newWaypoint=', newWaypoint?.id, 'isInitialModalOpen=', isInitialModalOpen)
+
   return (
     <div>
       <div className="mb-8">

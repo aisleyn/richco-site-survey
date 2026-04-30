@@ -10,6 +10,7 @@ export async function createSurveyUpdate(
     area_size_sqft?: number | null
     suggested_system?: string
     install_notes?: string
+    completion_date?: string
   },
   userId?: string,
 ): Promise<SurveyUpdate> {
@@ -21,6 +22,7 @@ export async function createSurveyUpdate(
     area_size_sqft: updateData.area_size_sqft || null,
     suggested_system: updateData.suggested_system || null,
     install_notes: updateData.install_notes || null,
+    completion_date: updateData.completion_date || null,
     updated_by: userId || null,
   }
 
