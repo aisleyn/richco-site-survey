@@ -56,9 +56,20 @@ export function PdfUploadModal({
       } else {
         // Multi-page PDF
         try {
+          console.log('[PdfUpload] Starting PDF processing for file:', file.name)
           const arrayBuffer = await file.arrayBuffer()
-          console.log('[PdfUpload] Loading PDF, file size:', arrayBuffer.byteLength, 'bytes')
+          console.log('[PdfUpload] File read complete, size:', arrayBuffer.byteLength, 'bytes')
 
+          console.log('[PdfUpload] Checking PDF.js worker availability...')
+          if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+            console.warn('[PdfUpload] WARNING: Worker not configured, will attempt to configure now')
+            pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+            console.log('[PdfUpload] Worker path set to:', pdfjsLib.GlobalWorkerOptions.workerSrc)
+          } else {
+            console.log('[PdfUpload] Worker already configured at:', pdfjsLib.GlobalWorkerOptions.workerSrc)
+          }
+
+          console.log('[PdfUpload] Loading PDF document...')
           const pdf = await pdfjsLib.getDocument(arrayBuffer).promise
           const numPages = pdf.numPages
           console.log('[PdfUpload] PDF loaded successfully with', numPages, 'pages')
@@ -134,8 +145,10 @@ export function PdfUploadModal({
       setFile(null)
       onClose()
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to upload'
-      console.error('[PdfUpload] Final error:', errorMsg)
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      const fullError = `${errorMsg}${err instanceof Error && err.stack ? '\n' + err.stack.split('\n').slice(0, 3).join('\n') : ''}`
+      console.error('[PdfUpload] FINAL ERROR:', fullError)
+      console.error('[PdfUpload] Error object:', err)
       setError(errorMsg)
     } finally {
       setIsConverting(false)
