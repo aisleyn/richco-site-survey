@@ -1,12 +1,16 @@
 import * as pdfjsLib from 'pdfjs-dist'
 
-// Use local worker file instead of CDN for better mobile reliability
-// The worker file is served from public/ directory
+// Use local worker file served from public folder
+// This works on localhost and Azure Static Web Apps
 if (typeof window !== 'undefined') {
-  // Determine the correct path based on deployment environment
-  const workerPath = new URL('/pdf.worker.min.mjs', import.meta.url).href
-  console.log('[PDF] Setting worker path:', workerPath)
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerPath
+  const workerSrc = '/pdf.worker.min.mjs'
+  console.log('[PDF] Initializing PDF.js worker:', workerSrc)
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
+    console.log('[PDF] Worker initialized successfully')
+  } catch (err) {
+    console.error('[PDF] Failed to initialize worker:', err)
+  }
 }
 
 export { pdfjsLib }
