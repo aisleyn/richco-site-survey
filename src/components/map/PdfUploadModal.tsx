@@ -35,7 +35,11 @@ export function PdfUploadModal({
   }
 
   const convertPdfToImage = async () => {
-    if (!file) return
+    console.log('[PdfUpload] ===== UPLOAD STARTED =====')
+    if (!file) {
+      console.log('[PdfUpload] No file selected!')
+      return
+    }
 
     setIsConverting(true)
     setError(null)
