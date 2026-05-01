@@ -1,0 +1,56 @@
+{
+  "name": "Richco Site Survey",
+  "short_name": "Survey",
+  "description": "Professional site survey and client repair request management system",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1f2937",
+  "theme_color": "#1f2937",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/richco-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/richco-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/sitesurvey (1).png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Create Survey",
+      "short_name": "New Survey",
+      "description": "Create a new site survey",
+      "url": "/staff/surveys/new",
+      "icons": [{ "src": "/richco-logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Projects",
+      "short_name": "Projects",
+      "description": "View all projects",
+      "url": "/staff/projects",
+      "icons": [{ "src": "/richco-logo.png", "sizes": "192x192" }]
+    }
+  ]
+}
