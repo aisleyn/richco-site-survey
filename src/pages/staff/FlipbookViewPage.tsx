@@ -101,7 +101,7 @@ export default function FlipbookViewPage() {
             </p>
 
             <div className="bg-slate-50 p-3 rounded border border-slate-200 mb-4">
-              <code className="text-xs text-white break-all">{shareUrl}</code>
+              <code className="text-xs text-black break-all">{shareUrl}</code>
             </div>
 
             <Button
