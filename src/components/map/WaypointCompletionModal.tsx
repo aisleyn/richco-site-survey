@@ -38,7 +38,7 @@ export function WaypointCompletionModal({
   const [images, setImages] = useState<File[]>([])
 
   const today = new Date().toISOString().split('T')[0]
-
+  // Completion modal - shows only completion-specific fields
   const { register, handleSubmit, formState: { errors: formErrors } } = useForm<any>({
     resolver: zodResolver(completionSchema),
     defaultValues: {
