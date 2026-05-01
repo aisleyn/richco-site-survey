@@ -6,6 +6,8 @@ import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdat
 import { deleteWaypointByLinkedSurvey } from '../../services/mapWaypoints'
 import { uploadFile } from '../../services/storage'
 import { generateSurveyFromTemplate } from '../../lib/templateExport'
+import { captureWaypointLocation } from '../../lib/waypointScreenshot'
+import { apiFetch } from '../../lib/api'
 import type { Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner, MediaPreviewModal, Input, Textarea } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
@@ -26,6 +28,7 @@ export default function SurveyDetailPage() {
   const [newMediaFiles, setNewMediaFiles] = useState<File[]>([])
   const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null)
   const [editingUpdateData, setEditingUpdateData] = useState<any>(null)
+  const [cachedWaypointLocation, setCachedWaypointLocation] = useState<any>(null)
 
   useEffect(() => {
     loadData()
@@ -57,6 +60,59 @@ export default function SurveyDetailPage() {
     try {
       await publishSurvey(survey.id, survey.project_id)
       setSurvey({ ...survey, status: 'published' })
+
+      // Capture waypoint location data and screenshot BEFORE deleting waypoint
+      try {
+        const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
+        if (waypointUpdate?.waypoint_id) {
+          console.log('Capturing waypoint location before deletion...')
+          const waypoints = await apiFetch<any[]>(
+            `map_waypoints?id=eq.${waypointUpdate.waypoint_id}`
+          )
+          const waypoint = waypoints?.[0]
+
+          if (waypoint?.floor_plan_page_id) {
+            const pages = await apiFetch<any[]>(
+              `floor_plan_pages?id=eq.${waypoint.floor_plan_page_id}`
+            )
+            const page = pages?.[0]
+
+            if (page?.image_url) {
+              const screenshot = await captureWaypointLocation(
+                page.image_url,
+                waypoint.x_percent,
+                waypoint.y_percent,
+              )
+
+              const waypointLocationData = {
+                areaName: waypoint.area_name || 'N/A',
+                pageNumber: page.page_number,
+                pageLabel: page.label || '',
+                xPercent: waypoint.x_percent,
+                yPercent: waypoint.y_percent,
+                screenshot,
+              }
+
+              // Cache in state so it's available when user downloads the report
+              setCachedWaypointLocation(waypointLocationData)
+
+              // Also save to database so it persists across sessions
+              await updateSurveyUpdate(waypointUpdate.id, {
+                waypoint_location_json: waypointLocationData,
+              })
+
+              console.log('Waypoint location captured and saved:', {
+                area: waypointLocationData.areaName,
+                page: waypointLocationData.pageNumber,
+                screenshotSize: screenshot.length,
+              })
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to capture waypoint location:', err)
+        // Continue with deletion even if capture fails
+      }
 
       // Delete the waypoint since repair is complete
       try {
@@ -106,6 +162,24 @@ export default function SurveyDetailPage() {
         scanMedia = media.filter((m) => m.media_type === '3d_scan').map((m) => m.file_url)
       }
 
+      // Try to get waypoint location data
+      let waypointLocation = cachedWaypointLocation
+
+      if (!waypointLocation) {
+        // Check if any survey update has the waypoint location data already loaded
+        try {
+          const waypointUpdate = surveyUpdates.find((u) => (u as any).waypoint_location_json)
+          if (waypointUpdate && (waypointUpdate as any).waypoint_location_json) {
+            waypointLocation = (waypointUpdate as any).waypoint_location_json
+            console.log('Waypoint location found in survey updates')
+            setCachedWaypointLocation(waypointLocation)
+          }
+        } catch (err) {
+          console.warn('Failed to get waypoint location from survey updates:', err)
+          // Continue with report generation without waypoint location
+        }
+      }
+
       await generateSurveyFromTemplate({
         projectName: survey.project_name,
         areaName: survey.area_name,
@@ -117,6 +191,7 @@ export default function SurveyDetailPage() {
         images: imageMedia,
         scans: scanMedia,
         clientName: survey.client_name || 'N/A',
+        waypointLocation,
       })
 
       addToast({

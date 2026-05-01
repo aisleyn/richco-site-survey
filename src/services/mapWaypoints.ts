@@ -14,6 +14,7 @@ export async function createWaypoint(
   areaName: string,
   xPercent: number,
   yPercent: number,
+  floorPlanPageId?: string,
 ): Promise<MapWaypoint> {
   try {
     console.log('createWaypoint: creating new waypoint')
@@ -28,6 +29,7 @@ export async function createWaypoint(
           x_percent: xPercent,
           y_percent: yPercent,
           status: 'needs_repair',
+          floor_plan_page_id: floorPlanPageId || null,
         }),
       }
     )

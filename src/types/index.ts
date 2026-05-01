@@ -99,6 +99,15 @@ export interface ClientSubmissionMedia {
   file_url: string
 }
 
+export interface FloorPlanPage {
+  id: string
+  project_id: string
+  page_number: number
+  label: string
+  image_url: string
+  created_at: string
+}
+
 export interface MapWaypoint {
   id: string
   project_id: string
@@ -107,6 +116,7 @@ export interface MapWaypoint {
   y_percent: number
   status: WaypointStatus
   linked_survey_id: string | null
+  floor_plan_page_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string

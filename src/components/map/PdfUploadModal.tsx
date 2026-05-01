@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Modal, Button } from '../ui'
-import { uploadFile, getSignedUrl } from '../../services/storage'
-import { supabase } from '../../lib/supabase'
+import { uploadFile } from '../../services/storage'
+import { createFloorPlanPage } from '../../services/floorPlanPages'
 import { pdfjsLib } from '../../lib/pdf'
+import type { FloorPlanPage } from '../../types'
 
 interface PdfUploadModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
-  onSuccess?: (imageUrl: string) => void
+  onSuccess?: (pages: FloorPlanPage[]) => void
 }
 
 export function PdfUploadModal({
@@ -19,6 +20,7 @@ export function PdfUploadModal({
 }: PdfUploadModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [isConverting, setIsConverting] = useState(false)
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,59 +39,88 @@ export function PdfUploadModal({
 
     setIsConverting(true)
     setError(null)
+    setProgress(null)
 
     try {
-      let imageBlob: Blob
+      const pages: FloorPlanPage[] = []
 
       if (file.type.startsWith('image/')) {
-        // If it's already an image, use it directly
-        imageBlob = file
+        // Single image file - create one floor plan page
+        setProgress({ current: 1, total: 1 })
+
+        const fileName = `${projectId}/floor-plan-${Date.now()}.png`
+        const uploadResult = await uploadFile('floor-plans', fileName, file)
+
+        const page = await createFloorPlanPage(projectId, 1, '', uploadResult.signedUrl)
+        pages.push(page)
       } else {
-        // Convert PDF to image
+        // Multi-page PDF
         const arrayBuffer = await file.arrayBuffer()
         const pdf = await pdfjsLib.getDocument(arrayBuffer).promise
-        const page = await pdf.getPage(1)
+        const numPages = pdf.numPages
+        console.log('PDF loaded with', numPages, 'pages')
 
-        const scale = 2
-        const viewport = page.getViewport({ scale })
-        const canvas = document.createElement('canvas')
-        const context = canvas.getContext('2d')
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+          try {
+            console.log('Processing page', pageNum)
+            setProgress({ current: pageNum, total: numPages })
 
-        if (!context) throw new Error('Failed to create canvas context')
+            const pdfPage = await pdf.getPage(pageNum)
+            const scale = 2
+            const viewport = pdfPage.getViewport({ scale })
+            const canvas = document.createElement('canvas')
+            const context = canvas.getContext('2d')
 
-        canvas.width = viewport.width
-        canvas.height = viewport.height
+            if (!context) throw new Error('Failed to create canvas context')
 
-        await page.render({
-          canvasContext: context,
-          viewport,
-        }).promise
+            canvas.width = viewport.width
+            canvas.height = viewport.height
 
-        // Convert canvas to blob
-        imageBlob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((b) => resolve(b!), 'image/png', 0.95)
-        })
+            // Clear and fill canvas with white background
+            context.fillStyle = 'white'
+            context.fillRect(0, 0, canvas.width, canvas.height)
+
+            await pdfPage.render({
+              canvasContext: context,
+              viewport,
+            }).promise
+
+            // Convert canvas to data URL and then to Blob
+            const dataUrl = canvas.toDataURL('image/png')
+            const response = await fetch(dataUrl)
+            const imageBlob = await response.blob()
+            console.log('Page', pageNum, 'rendered, blob size:', imageBlob.size)
+
+            // Create proper File object from blob
+            const timestamp = Date.now()
+            const fileName = `floor-plan-page-${pageNum}-${timestamp}.png`
+            const imageFile = new File([imageBlob], fileName, { type: 'image/png' })
+
+            // Upload with project ID prefix
+            const uploadPath = `${projectId}/${fileName}`
+            console.log('Uploading', uploadPath)
+            const uploadResult = await uploadFile('floor-plans', uploadPath, imageFile)
+            console.log('Upload result for page', pageNum, ':', uploadResult.signedUrl ? 'has URL' : 'no URL')
+
+            // Create floor plan page record
+            const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl)
+            console.log('Created floor plan page', pageNum)
+            pages.push(page)
+          } catch (err) {
+            console.error('Error processing page', pageNum, ':', err)
+            throw err
+          }
+        }
       }
 
-      // Upload to storage
-      const fileName = `${projectId}/floor-plan-${Date.now()}.png`
-      const uploadResult = await uploadFile('floor-plans', fileName, imageBlob as File)
-      // Use signed URL with 10-year expiration so map persists permanently
-      const imageUrl = await getSignedUrl('floor-plans', uploadResult.path, 315360000) // 10 years
-
-      // Update project with new map image URL
-      await supabase
-        .from('projects')
-        .update({ map_image_url: imageUrl })
-        .eq('id', projectId)
-
-      onSuccess?.(imageUrl)
+      onSuccess?.(pages)
       setFile(null)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload image')
+      setError(err instanceof Error ? err.message : 'Failed to upload')
     } finally {
       setIsConverting(false)
+      setProgress(null)
     }
   }
 
@@ -102,6 +133,14 @@ export function PdfUploadModal({
           </div>
         )}
 
+        {progress && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+            <p className="text-sm text-blue-800">
+              Uploading page {progress.current} of {progress.total}...
+            </p>
+          </div>
+        )}
+
         <div className="border-2 border-dashed border-slate-300 rounded-lg p-6">
           <input
             type="file"
@@ -109,6 +148,7 @@ export function PdfUploadModal({
             onChange={handleFileChange}
             className="hidden"
             id="pdf-input"
+            disabled={isConverting}
           />
           <label htmlFor="pdf-input" className="cursor-pointer block text-center">
             {file ? (
@@ -119,8 +159,8 @@ export function PdfUploadModal({
             ) : (
               <div>
                 <p className="text-2xl mb-2">📄</p>
-                <p className="font-medium text-white">Select a PDF file</p>
-                <p className="text-sm text-slate-600 mt-1">Click or drag to upload floor plan</p>
+                <p className="font-medium text-white">Select a PDF or image file</p>
+                <p className="text-sm text-slate-600 mt-1">Click or drag to upload (multi-page PDFs supported)</p>
               </div>
             )}
           </label>
@@ -142,12 +182,12 @@ export function PdfUploadModal({
             disabled={!file || isConverting}
             isLoading={isConverting}
           >
-            {isConverting ? 'Converting...' : 'Upload & Convert'}
+            {isConverting ? 'Converting...' : 'Upload'}
           </Button>
         </div>
 
         <p className="text-xs text-slate-500 text-center">
-          PDF will be converted to image, or image will be uploaded directly as the map background
+          PDFs with multiple pages will create one floor plan per page. Each page will have separate waypoints.
         </p>
       </div>
     </Modal>

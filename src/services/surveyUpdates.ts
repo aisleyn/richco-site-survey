@@ -67,6 +67,7 @@ export async function updateSurveyUpdate(
     area_size_sqft?: number | null
     suggested_system?: string
     install_notes?: string
+    waypoint_location_json?: any
   },
 ): Promise<SurveyUpdate> {
   const payload: any = {}
@@ -76,6 +77,7 @@ export async function updateSurveyUpdate(
   if (updateData.area_size_sqft !== undefined) payload.area_size_sqft = updateData.area_size_sqft
   if (updateData.suggested_system !== undefined) payload.suggested_system = updateData.suggested_system
   if (updateData.install_notes !== undefined) payload.install_notes = updateData.install_notes
+  if (updateData.waypoint_location_json !== undefined) payload.waypoint_location_json = updateData.waypoint_location_json
 
   const data = await apiFetch<SurveyUpdate[]>(
     `survey_updates?id=eq.${updateId}`,

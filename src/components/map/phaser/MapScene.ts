@@ -54,6 +54,10 @@ export class MapScene extends Phaser.Scene {
     console.log('MapScene: preload called, imageUrl=', this.imageUrl)
     if (this.imageUrl) {
       console.log('MapScene: loading image from URL:', this.imageUrl)
+      // Clear old texture if it exists to prevent caching issues
+      if (this.textures.exists('floorplan')) {
+        this.textures.remove('floorplan')
+      }
       this.load.image('floorplan', this.imageUrl)
 
       this.load.on('complete', () => {
@@ -100,6 +104,7 @@ export class MapScene extends Phaser.Scene {
       // Create image
       this.mapImage = this.add.image(0, 0, 'floorplan')
       this.mapImage.setOrigin(0, 0)
+      this.mapImage.setDepth(-1)
       console.log('MapScene: image added to canvas at 0,0')
 
       // Setup camera
@@ -340,6 +345,8 @@ export class MapScene extends Phaser.Scene {
   }
 
   syncWaypoints(waypoints: MapWaypoint[]) {
+    console.log('MapScene.syncWaypoints called with', waypoints.length, 'waypoints, mapWidth=', this.mapWidth, 'mapHeight=', this.mapHeight)
+
     // Deduplicate waypoints by ID (in case of duplicates in incoming data)
     const uniqueWaypoints = new Map<string, MapWaypoint>()
     for (const wp of waypoints) {
@@ -350,6 +357,7 @@ export class MapScene extends Phaser.Scene {
 
     const incomingIds = new Set(uniqueWaypoints.keys())
     const existingIds = new Set(this.waypointSprites.keys())
+    console.log('MapScene.syncWaypoints: incoming=', incomingIds.size, 'existing=', existingIds.size)
 
     // Remove waypoints no longer in list
     for (const id of existingIds) {
@@ -382,7 +390,9 @@ export class MapScene extends Phaser.Scene {
   }
 
   private createWaypointSprite(waypoint: MapWaypoint, worldX: number, worldY: number) {
+    console.log('MapScene.createWaypointSprite:', waypoint.area_name, 'at', worldX, worldY, '(percent:', waypoint.x_percent, waypoint.y_percent, ')')
     const container = this.add.container(worldX, worldY)
+    container.setDepth(1)
 
     // Base circle (smaller: 6px instead of 10px)
     const color = this.getStatusColor(waypoint.status)
@@ -566,5 +576,9 @@ export class MapScene extends Phaser.Scene {
 
   setMapLayer(_layer: 'blueprint' | 'detail') {
     // Layer switching implementation comes in Phase 4
+  }
+
+  shutdown() {
+    this.textures.remove('floorplan')
   }
 }

@@ -10,6 +10,14 @@ interface SurveyData {
   scans: string[]
   pdfs?: string[]
   clientName: string
+  waypointLocation?: {
+    areaName: string
+    pageNumber: number
+    pageLabel: string
+    xPercent: number
+    yPercent: number
+    screenshot: string
+  }
 }
 
 export async function generateSurveyFromTemplate(surveyData: SurveyData) {

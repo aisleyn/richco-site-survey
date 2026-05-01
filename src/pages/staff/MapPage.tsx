@@ -8,6 +8,7 @@ import {
   updateWaypointStatus,
   deleteWaypoint,
 } from '../../services/mapWaypoints'
+import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { useAuthStore } from '../../store/authStore'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import { PdfUploadModal } from '../../components/map/PdfUploadModal'
@@ -15,7 +16,7 @@ import { WaypointDrawer } from '../../components/map/WaypointDrawer'
 import { WaypointInitialModal } from '../../components/map/WaypointInitialModal'
 import { Card, Button, Spinner, Input } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
-import type { Project, MapWaypoint } from '../../types'
+import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 
 export default function MapPage() {
@@ -24,6 +25,8 @@ export default function MapPage() {
   const profile = useAuthStore((state) => state.profile)
   const [project, setProject] = useState<Project | null>(null)
   const [waypoints, setWaypoints] = useState<MapWaypoint[]>([])
+  const [floorPlanPages, setFloorPlanPages] = useState<FloorPlanPage[]>([])
+  const [activePageId, setActivePageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
   const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
@@ -42,12 +45,18 @@ export default function MapPage() {
   const loadData = async () => {
     if (!projectId) return
     try {
-      const [p, wp] = await Promise.all([
+      const [p, wp, pages] = await Promise.all([
         getProjectById(projectId),
         getWaypointsByProject(projectId).catch(() => []),
+        getFloorPlanPagesByProject(projectId).catch(() => []),
       ])
       setProject(p)
       setWaypoints(wp)
+      setFloorPlanPages(pages)
+      // Set active page to first page if exists
+      if (pages.length > 0) {
+        setActivePageId(pages[0].id)
+      }
     } catch (err) {
       console.error('Error loading map data:', err)
     } finally {
@@ -56,10 +65,10 @@ export default function MapPage() {
   }
 
   const handleAddWaypoint = async (x: number, y: number) => {
-    if (!projectId) return
+    if (!projectId || !activePageId) return
     try {
       console.log('MapPage: handleAddWaypoint, creating waypoint')
-      const createdWaypoint = await createWaypoint(projectId, `Area ${waypoints.length + 1}`, x, y)
+      const createdWaypoint = await createWaypoint(projectId, `Area ${waypoints.length + 1}`, x, y, activePageId)
       console.log('MapPage: handleAddWaypoint received new waypoint:', createdWaypoint?.id)
 
       // Use function-based setState to ensure we get the latest state
@@ -119,6 +128,11 @@ export default function MapPage() {
 
 
   const handleWaypointClick = async (waypoint: MapWaypoint) => {
+    // Auto-switch to the waypoint's page if it belongs to a different page
+    if (waypoint.floor_plan_page_id && waypoint.floor_plan_page_id !== activePageId) {
+      setActivePageId(waypoint.floor_plan_page_id)
+    }
+
     // Reload waypoint from database to get latest linked_survey_id
     try {
       const allWaypoints = await getWaypointsByProject(projectId!)
@@ -232,13 +246,14 @@ export default function MapPage() {
     }
   }
 
-  const handlePdfUploadSuccess = async (imageUrl: string) => {
-    if (project) {
-      setProject({ ...project, map_image_url: imageUrl })
+  const handlePdfUploadSuccess = async (pages: FloorPlanPage[]) => {
+    if (pages.length > 0) {
+      setFloorPlanPages(pages)
+      setActivePageId(pages[0].id)
       setIsPdfModalOpen(false)
       addToast({
         type: 'success',
-        message: 'Floor plan uploaded successfully',
+        message: `Floor plan uploaded successfully (${pages.length} page${pages.length !== 1 ? 's' : ''})`,
       })
     }
   }
@@ -304,7 +319,7 @@ export default function MapPage() {
         </div>
       </div>
 
-      {!project.map_image_url ? (
+      {floorPlanPages.length === 0 && !project.map_image_url ? (
         <Card>
           <div className="text-center py-12">
             <p className="text-secondary mb-4">No floor plan uploaded for this project</p>
@@ -345,10 +360,25 @@ export default function MapPage() {
             </Button>
           </div>
 
+          {floorPlanPages.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {floorPlanPages.map((page) => (
+                <Button
+                  key={page.id}
+                  variant={activePageId === page.id ? 'primary' : 'secondary'}
+                  onClick={() => setActivePageId(page.id)}
+                  className="text-sm"
+                >
+                  Page {page.page_number}
+                </Button>
+              ))}
+            </div>
+          )}
+
           <PhaserMap
             ref={phaserMapRef}
-            imageUrl={project.map_image_url}
-            waypoints={waypoints}
+            imageUrl={floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''}
+            waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
             isEditable={true}
             isPlacingWaypoint={isPlacingWaypoint}
             isMovingWaypoint={isMovingWaypoint}
@@ -401,7 +431,14 @@ export default function MapPage() {
                     />
                   ) : (
                     <>
-                      <p className="font-medium text-black">{wp.area_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-black">{wp.area_name}</p>
+                        {floorPlanPages.length > 0 && wp.floor_plan_page_id && (
+                          <span className="text-xs bg-slate-300 text-slate-700 px-2 py-0.5 rounded">
+                            P{floorPlanPages.find(p => p.id === wp.floor_plan_page_id)?.page_number || '?'}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-secondary">
                         {wp.status.replace('_', ' ')} • ({wp.x_percent.toFixed(1)}%, {wp.y_percent.toFixed(1)}%)
                       </p>

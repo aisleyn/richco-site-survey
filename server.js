@@ -70,11 +70,25 @@ app.post('/api/fill-template', async (req, res) => {
     }
 
     log('Starting Python process...')
-    // Call Python script
-    const python = spawn('python3', [scriptPath, templatePath, outputPath, JSON.stringify(surveyData)])
+
+    // Call Python script with template and output paths only
+    // Data will be passed via stdin to avoid CLI arg size issues
+    const args = [scriptPath, templatePath, outputPath]
+    log('Spawning Python with args:', args)
+
+    const python = spawn('python3', args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
 
     let stdout = ''
     let stderr = ''
+
+    // Send survey data to Python via stdin as soon as process starts
+    const surveyDataJson = JSON.stringify(surveyData)
+    log('Survey data size:', surveyDataJson.length, 'bytes')
+
+    python.stdin.write(surveyDataJson)
+    python.stdin.end()
 
     python.stdout.on('data', (data) => {
       stdout += data.toString()
@@ -87,32 +101,52 @@ app.post('/api/fill-template', async (req, res) => {
     })
 
     python.on('error', (err) => {
-      log('Failed to spawn Python:', err)
+      log('Failed to spawn Python:', err.message)
+      log('Error code:', err.code)
+      log('Error details:', err)
       res.status(500).json({ error: `Failed to spawn Python: ${err.message}` })
     })
 
     python.on('close', (code) => {
       log('Python process closed with code:', code)
+      log('Python stdout:', stdout)
+      log('Python stderr:', stderr)
 
       if (code !== 0) {
-        log('Python error:', stderr)
+        log('Python error - exit code:', code)
+        log('Error output:', stderr)
         return res.status(500).json({ error: `Template generation failed: ${stderr}` })
       }
 
       try {
+        // Check if output file exists
+        if (!fs.existsSync(outputPath)) {
+          log('ERROR: Output file does not exist:', outputPath)
+          return res.status(500).json({ error: `Output file not created: ${outputPath}` })
+        }
+
         // Read the generated file
         const fileContent = fs.readFileSync(outputPath)
+        log('Output file size:', fileContent.length, 'bytes')
+
+        if (fileContent.length === 0) {
+          log('ERROR: Output file is empty')
+          return res.status(500).json({ error: 'Generated file is empty' })
+        }
 
         // Clean up temp file
         fs.unlinkSync(outputPath)
+        log('Output file cleaned up')
 
         // Send file as response
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         res.setHeader('Content-Disposition', `attachment; filename="${surveyData.projectName}_${surveyData.areaName}_Report.docx"`)
+        log('Sending response with file')
         res.send(fileContent)
       } catch (err) {
-        log('File read error:', err)
-        res.status(500).json({ error: 'Failed to read generated file' })
+        log('File read/send error:', err.message)
+        log('Full error:', err)
+        res.status(500).json({ error: `Failed to send file: ${err.message}` })
       }
     })
   } catch (error) {

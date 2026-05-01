@@ -2,6 +2,7 @@
 import sys
 import json
 import re
+import os
 from pathlib import Path
 from docx import Document
 from docx.shared import Inches, Pt
@@ -97,6 +98,55 @@ def add_pdf_link_to_paragraph(paragraph, pdf_url):
             return True
         except:
             return False
+
+def add_waypoint_location_page(doc, waypoint_data):
+    """Add a waypoint location page to the document"""
+    from docx.shared import Inches, Pt, RGBColor
+    from docx.oxml.ns import qn
+
+    # Add page break
+    doc.add_page_break()
+
+    # Heading
+    heading = doc.add_heading('Waypoint Location', level=2)
+
+    # Metadata table (3 rows: Area Name, Floor Plan Page, Coordinates)
+    table = doc.add_table(rows=3, cols=2)
+    table.style = 'Table Grid'
+
+    # Row 0: Area Name
+    table.rows[0].cells[0].paragraphs[0].add_run('Area Name').bold = True
+    table.rows[0].cells[1].text = waypoint_data.get('areaName', 'N/A')
+
+    # Row 1: Floor Plan Page
+    page_label = waypoint_data.get('pageLabel', '')
+    page_text = f"Page {waypoint_data.get('pageNumber', 'N/A')}"
+    if page_label:
+        page_text += f" — {page_label}"
+    table.rows[1].cells[0].paragraphs[0].add_run('Floor Plan Page').bold = True
+    table.rows[1].cells[1].text = page_text
+
+    # Row 2: Coordinates
+    x = waypoint_data.get('xPercent', 0)
+    y = waypoint_data.get('yPercent', 0)
+    coord_text = f"X: {x:.1f}%,  Y: {y:.1f}%"
+    table.rows[2].cells[0].paragraphs[0].add_run('Location').bold = True
+    table.rows[2].cells[1].text = coord_text
+
+    # Add spacing
+    doc.add_paragraph()
+
+    # Add screenshot image
+    screenshot_b64 = waypoint_data.get('screenshot')
+    if screenshot_b64:
+        try:
+            import base64
+            img_bytes = base64.b64decode(screenshot_b64)
+            para = doc.add_paragraph()
+            para.add_run().add_picture(BytesIO(img_bytes), width=Inches(5.5))
+            print(f"[DEBUG] Waypoint screenshot added successfully", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: Could not add waypoint screenshot: {e}", file=sys.stderr)
 
 def fill_template(template_path, output_path, data):
     """Fill a Word template with survey data"""
@@ -275,6 +325,11 @@ def fill_template(template_path, output_path, data):
 
     print(f"Total images added: {images_added}", file=sys.stderr)
 
+    # Handle waypoint location - add as page 4 (between images and scans)
+    if data.get('waypointLocation'):
+        print(f"Adding waypoint location page", file=sys.stderr)
+        add_waypoint_location_page(doc, data['waypointLocation'])
+
     # Handle scans - look for Item.Scans of Area placeholder
     scans_added = 0
     if data.get('scans') and len(data['scans']) > 0:
@@ -367,7 +422,7 @@ def fill_template(template_path, output_path, data):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print(json.dumps({'error': 'Usage: fill_template.py <template_path> <output_path> <json_data>'}))
+        print(json.dumps({'error': 'Usage: fill_template.py <template_path> <output_path> [data_file_path]'}))
         sys.exit(1)
 
     template_path = sys.argv[1]
@@ -393,11 +448,10 @@ if __name__ == '__main__':
         sys.stderr = DualWriter(original_stderr, lf)
 
         try:
-            # Parse JSON data from argument
-            if len(sys.argv) > 3:
-                data = json.loads(sys.argv[3])
-            else:
-                data = json.load(sys.stdin)
+            # Always read from stdin
+            print(f"Reading survey data from stdin...", file=sys.stderr)
+            data = json.load(sys.stdin)
+            print(f"Survey data loaded successfully, size: {len(json.dumps(data))} bytes", file=sys.stderr)
 
             print(f"Starting template fill", file=sys.stderr)
             fill_template(template_path, output_path, data)
