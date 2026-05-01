@@ -44,8 +44,18 @@ export function PdfUploadModal({
     try {
       const pages: FloorPlanPage[] = []
 
+      console.log('[PdfUpload] File info:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        isImage: file.type.startsWith('image/'),
+        isPdf: file.type === 'application/pdf',
+        endsWithPdf: file.name.toLowerCase().endsWith('.pdf'),
+      })
+
       if (file.type.startsWith('image/')) {
         // Single image file - create one floor plan page
+        console.log('[PdfUpload] Detected as IMAGE file, creating single floor plan page')
         setProgress({ current: 1, total: 1 })
 
         const fileName = `${projectId}/floor-plan-${Date.now()}.png`
@@ -55,6 +65,7 @@ export function PdfUploadModal({
         pages.push(page)
       } else {
         // Multi-page PDF
+        console.log('[PdfUpload] Detected as PDF file, starting multi-page processing')
         try {
           console.log('[PdfUpload] Starting PDF processing for file:', file.name)
           const arrayBuffer = await file.arrayBuffer()
