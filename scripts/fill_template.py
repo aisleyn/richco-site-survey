@@ -143,7 +143,7 @@ def add_waypoint_location_page(doc, waypoint_data):
             import base64
             img_bytes = base64.b64decode(screenshot_b64)
             para = doc.add_paragraph()
-            para.add_run().add_picture(BytesIO(img_bytes), width=Inches(5.5))
+            para.add_run().add_picture(BytesIO(img_bytes), width=Inches(4.5))
             print(f"[DEBUG] Waypoint screenshot added successfully", file=sys.stderr)
         except Exception as e:
             print(f"Warning: Could not add waypoint screenshot: {e}", file=sys.stderr)

@@ -62,8 +62,8 @@ export async function captureWaypointLocation(
           cropY = img.naturalHeight - cropH
         }
 
-        // Create output canvas (fixed size for consistent document layout)
-        const outputSize = 800
+        // Create output canvas (fixed size, reduced for faster processing)
+        const outputSize = 600
         const outputCanvas = document.createElement('canvas')
         outputCanvas.width = outputSize
         outputCanvas.height = outputSize
