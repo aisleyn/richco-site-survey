@@ -10,3 +10,4 @@ dist
 .idea
 .vscode/settings.json
 .vscode/launch.json
+dist/
