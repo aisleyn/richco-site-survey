@@ -1,4 +1,4 @@
-const CACHE_NAME = 'richco-survey-v1'
+const CACHE_NAME = 'richco-survey-v2'
 const urlsToCache = [
   '/index.html',
   '/favicon.svg',
