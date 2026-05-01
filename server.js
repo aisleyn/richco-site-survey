@@ -12,7 +12,7 @@ dotenv.config()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
-const PORT = 3002
+const PORT = process.env.PORT || 3002
 
 // Log to file as well as console
 const logFile = path.join(__dirname, 'template-server.log')
@@ -227,6 +227,14 @@ app.post('/api/delete-user-by-email', async (req, res) => {
     log('Delete user exception:', error)
     res.status(500).json({ error: error.message })
   }
+})
+
+// Serve static files from dist folder
+app.use(express.static(path.join(__dirname, 'dist')))
+
+// SPA fallback: serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
 const server = app.listen(PORT, () => {
