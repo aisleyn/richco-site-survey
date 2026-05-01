@@ -39,6 +39,8 @@ export default function MapPage() {
   const phaserMapRef = useRef<PhaserMapHandle>(null)
 
   useEffect(() => {
+    // Version check for debugging Azure deployment
+    console.log('[MapPage] Version: e64d434 - Completion modal fix')
     if (projectId) loadData()
   }, [projectId])
 
