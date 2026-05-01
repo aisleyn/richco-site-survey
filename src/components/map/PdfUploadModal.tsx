@@ -126,9 +126,20 @@ export function PdfUploadModal({
               console.log('[PdfUpload] Upload result for page', pageNum, ':', uploadResult.signedUrl ? '✓ has URL' : '✗ no URL')
 
               // Create floor plan page record
-              const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl)
-              console.log('[PdfUpload] Created floor plan page record for page', pageNum, 'with id:', page.id)
-              pages.push(page)
+              console.log('[PdfUpload] Creating floor plan page record:', {
+                projectId,
+                pageNum,
+                label: `Page ${pageNum}`,
+                imageUrl: uploadResult.signedUrl ? '✓ has URL' : '✗ NO URL'
+              })
+              try {
+                const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl)
+                console.log('[PdfUpload] ✓ Created floor plan page record for page', pageNum, 'with id:', page.id)
+                pages.push(page)
+              } catch (dbErr) {
+                console.error('[PdfUpload] ✗ FAILED to create floor plan page record:', dbErr)
+                throw new Error(`Failed to save page ${pageNum} to database: ${dbErr instanceof Error ? dbErr.message : 'Unknown error'}`)
+              }
             } catch (err) {
               console.error('[PdfUpload] Error processing page', pageNum, ':', err)
               throw new Error(`Failed to process page ${pageNum}: ${err instanceof Error ? err.message : 'Unknown error'}`)
