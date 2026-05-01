@@ -55,69 +55,88 @@ export function PdfUploadModal({
         pages.push(page)
       } else {
         // Multi-page PDF
-        const arrayBuffer = await file.arrayBuffer()
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise
-        const numPages = pdf.numPages
-        console.log('PDF loaded with', numPages, 'pages')
+        try {
+          const arrayBuffer = await file.arrayBuffer()
+          console.log('[PdfUpload] Loading PDF, file size:', arrayBuffer.byteLength, 'bytes')
 
-        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-          try {
-            console.log('Processing page', pageNum)
-            setProgress({ current: pageNum, total: numPages })
+          const pdf = await pdfjsLib.getDocument(arrayBuffer).promise
+          const numPages = pdf.numPages
+          console.log('[PdfUpload] PDF loaded successfully with', numPages, 'pages')
 
-            const pdfPage = await pdf.getPage(pageNum)
-            const scale = 2
-            const viewport = pdfPage.getViewport({ scale })
-            const canvas = document.createElement('canvas')
-            const context = canvas.getContext('2d')
-
-            if (!context) throw new Error('Failed to create canvas context')
-
-            canvas.width = viewport.width
-            canvas.height = viewport.height
-
-            // Clear and fill canvas with white background
-            context.fillStyle = 'white'
-            context.fillRect(0, 0, canvas.width, canvas.height)
-
-            await pdfPage.render({
-              canvasContext: context,
-              viewport,
-            }).promise
-
-            // Convert canvas to data URL and then to Blob
-            const dataUrl = canvas.toDataURL('image/png')
-            const response = await fetch(dataUrl)
-            const imageBlob = await response.blob()
-            console.log('Page', pageNum, 'rendered, blob size:', imageBlob.size)
-
-            // Create proper File object from blob
-            const timestamp = Date.now()
-            const fileName = `floor-plan-page-${pageNum}-${timestamp}.png`
-            const imageFile = new File([imageBlob], fileName, { type: 'image/png' })
-
-            // Upload with project ID prefix
-            const uploadPath = `${projectId}/${fileName}`
-            console.log('Uploading', uploadPath)
-            const uploadResult = await uploadFile('floor-plans', uploadPath, imageFile)
-            console.log('Upload result for page', pageNum, ':', uploadResult.signedUrl ? 'has URL' : 'no URL')
-
-            // Create floor plan page record
-            const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl)
-            console.log('Created floor plan page', pageNum)
-            pages.push(page)
-          } catch (err) {
-            console.error('Error processing page', pageNum, ':', err)
-            throw err
+          if (numPages <= 0) {
+            throw new Error('PDF has no pages')
           }
+
+          for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            try {
+              console.log('[PdfUpload] Processing page', pageNum, 'of', numPages)
+              setProgress({ current: pageNum, total: numPages })
+
+              const pdfPage = await pdf.getPage(pageNum)
+              console.log('[PdfUpload] Got page', pageNum, 'from PDF')
+
+              // Reduce scale to 1.5 for better memory usage on multi-page PDFs
+              const scale = 1.5
+              const viewport = pdfPage.getViewport({ scale })
+              const canvas = document.createElement('canvas')
+              const context = canvas.getContext('2d')
+
+              if (!context) throw new Error('Failed to create canvas context')
+
+              canvas.width = viewport.width
+              canvas.height = viewport.height
+              console.log('[PdfUpload] Canvas created:', canvas.width, 'x', canvas.height)
+
+              // Clear and fill canvas with white background
+              context.fillStyle = 'white'
+              context.fillRect(0, 0, canvas.width, canvas.height)
+
+              await pdfPage.render({
+                canvasContext: context,
+                viewport,
+              }).promise
+              console.log('[PdfUpload] Page', pageNum, 'rendered to canvas')
+
+              // Convert canvas to data URL and then to Blob
+              const dataUrl = canvas.toDataURL('image/png')
+              const response = await fetch(dataUrl)
+              const imageBlob = await response.blob()
+              console.log('[PdfUpload] Page', pageNum, 'converted to blob, size:', imageBlob.size, 'bytes')
+
+              // Create proper File object from blob
+              const timestamp = Date.now()
+              const fileName = `floor-plan-page-${pageNum}-${timestamp}.png`
+              const imageFile = new File([imageBlob], fileName, { type: 'image/png' })
+
+              // Upload with project ID prefix
+              const uploadPath = `${projectId}/${fileName}`
+              console.log('[PdfUpload] Uploading page', pageNum, 'to:', uploadPath)
+              const uploadResult = await uploadFile('floor-plans', uploadPath, imageFile)
+              console.log('[PdfUpload] Upload result for page', pageNum, ':', uploadResult.signedUrl ? '✓ has URL' : '✗ no URL')
+
+              // Create floor plan page record
+              const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl)
+              console.log('[PdfUpload] Created floor plan page record for page', pageNum, 'with id:', page.id)
+              pages.push(page)
+            } catch (err) {
+              console.error('[PdfUpload] Error processing page', pageNum, ':', err)
+              throw new Error(`Failed to process page ${pageNum}: ${err instanceof Error ? err.message : 'Unknown error'}`)
+            }
+          }
+        } catch (err) {
+          console.error('[PdfUpload] PDF processing failed:', err)
+          throw err
         }
       }
 
+      console.log('[PdfUpload] Upload complete:', pages.length, 'pages created')
       onSuccess?.(pages)
       setFile(null)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload')
+      const errorMsg = err instanceof Error ? err.message : 'Failed to upload'
+      console.error('[PdfUpload] Final error:', errorMsg)
+      setError(errorMsg)
     } finally {
       setIsConverting(false)
       setProgress(null)
