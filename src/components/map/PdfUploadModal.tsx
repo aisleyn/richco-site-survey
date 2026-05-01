@@ -44,16 +44,19 @@ export function PdfUploadModal({
     try {
       const pages: FloorPlanPage[] = []
 
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      const isImage = file.type.startsWith('image/') && !isPdf
+
       console.log('[PdfUpload] File info:', {
         name: file.name,
         type: file.type,
         size: file.size,
-        isImage: file.type.startsWith('image/'),
-        isPdf: file.type === 'application/pdf',
+        isImage,
+        isPdf,
         endsWithPdf: file.name.toLowerCase().endsWith('.pdf'),
       })
 
-      if (file.type.startsWith('image/')) {
+      if (isImage) {
         // Single image file - create one floor plan page
         console.log('[PdfUpload] Detected as IMAGE file, creating single floor plan page')
         setProgress({ current: 1, total: 1 })
