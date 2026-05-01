@@ -595,11 +595,10 @@ export function WaypointDrawer({
         </div>
       </div>
 
-      {/* Survey Update Modal (In Progress) */}
-      {console.log('WaypointDrawer: rendering, survey=', !!survey, 'pendingStatus=', pendingStatus, 'isSurveyModalOpen=', isSurveyModalOpen)}
-      {survey && pendingStatus === 'in_progress' && (
+      {/* Survey Update Modal (In Progress Only) */}
+      {survey && pendingStatus === 'in_progress' && isSurveyModalOpen && (
         <WaypointSurveyUpdateModal
-          isOpen={isSurveyModalOpen}
+          isOpen={true}
           survey={survey}
           waypoint={waypoint}
           pendingStatus={pendingStatus}
@@ -612,10 +611,10 @@ export function WaypointDrawer({
         />
       )}
 
-      {/* Completion Modal (Completed) */}
-      {survey && pendingStatus === 'completed' && (
+      {/* Completion Modal (Completed Only) */}
+      {survey && pendingStatus === 'completed' && isSurveyModalOpen && (
         <WaypointCompletionModal
-          isOpen={isSurveyModalOpen}
+          isOpen={true}
           survey={survey}
           waypoint={waypoint}
           projectId={projectId}

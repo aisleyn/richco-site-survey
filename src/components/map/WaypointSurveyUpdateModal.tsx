@@ -115,9 +115,7 @@ export function WaypointSurveyUpdateModal({
     }
   }
 
-  if (!isOpen) return null
-
-  const statusLabel = pendingStatus === 'in_progress' ? 'In Progress' : 'Completed'
+  if (!isOpen || pendingStatus !== 'in_progress') return null
 
   return (
     <>
@@ -201,7 +199,7 @@ export function WaypointSurveyUpdateModal({
                 isLoading={isSubmitting}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Submitting...' : `Submit & Set ${statusLabel}`}
+                {isSubmitting ? 'Submitting...' : 'Submit & Set In Progress'}
               </Button>
               <Button
                 type="button"
