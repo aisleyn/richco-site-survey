@@ -109,6 +109,33 @@ export default function SurveyDetailPage() {
               })
             }
           }
+
+          // Fetch and save repair history BEFORE waypoint is deleted
+          try {
+            console.log('Fetching repair history before deletion...')
+            const history = await getWaypointHistory(waypointUpdate.waypoint_id)
+            console.log('Repair history fetched:', history.length, 'entries')
+            if (history && history.length > 0) {
+              const waypointHistory = history.reverse().map((entry) => ({
+                status: entry.new_status,
+                date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
+                notes: entry.notes,
+              }))
+              console.log('Saving repair history to survey update...')
+              // We'll store this as a JSON field in the survey update (we can add this field to the DB later if needed)
+              // For now, include it in the waypoint location JSON
+              if (waypointLocationData) {
+                waypointLocationData.waypointHistory = waypointHistory
+                await updateSurveyUpdate(waypointUpdate.id, {
+                  waypoint_location_json: waypointLocationData,
+                })
+                console.log('Repair history saved to survey update')
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to fetch repair history:', err)
+            // Continue even if history fetch fails
+          }
         }
       } catch (err) {
         console.warn('Failed to capture waypoint location:', err)
@@ -182,28 +209,35 @@ export default function SurveyDetailPage() {
         }
       }
 
-      // Fetch waypoint repair history if we have a waypoint
+      // Use repair history from waypointLocation if available (was saved during publish)
       if (waypointLocation) {
-        try {
-          const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
-          console.log('Waypoint update found:', waypointUpdate)
-          if (waypointUpdate?.waypoint_id) {
-            console.log('Fetching history for waypoint:', waypointUpdate.waypoint_id)
-            const history = await getWaypointHistory(waypointUpdate.waypoint_id)
-            console.log('Repair history fetched:', history)
-            // Transform to display format, ordered chronologically
-            waypointHistory = history.reverse().map((entry) => ({
-              status: entry.new_status,
-              date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
-              notes: entry.notes,
-            }))
-            console.log('Transformed waypoint history:', waypointHistory)
-          } else {
-            console.log('No waypoint_id found in survey updates')
+        console.log('Waypoint location found:', waypointLocation)
+        if ((waypointLocation as any).waypointHistory) {
+          waypointHistory = (waypointLocation as any).waypointHistory
+          console.log('Using repair history from waypointLocation:', waypointHistory)
+        } else {
+          // Fallback: try to fetch history if not embedded
+          try {
+            const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
+            console.log('Waypoint update found:', waypointUpdate)
+            if (waypointUpdate?.waypoint_id) {
+              console.log('Fetching history for waypoint:', waypointUpdate.waypoint_id)
+              const history = await getWaypointHistory(waypointUpdate.waypoint_id)
+              console.log('Repair history fetched:', history)
+              // Transform to display format, ordered chronologically
+              waypointHistory = history.reverse().map((entry) => ({
+                status: entry.new_status,
+                date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
+                notes: entry.notes,
+              }))
+              console.log('Transformed waypoint history:', waypointHistory)
+            } else {
+              console.log('No waypoint_id found in survey updates')
+            }
+          } catch (err) {
+            console.warn('Failed to fetch waypoint history:', err)
+            // Continue without history
           }
-        } catch (err) {
-          console.warn('Failed to fetch waypoint history:', err)
-          // Continue without history
         }
       }
 
