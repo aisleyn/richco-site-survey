@@ -72,6 +72,8 @@ export default function SurveyDetailPage() {
           )
           const waypoint = waypoints?.[0]
 
+          let waypointLocationData: any = null
+
           if (waypoint?.floor_plan_page_id) {
             const pages = await apiFetch<any[]>(
               `floor_plan_pages?id=eq.${waypoint.floor_plan_page_id}`
@@ -85,7 +87,7 @@ export default function SurveyDetailPage() {
                 waypoint.y_percent,
               )
 
-              const waypointLocationData = {
+              waypointLocationData = {
                 areaName: waypoint.area_name || 'N/A',
                 pageNumber: page.page_number,
                 pageLabel: page.label || '',
@@ -122,8 +124,6 @@ export default function SurveyDetailPage() {
                 notes: entry.notes,
               }))
               console.log('Saving repair history to survey update...')
-              // We'll store this as a JSON field in the survey update (we can add this field to the DB later if needed)
-              // For now, include it in the waypoint location JSON
               if (waypointLocationData) {
                 waypointLocationData.waypointHistory = waypointHistory
                 await updateSurveyUpdate(waypointUpdate.id, {
