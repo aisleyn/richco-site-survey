@@ -166,7 +166,8 @@ def add_waypoint_location_page(doc, waypoint_data):
             else:
                 bullet_text += "."
 
-            p = doc.add_paragraph(bullet_text, style='List Bullet')
+            # Add as paragraph with bullet character
+            p = doc.add_paragraph('• ' + bullet_text)
             print(f"[DEBUG] Added history entry: {bullet_text[:80]}", file=sys.stderr)
 
 def fill_template(template_path, output_path, data):
