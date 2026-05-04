@@ -233,7 +233,7 @@ app.post('/api/delete-user-by-email', async (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist')))
 
 // SPA fallback: serve index.html for all non-API routes
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
 
