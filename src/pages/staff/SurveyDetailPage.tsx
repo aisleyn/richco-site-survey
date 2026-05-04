@@ -186,14 +186,20 @@ export default function SurveyDetailPage() {
       if (waypointLocation) {
         try {
           const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
+          console.log('Waypoint update found:', waypointUpdate)
           if (waypointUpdate?.waypoint_id) {
+            console.log('Fetching history for waypoint:', waypointUpdate.waypoint_id)
             const history = await getWaypointHistory(waypointUpdate.waypoint_id)
+            console.log('Repair history fetched:', history)
             // Transform to display format, ordered chronologically
             waypointHistory = history.reverse().map((entry) => ({
               status: entry.new_status,
               date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
               notes: entry.notes,
             }))
+            console.log('Transformed waypoint history:', waypointHistory)
+          } else {
+            console.log('No waypoint_id found in survey updates')
           }
         } catch (err) {
           console.warn('Failed to fetch waypoint history:', err)
