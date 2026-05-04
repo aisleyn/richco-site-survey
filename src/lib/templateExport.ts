@@ -1,3 +1,9 @@
+interface WaypointHistoryEntry {
+  status: string
+  date: string
+  notes: string | null
+}
+
 interface SurveyData {
   projectName: string
   areaName: string
@@ -18,6 +24,7 @@ interface SurveyData {
     yPercent: number
     screenshot: string
   }
+  waypointHistory?: WaypointHistoryEntry[]
 }
 
 export async function generateSurveyFromTemplate(surveyData: SurveyData) {

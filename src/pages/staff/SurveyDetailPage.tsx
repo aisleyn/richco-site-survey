@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { getSurveyById, getSurveyMedia, publishSurvey, deleteSurvey, updateSurvey, addSurveyMedia } from '../../services/surveys'
 import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdates'
 import { deleteWaypointByLinkedSurvey } from '../../services/mapWaypoints'
+import { getWaypointHistory } from '../../services/waypointRepairHistory'
 import { uploadFile } from '../../services/storage'
 import { generateSurveyFromTemplate } from '../../lib/templateExport'
 import { captureWaypointLocation } from '../../lib/waypointScreenshot'
@@ -164,6 +165,7 @@ export default function SurveyDetailPage() {
 
       // Try to get waypoint location data
       let waypointLocation = cachedWaypointLocation
+      let waypointHistory = undefined
 
       if (!waypointLocation) {
         // Check if any survey update has the waypoint location data already loaded
@@ -180,6 +182,25 @@ export default function SurveyDetailPage() {
         }
       }
 
+      // Fetch waypoint repair history if we have a waypoint
+      if (waypointLocation) {
+        try {
+          const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
+          if (waypointUpdate?.waypoint_id) {
+            const history = await getWaypointHistory(waypointUpdate.waypoint_id)
+            // Transform to display format, ordered chronologically
+            waypointHistory = history.reverse().map((entry) => ({
+              status: entry.new_status,
+              date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
+              notes: entry.notes,
+            }))
+          }
+        } catch (err) {
+          console.warn('Failed to fetch waypoint history:', err)
+          // Continue without history
+        }
+      }
+
       await generateSurveyFromTemplate({
         projectName: survey.project_name,
         areaName: survey.area_name,
@@ -192,6 +213,7 @@ export default function SurveyDetailPage() {
         scans: scanMedia,
         clientName: survey.client_name || 'N/A',
         waypointLocation,
+        waypointHistory,
       })
 
       addToast({

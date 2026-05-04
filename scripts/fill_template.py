@@ -148,6 +148,27 @@ def add_waypoint_location_page(doc, waypoint_data):
         except Exception as e:
             print(f"Warning: Could not add waypoint screenshot: {e}", file=sys.stderr)
 
+    # Add repair history as bullet points below screenshot
+    history = waypoint_data.get('waypointHistory', [])
+    if history and len(history) > 0:
+        print(f"Adding {len(history)} repair history entries", file=sys.stderr)
+        doc.add_paragraph()  # Add spacing
+
+        for entry in history:
+            status = entry.get('status', 'Unknown').replace('_', ' ').title()
+            date = entry.get('date', 'Unknown date')
+            notes = entry.get('notes', '')
+
+            # Create bullet point with status and date
+            bullet_text = f"{status} on {date}"
+            if notes:
+                bullet_text += f". Notes: {notes}"
+            else:
+                bullet_text += "."
+
+            p = doc.add_paragraph(bullet_text, style='List Bullet')
+            print(f"[DEBUG] Added history entry: {bullet_text[:80]}", file=sys.stderr)
+
 def fill_template(template_path, output_path, data):
     """Fill a Word template with survey data"""
 
@@ -328,7 +349,11 @@ def fill_template(template_path, output_path, data):
     # Handle waypoint location - add as page 4 (between images and scans)
     if data.get('waypointLocation'):
         print(f"Adding waypoint location page", file=sys.stderr)
-        add_waypoint_location_page(doc, data['waypointLocation'])
+        waypoint_data = data['waypointLocation'].copy()
+        # Include repair history if available
+        if data.get('waypointHistory'):
+            waypoint_data['waypointHistory'] = data['waypointHistory']
+        add_waypoint_location_page(doc, waypoint_data)
 
     # Handle scans - look for Item.Scans of Area placeholder
     scans_added = 0
