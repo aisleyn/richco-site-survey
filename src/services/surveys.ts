@@ -127,6 +127,17 @@ export async function publishSurvey(surveyId: string, projectId: string): Promis
   await upsertReportPage(projectId, surveyId)
 }
 
+export async function archiveSurvey(surveyId: string, projectId: string): Promise<void> {
+  const { error } = await supabase
+    .from('surveys')
+    .update({ status: 'archived' })
+    .eq('id', surveyId)
+
+  if (error) throw error
+
+  await upsertReportPage(projectId, surveyId)
+}
+
 export async function deleteSurvey(surveyId: string): Promise<void> {
   const { error: mediaError } = await supabase
     .from('survey_media')

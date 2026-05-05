@@ -10,6 +10,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showArchivedSurveys, setShowArchivedSurveys] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -28,6 +29,9 @@ export default function ProjectDetailPage() {
       setIsLoading(false)
     }
   }
+
+  const activeSurveys = surveys.filter((s) => s.status === 'draft' || s.status === 'published')
+  const archivedSurveys = surveys.filter((s) => s.status === 'archived')
 
   if (isLoading) return <div className="flex items-center justify-center min-h-screen"><Spinner size="lg" /></div>
   if (!project) return <div>Project not found</div>
@@ -54,27 +58,72 @@ export default function ProjectDetailPage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        {surveys.length === 0 ? (
+      <div className="space-y-6">
+        {/* Active Surveys */}
+        <div>
+          <h2 className="text-lg font-semibold text-white mb-3">Active</h2>
+          <div className="space-y-4">
+            {activeSurveys.length === 0 ? (
+              <Card>
+                <p className="text-center text-secondary py-12">No active surveys</p>
+              </Card>
+            ) : (
+              activeSurveys.map((survey) => (
+                <Link key={survey.id} to={`/staff/surveys/${survey.id}`}>
+                  <Card className="card-hover cursor-pointer">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{survey.area_name}</h3>
+                        <p className="text-sm text-secondary mt-1">
+                          {new Date(survey.survey_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant={survey.status}>{survey.status}</Badge>
+                    </div>
+                  </Card>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Archived Surveys */}
+        {archivedSurveys.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowArchivedSurveys(!showArchivedSurveys)}
+              className="flex items-center gap-2 mb-3 text-white font-semibold hover:opacity-80 transition-opacity"
+            >
+              <span className="text-lg">{showArchivedSurveys ? '▼' : '▶'}</span>
+              Archived ({archivedSurveys.length})
+            </button>
+            {showArchivedSurveys && (
+              <div className="space-y-4">
+                {archivedSurveys.map((survey) => (
+                  <Link key={survey.id} to={`/staff/surveys/${survey.id}`}>
+                    <Card className="card-hover cursor-pointer opacity-75">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">{survey.area_name}</h3>
+                          <p className="text-sm text-secondary mt-1">
+                            {new Date(survey.survey_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant={survey.status}>{survey.status}</Badge>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* No surveys at all */}
+        {surveys.length === 0 && (
           <Card>
             <p className="text-center text-secondary py-12">No surveys yet</p>
           </Card>
-        ) : (
-          surveys.map((survey) => (
-            <Link key={survey.id} to={`/staff/surveys/${survey.id}`}>
-              <Card className="card-hover cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{survey.area_name}</h3>
-                    <p className="text-sm text-secondary mt-1">
-                      {new Date(survey.survey_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge variant={survey.status}>{survey.status}</Badge>
-                </div>
-              </Card>
-            </Link>
-          ))
         )}
       </div>
     </div>

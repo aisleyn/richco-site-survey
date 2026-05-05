@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 
-type BadgeVariant = 'draft' | 'published' | 'needs_repair' | 'in_progress' | 'completed' | 'default'
+type BadgeVariant = 'draft' | 'published' | 'archived' | 'needs_repair' | 'in_progress' | 'completed' | 'default'
 
 interface BadgeProps {
   variant?: BadgeVariant
@@ -12,6 +12,7 @@ export function Badge({ variant = 'default', children, className }: BadgeProps) 
   const variantClasses = {
     draft: 'bg-yellow-50 text-yellow-800 border border-yellow-200',
     published: 'bg-green-50 text-green-800 border border-green-200',
+    archived: 'bg-slate-200 text-slate-700 border border-slate-300',
     needs_repair: 'bg-red-900 text-red-100 border border-red-700',
     in_progress: 'bg-amber-50 text-amber-800 border border-amber-200',
     completed: 'bg-green-50 text-green-800 border border-green-200',

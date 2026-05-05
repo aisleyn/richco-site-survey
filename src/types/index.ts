@@ -1,7 +1,7 @@
 // Types as string unions instead of enums (better tree-shaking)
 export type UserRole = 'richco_staff' | 'client'
 export type MediaType = 'image' | 'video' | '3d_scan' | 'pdf'
-export type SurveyStatus = 'draft' | 'published'
+export type SurveyStatus = 'draft' | 'published' | 'archived'
 export type WaypointStatus = 'needs_repair' | 'in_progress' | 'completed'
 export type WaypointPhotoType = 'before' | 'after' | 'progress' | 'general'
 
@@ -20,6 +20,7 @@ export const MediaType = {
 export const SurveyStatus = {
   DRAFT: 'draft' as const,
   PUBLISHED: 'published' as const,
+  ARCHIVED: 'archived' as const,
 }
 
 export const WaypointStatus = {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
-import { getSurveyById, getSurveyMedia, publishSurvey, deleteSurvey, updateSurvey, addSurveyMedia } from '../../services/surveys'
+import { getSurveyById, getSurveyMedia, publishSurvey, archiveSurvey, deleteSurvey, updateSurvey, addSurveyMedia } from '../../services/surveys'
 import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdates'
 import { deleteWaypointByLinkedSurvey } from '../../services/mapWaypoints'
 import { getWaypointHistory } from '../../services/waypointRepairHistory'
@@ -30,6 +30,7 @@ export default function SurveyDetailPage() {
   const [editingUpdateId, setEditingUpdateId] = useState<string | null>(null)
   const [editingUpdateData, setEditingUpdateData] = useState<any>(null)
   const [cachedWaypointLocation, setCachedWaypointLocation] = useState<any>(null)
+  const [showRepairTypeModal, setShowRepairTypeModal] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -55,94 +56,118 @@ export default function SurveyDetailPage() {
     }
   }
 
-  const handlePublish = async () => {
+  const captureWaypointData = async () => {
+    try {
+      const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
+      if (waypointUpdate?.waypoint_id) {
+        console.log('Capturing waypoint location...')
+        const waypoints = await apiFetch<any[]>(
+          `map_waypoints?id=eq.${waypointUpdate.waypoint_id}`
+        )
+        const waypoint = waypoints?.[0]
+
+        let waypointLocationData: any = null
+
+        if (waypoint?.floor_plan_page_id) {
+          const pages = await apiFetch<any[]>(
+            `floor_plan_pages?id=eq.${waypoint.floor_plan_page_id}`
+          )
+          const page = pages?.[0]
+
+          if (page?.image_url) {
+            const screenshot = await captureWaypointLocation(
+              page.image_url,
+              waypoint.x_percent,
+              waypoint.y_percent,
+            )
+
+            waypointLocationData = {
+              areaName: waypoint.area_name || 'N/A',
+              pageNumber: page.page_number,
+              pageLabel: page.label || '',
+              xPercent: waypoint.x_percent,
+              yPercent: waypoint.y_percent,
+              screenshot,
+            }
+
+            setCachedWaypointLocation(waypointLocationData)
+
+            await updateSurveyUpdate(waypointUpdate.id, {
+              waypoint_location_json: waypointLocationData,
+            })
+
+            console.log('Waypoint location captured and saved:', {
+              area: waypointLocationData.areaName,
+              page: waypointLocationData.pageNumber,
+            })
+          }
+        }
+
+        // Fetch and save repair history
+        try {
+          console.log('Fetching repair history...')
+          const history = await getWaypointHistory(waypointUpdate.waypoint_id)
+          console.log('Repair history fetched:', history.length, 'entries')
+          if (history && history.length > 0) {
+            const waypointHistory = history.reverse().map((entry) => ({
+              status: entry.new_status,
+              date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
+              notes: entry.notes,
+            }))
+            console.log('Saving repair history to survey update...')
+            if (waypointLocationData) {
+              waypointLocationData.waypointHistory = waypointHistory
+              await updateSurveyUpdate(waypointUpdate.id, {
+                waypoint_location_json: waypointLocationData,
+              })
+              console.log('Repair history saved to survey update')
+            }
+          }
+        } catch (err) {
+          console.warn('Failed to fetch repair history:', err)
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to capture waypoint location:', err)
+    }
+  }
+
+  const handleTemporaryRepair = async () => {
     if (!survey) return
     setIsPublishing(true)
+    setShowRepairTypeModal(false)
     try {
       await publishSurvey(survey.id, survey.project_id)
       setSurvey({ ...survey, status: 'published' })
 
-      // Capture waypoint location data and screenshot BEFORE deleting waypoint
-      try {
-        const waypointUpdate = surveyUpdates.find((u) => u.waypoint_id)
-        if (waypointUpdate?.waypoint_id) {
-          console.log('Capturing waypoint location before deletion...')
-          const waypoints = await apiFetch<any[]>(
-            `map_waypoints?id=eq.${waypointUpdate.waypoint_id}`
-          )
-          const waypoint = waypoints?.[0]
+      // Capture waypoint location but do NOT delete the waypoint
+      await captureWaypointData()
 
-          let waypointLocationData: any = null
+      addToast({
+        type: 'success',
+        message: 'Repair marked complete — waypoint remains on map',
+      })
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: 'Failed to complete repair',
+      })
+    } finally {
+      setIsPublishing(false)
+    }
+  }
 
-          if (waypoint?.floor_plan_page_id) {
-            const pages = await apiFetch<any[]>(
-              `floor_plan_pages?id=eq.${waypoint.floor_plan_page_id}`
-            )
-            const page = pages?.[0]
+  const handlePermanentRepair = async () => {
+    if (!survey) return
+    setIsPublishing(true)
+    setShowRepairTypeModal(false)
+    try {
+      await archiveSurvey(survey.id, survey.project_id)
+      setSurvey({ ...survey, status: 'archived' })
 
-            if (page?.image_url) {
-              const screenshot = await captureWaypointLocation(
-                page.image_url,
-                waypoint.x_percent,
-                waypoint.y_percent,
-              )
+      // Capture waypoint location and delete the waypoint
+      await captureWaypointData()
 
-              waypointLocationData = {
-                areaName: waypoint.area_name || 'N/A',
-                pageNumber: page.page_number,
-                pageLabel: page.label || '',
-                xPercent: waypoint.x_percent,
-                yPercent: waypoint.y_percent,
-                screenshot,
-              }
-
-              // Cache in state so it's available when user downloads the report
-              setCachedWaypointLocation(waypointLocationData)
-
-              // Also save to database so it persists across sessions
-              await updateSurveyUpdate(waypointUpdate.id, {
-                waypoint_location_json: waypointLocationData,
-              })
-
-              console.log('Waypoint location captured and saved:', {
-                area: waypointLocationData.areaName,
-                page: waypointLocationData.pageNumber,
-                screenshotSize: screenshot.length,
-              })
-            }
-          }
-
-          // Fetch and save repair history BEFORE waypoint is deleted
-          try {
-            console.log('Fetching repair history before deletion...')
-            const history = await getWaypointHistory(waypointUpdate.waypoint_id)
-            console.log('Repair history fetched:', history.length, 'entries')
-            if (history && history.length > 0) {
-              const waypointHistory = history.reverse().map((entry) => ({
-                status: entry.new_status,
-                date: format(new Date(entry.changed_at), 'MMMM d, yyyy'),
-                notes: entry.notes,
-              }))
-              console.log('Saving repair history to survey update...')
-              if (waypointLocationData) {
-                waypointLocationData.waypointHistory = waypointHistory
-                await updateSurveyUpdate(waypointUpdate.id, {
-                  waypoint_location_json: waypointLocationData,
-                })
-                console.log('Repair history saved to survey update')
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to fetch repair history:', err)
-            // Continue even if history fetch fails
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to capture waypoint location:', err)
-        // Continue with deletion even if capture fails
-      }
-
-      // Delete the waypoint since repair is complete
       try {
         await deleteWaypointByLinkedSurvey(survey.id)
       } catch (err) {
@@ -151,7 +176,7 @@ export default function SurveyDetailPage() {
 
       addToast({
         type: 'success',
-        message: 'Repair completed and waypoint removed',
+        message: 'Repair permanently complete and waypoint removed',
       })
     } catch (err) {
       addToast({
@@ -396,11 +421,11 @@ export default function SurveyDetailPage() {
         </div>
         <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
           {survey.status === 'draft' && (
-            <Button variant="primary" onClick={handlePublish} isLoading={isPublishing} className="w-full xs:w-auto">
+            <Button variant="primary" onClick={() => setShowRepairTypeModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
               ✓ Complete Repair
             </Button>
           )}
-          {survey.status === 'published' && (
+          {(survey.status === 'published' || survey.status === 'archived') && (
             <Button variant="primary" onClick={handleDownloadReport} isLoading={isDownloading} className="w-full xs:w-auto">
               📥 Download Report
             </Button>
@@ -768,6 +793,38 @@ export default function SurveyDetailPage() {
         media={selectedMedia}
         onClose={() => setSelectedMedia(null)}
       />
+
+      {showRepairTypeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>How should this repair be completed?</CardTitle>
+            </CardHeader>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-white mb-4">Choose whether this is a temporary or permanent repair completion.</p>
+              </div>
+              <div className="border border-slate-300 rounded-lg p-4 bg-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2">Temporary Repair</h4>
+                <p className="text-sm text-slate-700 mb-3">Report will be generated, but the waypoint will remain on the floor plan for future reference or follow-up.</p>
+                <Button variant="primary" onClick={handleTemporaryRepair} isLoading={isPublishing} className="w-full">
+                  Mark as Temporary
+                </Button>
+              </div>
+              <div className="border border-slate-300 rounded-lg p-4 bg-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2">Permanent Repair</h4>
+                <p className="text-sm text-slate-700 mb-3">Report will be generated and the waypoint will be removed from the floor plan.</p>
+                <Button variant="primary" onClick={handlePermanentRepair} isLoading={isPublishing} className="w-full">
+                  Mark as Permanent
+                </Button>
+              </div>
+              <Button variant="ghost" onClick={() => setShowRepairTypeModal(false)} className="w-full bg-slate-300 hover:bg-slate-400 text-slate-900">
+                Cancel
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
