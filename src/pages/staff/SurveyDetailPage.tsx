@@ -31,6 +31,7 @@ export default function SurveyDetailPage() {
   const [editingUpdateData, setEditingUpdateData] = useState<any>(null)
   const [cachedWaypointLocation, setCachedWaypointLocation] = useState<any>(null)
   const [showRepairTypeModal, setShowRepairTypeModal] = useState(false)
+  const [showConvertToPermanentModal, setShowConvertToPermanentModal] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -161,6 +162,7 @@ export default function SurveyDetailPage() {
     if (!survey) return
     setIsPublishing(true)
     setShowRepairTypeModal(false)
+    setShowConvertToPermanentModal(false)
     try {
       await archiveSurvey(survey.id, survey.project_id)
       setSurvey({ ...survey, status: 'archived' })
@@ -428,6 +430,11 @@ export default function SurveyDetailPage() {
           {(survey.status === 'published' || survey.status === 'archived') && (
             <Button variant="primary" onClick={handleDownloadReport} isLoading={isDownloading} className="w-full xs:w-auto">
               📥 Download Report
+            </Button>
+          )}
+          {survey.status === 'published' && (
+            <Button variant="secondary" onClick={() => setShowConvertToPermanentModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
+              ✓ Mark as Permanent
             </Button>
           )}
           <Button variant="danger" onClick={handleDelete} isLoading={isDeleting} className="w-full xs:w-auto">
@@ -819,6 +826,30 @@ export default function SurveyDetailPage() {
                 </Button>
               </div>
               <Button variant="ghost" onClick={() => setShowRepairTypeModal(false)} className="w-full bg-slate-300 hover:bg-slate-400 text-slate-900">
+                Cancel
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {showConvertToPermanentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="max-w-md mx-4">
+            <CardHeader>
+              <CardTitle>Convert to Permanent Repair?</CardTitle>
+            </CardHeader>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-white mb-4">This will permanently complete the repair and remove the waypoint from the floor plan.</p>
+              </div>
+              <div className="border border-slate-300 rounded-lg p-4 bg-slate-200">
+                <p className="text-sm text-slate-700 mb-3">The report will remain available for download, and the waypoint will be permanently removed from the map.</p>
+                <Button variant="primary" onClick={handlePermanentRepair} isLoading={isPublishing} className="w-full">
+                  Mark as Permanent
+                </Button>
+              </div>
+              <Button variant="ghost" onClick={() => setShowConvertToPermanentModal(false)} className="w-full bg-slate-300 hover:bg-slate-400 text-slate-900">
                 Cancel
               </Button>
             </div>
