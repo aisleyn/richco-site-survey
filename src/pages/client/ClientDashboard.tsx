@@ -51,13 +51,15 @@ export default function ClientDashboard() {
     return (
       <div className="relative min-h-screen overflow-hidden">
         <AnimatedBackground />
-        <div className="relative z-10 flex items-center justify-center min-h-screen px-6">
-          <div className="text-center max-w-md">
-            <div className="mb-8">
-              <BackButton label="Back to Dashboard" />
+        <div className="relative z-10 px-6 pt-8">
+          <div className="mb-4">
+            <BackButton label="Back to Dashboard" />
+          </div>
+          <div className="flex items-center justify-center min-h-[calc(100vh-120px)]">
+            <div className="text-center max-w-md">
+              <h1 className="text-4xl font-light text-white mb-4" style={{ fontFamily: '"Syne", sans-serif' }}>Access Restricted</h1>
+              <p className="text-secondary mb-8">Your account does not have access to a project yet. Please contact support.</p>
             </div>
-            <h1 className="text-4xl font-light text-white mb-4" style={{ fontFamily: '"Syne", sans-serif' }}>Access Restricted</h1>
-            <p className="text-secondary mb-8">Your account does not have access to a project yet. Please contact support.</p>
           </div>
         </div>
       </div>
