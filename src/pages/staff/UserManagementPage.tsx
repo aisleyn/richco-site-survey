@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Input, Spinner } from '../../components/ui'
+import { Button, Card, Input, Spinner, BackButton } from '../../components/ui'
 import { useAuthStore } from '../../store/authStore'
 import type { Profile } from '../../types'
 
@@ -286,6 +286,9 @@ export default function UserManagementPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Settings" />
+      </div>
       <h1 className="text-3xl font-bold text-white mb-6">User Management</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

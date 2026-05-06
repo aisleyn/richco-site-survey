@@ -10,7 +10,7 @@ import { createWaypoint } from '../../services/mapWaypoints'
 import { getProjectById } from '../../services/projects'
 import { MediaType } from '../../types'
 import { supabase } from '../../lib/supabase'
-import { Card, Button, Textarea, FileDropzone, useToast } from '../../components/ui'
+import { Card, Button, Textarea, FileDropzone, useToast, BackButton } from '../../components/ui'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import type { ClientSubmission } from '../../types'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
@@ -115,6 +115,9 @@ export default function ClientSubmitPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-8">Submit Repair Request</h1>
 
       {error && (

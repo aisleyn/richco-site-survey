@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Input, Spinner } from '../../components/ui'
+import { Button, Card, Input, Spinner, BackButton } from '../../components/ui'
 import type { Profile } from '../../types'
 
 function getAuthToken(): string | null {
@@ -238,6 +238,9 @@ export default function ClientManagementPage() {
 
   return (
     <div className="space-y-8">
+      <div className="mb-4">
+        <BackButton label="Back to Settings" />
+      </div>
       <h1 className="text-3xl font-bold text-white mb-6">Client Management</h1>
 
       {/* Clients List */}

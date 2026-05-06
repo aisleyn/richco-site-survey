@@ -303,6 +303,9 @@ export default function MapPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Project" />
+      </div>
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>

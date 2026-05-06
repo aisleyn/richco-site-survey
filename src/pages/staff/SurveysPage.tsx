@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, Spinner, EmptyState, Button, Badge } from '../../components/ui'
+import { Card, Spinner, EmptyState, Button, Badge, BackButton } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import { deleteSurvey } from '../../services/surveys'
 import { useToast } from '../../components/ui/Toast'
@@ -62,6 +62,9 @@ export default function SurveysPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">All Surveys</h1>

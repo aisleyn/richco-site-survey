@@ -6,7 +6,7 @@ import * as z from 'zod'
 import { supabase } from '../../lib/supabase'
 import { getProjects, createProject } from '../../services/projects'
 import type { Project, ProjectFormValues } from '../../types'
-import { Card, Button, Input, Modal, EmptyState, SkeletonGrid } from '../../components/ui'
+import { Card, Button, Input, Modal, EmptyState, SkeletonGrid, BackButton } from '../../components/ui'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
@@ -119,6 +119,9 @@ export default function ProjectsPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Projects</h1>

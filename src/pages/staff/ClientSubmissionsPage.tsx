@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import type { ClientSubmission } from '../../types'
-import { Card, Badge, Spinner } from '../../components/ui'
+import { Card, Badge, Spinner, BackButton } from '../../components/ui'
 
 interface SubmissionWithClient extends ClientSubmission {
   client_name: string
@@ -67,6 +67,9 @@ export default function ClientSubmissionsPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Project" />
+      </div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white">Client Repair Requests</h1>
         <p className="text-secondary mt-2">

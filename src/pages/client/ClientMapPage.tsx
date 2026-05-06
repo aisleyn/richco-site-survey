@@ -4,7 +4,7 @@ import { getProjectById } from '../../services/projects'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
 import { InteractiveMap } from '../../components/map'
 import { WaypointDetailModal } from '../../components/map/WaypointDetailModal'
-import { Card, Spinner } from '../../components/ui'
+import { Card, Spinner, BackButton } from '../../components/ui'
 import type { Project, MapWaypoint } from '../../types'
 
 export default function ClientMapPage() {
@@ -52,6 +52,9 @@ export default function ClientMapPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Site Map</h1>
         <p className="text-secondary mt-2 text-sm sm:text-base">

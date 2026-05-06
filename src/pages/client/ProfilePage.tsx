@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../../store/authStore'
-import { Button, Card, Input, Spinner } from '../../components/ui'
+import { Button, Card, Input, Spinner, BackButton } from '../../components/ui'
 
 interface Vendor {
   id: string
@@ -163,6 +163,9 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
       <div>
         <h1 className="text-3xl font-bold text-white mb-2">My Profile</h1>
         <p className="text-secondary">Manage your account settings and preferences</p>

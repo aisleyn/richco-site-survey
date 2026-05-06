@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Spinner } from '../../components/ui'
+import { Button, Card, Spinner, BackButton } from '../../components/ui'
 
 function getAuthToken(): string | null {
   const projectId = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0]
@@ -113,6 +113,9 @@ export default function VendorProjectsPage() {
 
   return (
     <div className="space-y-8">
+      <div className="mb-4">
+        <BackButton label="Back to Settings" />
+      </div>
       <div>
         <h1 className="text-3xl font-bold text-white mb-6">Vendor-Project Mapping</h1>
 

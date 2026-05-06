@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, Spinner, EmptyState, Button } from '../../components/ui'
+import { Card, Spinner, EmptyState, Button, BackButton } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import { deleteProjectReports } from '../../services/reportPages'
 import { useToast } from '../../components/ui/Toast'
@@ -81,6 +81,9 @@ export default function ReportsPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white">All Reports</h1>
         <p className="text-secondary mt-2 text-sm sm:text-base">Flipbook reports by project</p>
