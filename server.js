@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 import os from 'os'
 import dotenv from 'dotenv'
+import { spawn, spawnSync } from 'child_process'
 import { fillTemplate } from './scripts/fillTemplateNode.js'
 
 // Load environment variables from .env file
@@ -40,6 +41,55 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
     })
   : null
 
+function fillTemplateWithPython(templatePath, outputPath, surveyData, logger) {
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, 'scripts', 'fill_template.py')
+
+    if (!fs.existsSync(scriptPath)) {
+      reject(new Error('Python script not found'))
+      return
+    }
+
+    const args = [scriptPath, templatePath, outputPath]
+    const python = spawn('python3', args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    const surveyDataJson = JSON.stringify(surveyData)
+    logger('[Python] Survey data size:', surveyDataJson.length, 'bytes')
+
+    python.stdin.write(surveyDataJson)
+    python.stdin.end()
+
+    python.stdout.on('data', (data) => {
+      stdout += data.toString()
+      logger('[Python] stdout:', data.toString())
+    })
+
+    python.stderr.on('data', (data) => {
+      stderr += data.toString()
+      logger('[Python] stderr:', data.toString())
+    })
+
+    python.on('error', (err) => {
+      logger('[Python] Failed to spawn:', err.message)
+      reject(err)
+    })
+
+    python.on('close', (code) => {
+      logger('[Python] Exit code:', code)
+      if (code !== 0) {
+        reject(new Error(`Python script failed: ${stderr}`))
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
 app.post('/api/fill-template', async (req, res) => {
   const tmpOutputPath = path.join(os.tmpdir(), `report-${Date.now()}.docx`)
 
@@ -62,10 +112,29 @@ app.post('/api/fill-template', async (req, res) => {
       return res.status(404).json({ error: 'Template not found' })
     }
 
-    log('Starting template fill with Node.js...')
+    // Try Python first (if available), fall back to Node.js
+    let usedPython = false
 
-    // Use Node.js to fill template instead of Python
-    await fillTemplate(templatePath, tmpOutputPath, surveyData)
+    try {
+      log('Attempting to use Python for template fill...')
+      const pythonCheck = spawnSync('python3', ['-c', 'import docx'], { encoding: 'utf-8' })
+
+      if (pythonCheck.status === 0) {
+        log('Python and docx module available, using Python script')
+        await fillTemplateWithPython(templatePath, tmpOutputPath, surveyData, log)
+        usedPython = true
+      } else {
+        log('Python docx module not available, using Node.js fallback')
+      }
+    } catch (pythonErr) {
+      log('Python not available, using Node.js fallback:', pythonErr.message)
+    }
+
+    // Fall back to Node.js if Python didn't work
+    if (!usedPython) {
+      log('Starting template fill with Node.js...')
+      await fillTemplate(templatePath, tmpOutputPath, surveyData)
+    }
 
     try {
       // Check if output file exists
