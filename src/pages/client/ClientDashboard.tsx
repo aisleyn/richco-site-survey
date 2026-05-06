@@ -51,11 +51,11 @@ export default function ClientDashboard() {
     return (
       <div className="relative min-h-screen overflow-hidden">
         <AnimatedBackground />
-        <div className="relative z-10 px-6 pt-8">
-          <div className="mb-4">
+        <div className="absolute inset-0 z-20 px-6 pt-8 pointer-events-none">
+          <div className="mb-4 pointer-events-auto">
             <BackButton label="Back to Dashboard" />
           </div>
-          <div className="flex items-center justify-center min-h-[calc(100vh-120px)]">
+          <div className="flex items-center justify-center min-h-screen pointer-events-auto">
             <div className="text-center max-w-md">
               <h1 className="text-4xl font-light text-white mb-4" style={{ fontFamily: '"Syne", sans-serif' }}>Access Restricted</h1>
               <p className="text-secondary mb-8">Your account does not have access to a project yet. Please contact support.</p>
