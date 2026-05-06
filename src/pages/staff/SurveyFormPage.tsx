@@ -9,7 +9,7 @@ import { createSurvey, addSurveyMedia, getSurveyById, updateSurvey } from '../..
 import { uploadFile } from '../../services/storage'
 import { MediaType } from '../../types'
 import type { Project, Survey } from '../../types'
-import { Card, Button, Input, Textarea, FileDropzone, Spinner, Select } from '../../components/ui'
+import { Card, Button, Input, Textarea, FileDropzone, Spinner, Select, BackButton } from '../../components/ui'
 
 const surveySchema = z.object({
   project_id: z.string().min(1, 'Project is required'),
@@ -165,6 +165,9 @@ export default function SurveyFormPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Surveys" />
+      </div>
       <h1 className="text-2xl sm:text-3xl font-bold text-white mb-8">
         {survey ? 'Edit Survey' : 'Create Site Survey'}
       </h1>
