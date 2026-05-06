@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { spawn } from 'child_process'
+import { spawn, spawnSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -23,6 +23,45 @@ function log(msg) {
   const line = `[${timestamp}] ${msg}\n`
   process.stderr.write(line)
   logStream.write(line)
+}
+
+// Ensure Python dependencies are installed on startup
+function ensurePythonDependencies() {
+  log('Checking Python dependencies...')
+
+  try {
+    // Try to import docx module
+    const checkResult = spawnSync('python3', ['-c', 'import docx'], {
+      encoding: 'utf-8',
+    })
+
+    if (checkResult.status === 0) {
+      log('Python dependencies already installed')
+      return
+    }
+
+    // If not installed, try to install requirements.txt
+    log('Installing Python dependencies...')
+    const requirementsPath = path.join(__dirname, 'requirements.txt')
+
+    if (fs.existsSync(requirementsPath)) {
+      const installResult = spawnSync('python3', ['-m', 'pip', 'install', '-r', requirementsPath], {
+        encoding: 'utf-8',
+        stdio: 'pipe'
+      })
+
+      if (installResult.status === 0) {
+        log('Python dependencies installed successfully')
+      } else {
+        log('Warning: Failed to install Python dependencies')
+        log('pip stderr:', installResult.stderr)
+      }
+    } else {
+      log('Warning: requirements.txt not found')
+    }
+  } catch (err) {
+    log('Error checking Python dependencies:', err.message)
+  }
 }
 
 app.use(cors())
@@ -236,6 +275,9 @@ app.use(express.static(path.join(__dirname, 'dist')))
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
+
+// Ensure Python dependencies before starting server
+ensurePythonDependencies()
 
 const server = app.listen(PORT, () => {
   log(`Template server running on http://localhost:${PORT}`)
