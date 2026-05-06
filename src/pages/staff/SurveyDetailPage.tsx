@@ -11,7 +11,7 @@ import { generateSurveyFromTemplate } from '../../lib/templateExport'
 import { captureWaypointLocation } from '../../lib/waypointScreenshot'
 import { apiFetch } from '../../lib/api'
 import type { Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia } from '../../types'
-import { Card, CardHeader, CardTitle, Button, Badge, Spinner, MediaPreviewModal, Input, Textarea } from '../../components/ui'
+import { Card, CardHeader, CardTitle, Button, Badge, Spinner, MediaPreviewModal, Input, Textarea, BackButton } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
 
 export default function SurveyDetailPage() {
@@ -433,6 +433,9 @@ export default function SurveyDetailPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Surveys" />
+      </div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">{survey.area_name}</h1>

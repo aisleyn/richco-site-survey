@@ -4,7 +4,7 @@ import { getProjectById } from '../../services/projects'
 import { getReportPagesByProject } from '../../services/reportPages'
 import { Flipbook } from '../../components/flipbook'
 import type { Project, ReportPage } from '../../types'
-import { Button, Spinner, Card } from '../../components/ui'
+import { Button, Spinner, Card, BackButton } from '../../components/ui'
 
 export default function FlipbookViewPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -51,6 +51,9 @@ export default function FlipbookViewPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Reports" />
+      </div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">{project.name} — Flipbook View</h1>

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getProjectById } from '../../services/projects'
 import { getSurveysByProject } from '../../services/surveys'
 import type { Project, Survey } from '../../types'
-import { Card, Button, Spinner, Badge } from '../../components/ui'
+import { Card, Button, Spinner, Badge, BackButton } from '../../components/ui'
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -38,6 +38,9 @@ export default function ProjectDetailPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <BackButton label="Back to Projects" />
+      </div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">{project.name}</h1>
