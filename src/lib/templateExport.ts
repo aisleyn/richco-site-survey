@@ -29,7 +29,11 @@ interface SurveyData {
 
 export async function generateSurveyFromTemplate(surveyData: SurveyData) {
   try {
-    const response = await fetch('http://localhost:3002/api/fill-template', {
+    // On localhost, use port 3002; on production/Azure, use current origin
+    const templateUrl = window.location.hostname === 'localhost'
+      ? 'http://localhost:3002'
+      : window.location.origin
+    const response = await fetch(`${templateUrl}/api/fill-template`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ surveyData }),

@@ -94,7 +94,7 @@ export async function getSurveyUpdates(
   surveyId: string,
 ): Promise<(SurveyUpdate & { media: SurveyUpdateMedia[] })[]> {
   const updates = await apiFetch<SurveyUpdate[]>(
-    `survey_updates?survey_id=eq.${surveyId}&order=updated_at.asc`
+    `survey_updates?survey_id=eq.${surveyId}&select=*,waypoint_location_json&order=updated_at.asc`
   )
 
   if (!updates || updates.length === 0) return []

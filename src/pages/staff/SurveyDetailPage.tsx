@@ -144,6 +144,10 @@ export default function SurveyDetailPage() {
       // Capture waypoint location but do NOT delete the waypoint
       await captureWaypointData()
 
+      // Reload survey updates to include captured waypoint data
+      const updates = await getSurveyUpdates(survey.id)
+      setSurveyUpdates(updates)
+
       addToast({
         type: 'success',
         message: 'Repair marked complete — waypoint remains on map',
@@ -169,6 +173,10 @@ export default function SurveyDetailPage() {
 
       // Capture waypoint location and delete the waypoint
       await captureWaypointData()
+
+      // Reload survey updates to include captured waypoint data
+      const updates = await getSurveyUpdates(survey.id)
+      setSurveyUpdates(updates)
 
       try {
         await deleteWaypointByLinkedSurvey(survey.id)

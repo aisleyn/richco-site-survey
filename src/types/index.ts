@@ -159,6 +159,7 @@ export interface SurveyUpdate {
   completion_date?: string | null
   updated_by: string | null
   updated_at: string
+  waypoint_location_json?: any
 }
 
 export interface SurveyUpdateMedia {
