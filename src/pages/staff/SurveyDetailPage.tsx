@@ -5,6 +5,7 @@ import { getSurveyById, getSurveyMedia, publishSurvey, archiveSurvey, deleteSurv
 import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdates'
 import { deleteWaypointByLinkedSurvey } from '../../services/mapWaypoints'
 import { getWaypointHistory } from '../../services/waypointRepairHistory'
+import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { uploadFile } from '../../services/storage'
 import { generateSurveyFromTemplate } from '../../lib/templateExport'
 import { captureWaypointLocation } from '../../lib/waypointScreenshot'
@@ -207,6 +208,16 @@ export default function SurveyDetailPage() {
 
       let imageMedia: string[] = []
       let scanMedia: string[] = []
+      let floorPlanMedia: string[] = []
+
+      // Always include floor plans
+      try {
+        const floorPlans = await getFloorPlanPagesByProject(survey.project_id)
+        floorPlanMedia = floorPlans.map((fp) => fp.image_url)
+        console.log('Floor plans loaded:', floorPlanMedia.length)
+      } catch (err) {
+        console.warn('Failed to load floor plans:', err)
+      }
 
       if (isInitialIssue && surveyUpdates.length > 0) {
         // Use media from survey updates only
@@ -224,6 +235,9 @@ export default function SurveyDetailPage() {
         imageMedia = media.filter((m) => m.media_type === 'image' || m.media_type === 'pdf').map((m) => m.file_url)
         scanMedia = media.filter((m) => m.media_type === '3d_scan').map((m) => m.file_url)
       }
+
+      // Combine floor plans with images (add them first)
+      imageMedia = [...floorPlanMedia, ...imageMedia]
 
       // Try to get waypoint location data
       let waypointLocation = cachedWaypointLocation
