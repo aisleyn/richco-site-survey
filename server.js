@@ -1,11 +1,11 @@
 import express from 'express'
 import cors from 'cors'
-import { spawn, spawnSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 import os from 'os'
 import dotenv from 'dotenv'
+import { fillTemplate } from './scripts/fillTemplateNode.js'
 
 // Load environment variables from .env file
 dotenv.config()
@@ -25,45 +25,6 @@ function log(msg) {
   logStream.write(line)
 }
 
-// Ensure Python dependencies are installed on startup
-function ensurePythonDependencies() {
-  log('Checking Python dependencies...')
-
-  try {
-    // Try to import docx module
-    const checkResult = spawnSync('python3', ['-c', 'import docx'], {
-      encoding: 'utf-8',
-    })
-
-    if (checkResult.status === 0) {
-      log('Python dependencies already installed')
-      return
-    }
-
-    // If not installed, try to install requirements.txt
-    log('Installing Python dependencies...')
-    const requirementsPath = path.join(__dirname, 'requirements.txt')
-
-    if (fs.existsSync(requirementsPath)) {
-      const installResult = spawnSync('python3', ['-m', 'pip', 'install', '-r', requirementsPath], {
-        encoding: 'utf-8',
-        stdio: 'pipe'
-      })
-
-      if (installResult.status === 0) {
-        log('Python dependencies installed successfully')
-      } else {
-        log('Warning: Failed to install Python dependencies')
-        log('pip stderr:', installResult.stderr)
-      }
-    } else {
-      log('Warning: requirements.txt not found')
-    }
-  } catch (err) {
-    log('Error checking Python dependencies:', err.message)
-  }
-}
-
 app.use(cors())
 app.use(express.json({ limit: '50mb' }))
 
@@ -80,6 +41,8 @@ const supabaseAdmin = supabaseUrl && supabaseServiceKey
   : null
 
 app.post('/api/fill-template', async (req, res) => {
+  const tmpOutputPath = path.join(os.tmpdir(), `report-${Date.now()}.docx`)
+
   try {
     const { surveyData } = req.body
 
@@ -89,18 +52,9 @@ app.post('/api/fill-template', async (req, res) => {
 
     log('Received request to fill template:', surveyData.projectName)
 
-    // Create a temporary directory for the output
-    const tmpDir = os.tmpdir()
-    const outputFileName = `report-${Date.now()}.docx`
-    const outputPath = path.join(tmpDir, outputFileName)
-
-    // Paths
     const templatePath = path.join(__dirname, 'public', 'Survey_Report_Template.docx')
-    const scriptPath = path.join(__dirname, 'scripts', 'fill_template.py')
-
     log('Template path:', templatePath)
-    log('Script path:', scriptPath)
-    log('Output path:', outputPath)
+    log('Output path:', tmpOutputPath)
 
     // Verify template exists
     if (!fs.existsSync(templatePath)) {
@@ -108,89 +62,51 @@ app.post('/api/fill-template', async (req, res) => {
       return res.status(404).json({ error: 'Template not found' })
     }
 
-    log('Starting Python process...')
+    log('Starting template fill with Node.js...')
 
-    // Call Python script with template and output paths only
-    // Data will be passed via stdin to avoid CLI arg size issues
-    const args = [scriptPath, templatePath, outputPath]
-    log('Spawning Python with args:', args)
+    // Use Node.js to fill template instead of Python
+    await fillTemplate(templatePath, tmpOutputPath, surveyData)
 
-    const python = spawn('python3', args, {
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
-
-    let stdout = ''
-    let stderr = ''
-
-    // Send survey data to Python via stdin as soon as process starts
-    const surveyDataJson = JSON.stringify(surveyData)
-    log('Survey data size:', surveyDataJson.length, 'bytes')
-
-    python.stdin.write(surveyDataJson)
-    python.stdin.end()
-
-    python.stdout.on('data', (data) => {
-      stdout += data.toString()
-      log('Python stdout:', data.toString())
-    })
-
-    python.stderr.on('data', (data) => {
-      stderr += data.toString()
-      log('Python stderr:', data.toString())
-    })
-
-    python.on('error', (err) => {
-      log('Failed to spawn Python:', err.message)
-      log('Error code:', err.code)
-      log('Error details:', err)
-      res.status(500).json({ error: `Failed to spawn Python: ${err.message}` })
-    })
-
-    python.on('close', (code) => {
-      log('Python process closed with code:', code)
-      log('Python stdout:', stdout)
-      log('Python stderr:', stderr)
-
-      if (code !== 0) {
-        log('Python error - exit code:', code)
-        log('Error output:', stderr)
-        return res.status(500).json({ error: `Template generation failed: ${stderr}` })
+    try {
+      // Check if output file exists
+      if (!fs.existsSync(tmpOutputPath)) {
+        log('ERROR: Output file does not exist:', tmpOutputPath)
+        return res.status(500).json({ error: `Output file not created: ${tmpOutputPath}` })
       }
 
-      try {
-        // Check if output file exists
-        if (!fs.existsSync(outputPath)) {
-          log('ERROR: Output file does not exist:', outputPath)
-          return res.status(500).json({ error: `Output file not created: ${outputPath}` })
-        }
+      // Read the generated file
+      const fileContent = fs.readFileSync(tmpOutputPath)
+      log('Output file size:', fileContent.length, 'bytes')
 
-        // Read the generated file
-        const fileContent = fs.readFileSync(outputPath)
-        log('Output file size:', fileContent.length, 'bytes')
-
-        if (fileContent.length === 0) {
-          log('ERROR: Output file is empty')
-          return res.status(500).json({ error: 'Generated file is empty' })
-        }
-
-        // Clean up temp file
-        fs.unlinkSync(outputPath)
-        log('Output file cleaned up')
-
-        // Send file as response
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        res.setHeader('Content-Disposition', `attachment; filename="${surveyData.projectName}_${surveyData.areaName}_Report.docx"`)
-        log('Sending response with file')
-        res.send(fileContent)
-      } catch (err) {
-        log('File read/send error:', err.message)
-        log('Full error:', err)
-        res.status(500).json({ error: `Failed to send file: ${err.message}` })
+      if (fileContent.length === 0) {
+        log('ERROR: Output file is empty')
+        return res.status(500).json({ error: 'Generated file is empty' })
       }
-    })
+
+      // Send file as response
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+      res.setHeader('Content-Disposition', `attachment; filename="${surveyData.projectName}_${surveyData.areaName}_Report.docx"`)
+      log('Sending response with file')
+      res.send(fileContent)
+    } catch (err) {
+      log('File read/send error:', err.message)
+      log('Full error:', err)
+      res.status(500).json({ error: `Failed to send file: ${err.message}` })
+    }
   } catch (error) {
-    log('Error:', error)
-    res.status(500).json({ error: error.message })
+    log('Template fill error:', error.message)
+    log('Full error:', error)
+    res.status(500).json({ error: `Template generation failed: ${error.message}` })
+  } finally {
+    // Clean up temp file
+    try {
+      if (fs.existsSync(tmpOutputPath)) {
+        fs.unlinkSync(tmpOutputPath)
+        log('Temp file cleaned up')
+      }
+    } catch (err) {
+      log('Warning: Could not clean up temp file:', err.message)
+    }
   }
 })
 
@@ -275,9 +191,6 @@ app.use(express.static(path.join(__dirname, 'dist')))
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'))
 })
-
-// Ensure Python dependencies before starting server
-ensurePythonDependencies()
 
 const server = app.listen(PORT, () => {
   log(`Template server running on http://localhost:${PORT}`)
