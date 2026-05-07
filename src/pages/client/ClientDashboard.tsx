@@ -33,6 +33,7 @@ export default function ClientDashboard() {
       return
     }
     try {
+      console.log('Profile data:', profile)
       console.log('Loading projects for client:', profile.id)
       let allProjects: Project[] = []
 
@@ -43,9 +44,12 @@ export default function ClientDashboard() {
         .eq('client_id', profile.id)
         .eq('archived', false)
 
+      console.log('Direct projects query result:', { directProjects, directError })
+
       if (directError) {
         console.error('Direct projects error:', directError)
       } else if (directProjects) {
+        console.log('Direct projects found:', directProjects.length)
         allProjects = [...(directProjects || [])]
       }
 
@@ -57,18 +61,26 @@ export default function ClientDashboard() {
           .select('project_id')
           .eq('vendor_id', profile.vendor_id)
 
+        console.log('Vendor projects query result:', { vendorProjects, vendorError })
+
         if (vendorError) {
           console.error('Vendor projects error:', vendorError)
         } else if (vendorProjects && vendorProjects.length > 0) {
+          console.log('Vendor projects found:', vendorProjects.length)
           // Fetch the actual project details
           const projectIds = vendorProjects.map((vp: any) => vp.project_id)
-          const { data: vendorProjectDetails } = await supabase
+          console.log('Project IDs to fetch:', projectIds)
+
+          const { data: vendorProjectDetails, error: detailsError } = await supabase
             .from('projects')
             .select('*')
             .in('id', projectIds)
             .eq('archived', false)
 
+          console.log('Vendor project details result:', { vendorProjectDetails, detailsError })
+
           if (vendorProjectDetails) {
+            console.log('Vendor project details found:', vendorProjectDetails.length)
             // Merge with direct projects, avoiding duplicates
             const existingIds = new Set(allProjects.map(p => p.id))
             allProjects = [
@@ -76,7 +88,11 @@ export default function ClientDashboard() {
               ...vendorProjectDetails.filter(p => !existingIds.has(p.id))
             ]
           }
+        } else {
+          console.log('No vendor projects found for vendor:', profile.vendor_id)
         }
+      } else {
+        console.log('User has no vendor_id assigned')
       }
 
       console.log('All projects loaded:', allProjects)
