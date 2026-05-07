@@ -167,6 +167,19 @@ export default function ClientManagementPage() {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       }
+
+      // Check if link already exists
+      const existingRes = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects?vendor_id=eq.${selectedClientForProject}&project_id=eq.${selectedProject}`,
+        { headers }
+      )
+      const existing = await existingRes.json()
+
+      if (Array.isArray(existing) && existing.length > 0) {
+        alert('This company is already linked to this project')
+        return
+      }
+
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendor_projects`, {
         method: 'POST',
         headers,
@@ -177,12 +190,17 @@ export default function ClientManagementPage() {
       })
 
       if (response.ok) {
+        alert('Company linked to project successfully')
         setSelectedClientForProject('')
         setSelectedProject('')
         loadData()
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.message || 'Failed to link company to project'}`)
       }
     } catch (err) {
       console.error('Failed to link client to project', err)
+      alert('Failed to link company to project')
     }
   }
 
