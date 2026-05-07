@@ -183,68 +183,68 @@ export default function ClientFloorPlanPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div>
       <div className="mb-4">
         <BackButton label="Back to Dashboard" />
       </div>
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Floor Plan Map</h1>
-        {activePage && (
-          <p className="text-secondary mt-2 text-sm sm:text-base">
-            {activePage.label || `Floor Plan ${activePage.page_number}`}
-          </p>
-        )}
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Floor Plan Map</h1>
+            <p className="text-secondary mt-2 text-sm sm:text-base">
+              {waypoints.length} repair location{waypoints.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {activePage && (
-        <div style={{ height: '500px' }}>
-          <InteractiveMap
-            imageUrl={activePage.image_url}
-            waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
-            isEditable={false}
-            onWaypointClick={handleWaypointClick}
-          />
+      {floorPlanPages.length > 0 && (
+        <div className="space-y-4">
+          {floorPlanPages.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {floorPlanPages.map((page) => (
+                <Button
+                  key={page.id}
+                  variant={activePageId === page.id ? 'primary' : 'secondary'}
+                  onClick={() => setActivePageId(page.id)}
+                  className="text-sm"
+                >
+                  {page.label || `Floor Plan ${page.page_number}`}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {projects.length > 1 && (
+            <div className="flex flex-wrap gap-2">
+              {projects.map((p) => (
+                <Button
+                  key={p.id}
+                  onClick={() => setCurrentProjectId(p.id)}
+                  variant={currentProjectId === p.id ? 'primary' : 'secondary'}
+                  className="text-sm"
+                >
+                  {p.name}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {activePage && (
+            <div style={{ height: '500px' }}>
+              <InteractiveMap
+                imageUrl={activePage.image_url}
+                waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
+                isEditable={false}
+                onWaypointClick={handleWaypointClick}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {floorPlanPages.length > 1 && (
-        <Card className="p-4">
-          <p className="text-sm text-secondary mb-3">View Floor Plan:</p>
-          <div className="flex gap-2 flex-wrap">
-            {floorPlanPages.map((page) => (
-              <Button
-                key={page.id}
-                onClick={() => setActivePageId(page.id)}
-                variant={activePageId === page.id ? 'primary' : 'secondary'}
-                size="sm"
-              >
-                {page.label || `Floor Plan ${page.page_number}`}
-              </Button>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {projects.length > 1 && (
-        <Card className="p-4">
-          <p className="text-sm text-secondary mb-3">View Project:</p>
-          <div className="flex gap-2 flex-wrap">
-            {projects.map((p) => (
-              <Button
-                key={p.id}
-                onClick={() => setCurrentProjectId(p.id)}
-                variant={currentProjectId === p.id ? 'primary' : 'secondary'}
-                size="sm"
-              >
-                {p.name}
-              </Button>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {waypoints.length > 0 && (
-        <Card>
+      {waypoints.length > 0 && floorPlanPages.length > 0 && (
+        <Card className="mt-8">
           <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Repair Locations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {waypoints
