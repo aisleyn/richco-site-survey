@@ -54,6 +54,7 @@ export default function ClientDashboard() {
       }
 
       // Load projects through vendor/company assignment if user has vendor_id
+      console.log('Checking vendor_id:', profile.vendor_id, 'Type:', typeof profile.vendor_id)
       if (profile.vendor_id) {
         console.log('Loading projects for vendor:', profile.vendor_id)
         const { data: vendorProjects, error: vendorError } = await supabase
@@ -62,6 +63,8 @@ export default function ClientDashboard() {
           .eq('vendor_id', profile.vendor_id)
 
         console.log('Vendor projects query result:', { vendorProjects, vendorError })
+        console.log('Vendor projects raw data:', vendorProjects)
+        console.log('Vendor projects length:', vendorProjects?.length)
 
         if (vendorError) {
           console.error('Vendor projects error:', vendorError)
