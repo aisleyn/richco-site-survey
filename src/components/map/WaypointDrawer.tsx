@@ -107,8 +107,8 @@ export function WaypointDrawer({
 
 
   const handleStatusChange = async (newStatus: string) => {
-    // Require survey for in_progress or completed status changes
-    if (newStatus === 'in_progress' || newStatus === 'completed') {
+    // Require survey for in_progress, temporary_repair, or permanent_repair status changes
+    if (newStatus === 'in_progress') {
       if (!waypoint?.linked_survey_id) {
         addToast({
           type: 'error',
@@ -117,6 +117,19 @@ export function WaypointDrawer({
         return
       }
       // Open modal to submit survey update
+      setPendingStatus(newStatus as WaypointStatus)
+      setIsSurveyModalOpen(true)
+      return
+    }
+    if (newStatus === 'temporary_repair' || newStatus === 'permanent_repair') {
+      if (!waypoint?.linked_survey_id) {
+        addToast({
+          type: 'error',
+          message: 'Please link a survey before marking as ' + newStatus.replace('_', ' '),
+        })
+        return
+      }
+      // Open modal to submit completion
       setPendingStatus(newStatus as WaypointStatus)
       setIsSurveyModalOpen(true)
       return
@@ -158,6 +171,23 @@ export function WaypointDrawer({
       await onSurveyLink(surveyId || null)
     } catch (err) {
       console.error('Failed to link survey:', err)
+    }
+  }
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'needs_repair':
+        return 'Needs Repair'
+      case 'in_progress':
+        return 'In Progress'
+      case 'temporary_repair':
+        return 'Temporarily Completed'
+      case 'permanent_repair':
+        return 'Permanently Completed'
+      case 'completed':
+        return 'Completed'
+      default:
+        return status.replace('_', ' ')
     }
   }
 
@@ -227,7 +257,7 @@ export function WaypointDrawer({
         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
       >
         {/* Header */}
-        <div className="bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
+        <div className="bg-soft-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
           <div className="flex-1">
             {editingName ? (
               <div className="flex gap-2 mb-2">
@@ -268,7 +298,7 @@ export function WaypointDrawer({
               </div>
             )}
             <Badge variant={waypoint.status} className="mt-1">
-              {waypoint.status.replace('_', ' ')}
+              {getStatusLabel(waypoint.status)}
             </Badge>
           </div>
           <div className="flex gap-2">
@@ -302,7 +332,8 @@ export function WaypointDrawer({
                 options={[
                   { value: 'needs_repair', label: 'Needs Repair' },
                   { value: 'in_progress', label: 'In Progress' },
-                  { value: 'completed', label: 'Completed' },
+                  { value: 'temporary_repair', label: 'Temporarily Completed' },
+                  { value: 'permanent_repair', label: 'Permanently Completed' },
                 ]}
               />
               {statusChanging && <Spinner size="sm" className="mt-2" />}
@@ -611,13 +642,14 @@ export function WaypointDrawer({
         />
       )}
 
-      {/* Completion Modal (Completed Only) */}
-      {survey && pendingStatus === 'completed' && isSurveyModalOpen && (
+      {/* Completion Modal (Temporary & Permanent Repairs) */}
+      {survey && (pendingStatus === 'temporary_repair' || pendingStatus === 'permanent_repair') && isSurveyModalOpen && (
         <WaypointCompletionModal
           isOpen={true}
           survey={survey}
           waypoint={waypoint}
           projectId={projectId}
+          repairType={pendingStatus}
           onSubmit={handleSurveyUpdateSubmit}
           onClose={() => {
             setIsSurveyModalOpen(false)

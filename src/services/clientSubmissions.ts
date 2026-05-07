@@ -42,6 +42,15 @@ export async function updateSubmissionWaypoint(
   return data
 }
 
+export async function getClientSubmissionCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('client_submissions')
+    .select('*', { count: 'exact', head: true })
+
+  if (error) throw error
+  return count || 0
+}
+
 async function notifyStaffOfSubmission(projectId: string, submission: ClientSubmission): Promise<void> {
   try {
     // Get project details

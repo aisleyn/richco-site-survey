@@ -9,15 +9,34 @@ import {
   deleteWaypoint,
 } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
+import { publishSurvey, archiveSurvey } from '../../services/surveys'
 import { useAuthStore } from '../../store/authStore'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import { PdfUploadModal } from '../../components/map/PdfUploadModal'
 import { WaypointDrawer } from '../../components/map/WaypointDrawer'
 import { WaypointInitialModal } from '../../components/map/WaypointInitialModal'
+import { StatusLegend } from '../../components/map/StatusLegend'
 import { Card, Button, Spinner, Input, BackButton } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
-import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
+import type { Project, MapWaypoint, FloorPlanPage, WaypointStatus } from '../../types'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
+
+const getStatusLabel = (status: string): string => {
+  switch (status) {
+    case 'needs_repair':
+      return 'Needs Repair'
+    case 'in_progress':
+      return 'In Progress'
+    case 'temporary_repair':
+      return 'Temporarily Completed'
+    case 'permanent_repair':
+      return 'Permanently Completed'
+    case 'completed':
+      return 'Completed'
+    default:
+      return status.replace('_', ' ')
+  }
+}
 
 export default function MapPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -36,6 +55,15 @@ export default function MapPage() {
   const [isInitialModalOpen, setIsInitialModalOpen] = useState(false)
   const [isPlacingWaypoint, setIsPlacingWaypoint] = useState(false)
   const [isMovingWaypoint, setIsMovingWaypoint] = useState(false)
+  const [selectedStatuses, setSelectedStatuses] = useState<WaypointStatus[]>([
+    'needs_repair',
+    'in_progress',
+    'temporary_repair',
+    'permanent_repair',
+  ])
+  const [expandedCategories, setExpandedCategories] = useState<Set<WaypointStatus>>(
+    new Set(['needs_repair', 'in_progress', 'temporary_repair', 'permanent_repair'])
+  )
   const phaserMapRef = useRef<PhaserMapHandle>(null)
 
   useEffect(() => {
@@ -163,6 +191,22 @@ export default function MapPage() {
         surveyId,
       )
       console.log('MapPage: status update succeeded, updated waypoint:', updated)
+
+      // If changing to temporary_repair or permanent_repair, also update survey status
+      if (surveyId && (newStatus === 'temporary_repair' || newStatus === 'permanent_repair')) {
+        try {
+          if (newStatus === 'temporary_repair') {
+            console.log('MapPage: publishing survey', surveyId)
+            await publishSurvey(surveyId, selectedWaypoint.project_id)
+          } else if (newStatus === 'permanent_repair') {
+            console.log('MapPage: archiving survey', surveyId)
+            await archiveSurvey(surveyId, selectedWaypoint.project_id)
+          }
+        } catch (err) {
+          console.warn('MapPage: failed to update survey status:', err)
+        }
+      }
+
       setWaypoints(waypoints.map((w) => (w.id === updated.id ? updated : w)))
       setSelectedWaypoint(updated)
       addToast({
@@ -287,6 +331,52 @@ export default function MapPage() {
     }
   }
 
+  const handleStatusToggle = (status: WaypointStatus) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    )
+  }
+
+  const filteredWaypoints = waypoints.filter((wp) => selectedStatuses.includes(wp.status))
+
+  const groupAndSortWaypoints = (wps: MapWaypoint[]) => {
+    const statusOrder: WaypointStatus[] = ['needs_repair', 'in_progress', 'temporary_repair', 'permanent_repair']
+    const grouped = new Map<WaypointStatus, MapWaypoint[]>()
+
+    statusOrder.forEach((status) => {
+      grouped.set(status, [])
+    })
+
+    wps.forEach((wp) => {
+      if (grouped.has(wp.status)) {
+        grouped.get(wp.status)!.push(wp)
+      }
+    })
+
+    // Sort each group by created_at descending (newest first)
+    grouped.forEach((items) => {
+      items.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime()
+        const dateB = new Date(b.created_at).getTime()
+        return dateB - dateA
+      })
+    })
+
+    return grouped
+  }
+
+  const groupedWaypoints = groupAndSortWaypoints(filteredWaypoints)
+
+  const toggleCategory = (status: WaypointStatus) => {
+    const newExpandedCategories = new Set(expandedCategories)
+    if (newExpandedCategories.has(status)) {
+      newExpandedCategories.delete(status)
+    } else {
+      newExpandedCategories.add(status)
+    }
+    setExpandedCategories(newExpandedCategories)
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -359,9 +449,24 @@ export default function MapPage() {
             <Button
               variant="secondary"
               onClick={() => phaserMapRef.current?.resetView()}
-              className="flex-1 xs:flex-none"
+              className="flex-1 xs:flex-none flex items-center justify-center gap-2"
             >
-              🏠 Reset View
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-white"
+              >
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+              </svg>
+              Reset View
             </Button>
           </div>
 
@@ -380,100 +485,124 @@ export default function MapPage() {
             </div>
           )}
 
-          <PhaserMap
-            ref={phaserMapRef}
-            imageUrl={floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''}
-            waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
-            isEditable={true}
-            isPlacingWaypoint={isPlacingWaypoint}
-            isMovingWaypoint={isMovingWaypoint}
-            onWaypointClick={handleWaypointClick}
-            onWaypointAdd={handleAddWaypoint}
-            onWaypointDrop={(id, x, y) => {
-              const wp = waypoints.find((w) => w.id === id)
-              if (wp && (wp.x_percent !== x || wp.y_percent !== y)) {
-                handleUpdateWaypoint({ ...wp, x_percent: x, y_percent: y })
-              }
-            }}
-            className="h-80 sm:h-[600px] border border-slate-200 rounded-lg overflow-hidden"
-          />
+          <div className="relative">
+            {floorPlanPages.length > 0 && (
+              <StatusLegend selectedStatuses={selectedStatuses} onStatusToggle={handleStatusToggle} />
+            )}
+            <PhaserMap
+              ref={phaserMapRef}
+              imageUrl={floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''}
+              waypoints={filteredWaypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
+              isEditable={true}
+              isPlacingWaypoint={isPlacingWaypoint}
+              isMovingWaypoint={isMovingWaypoint}
+              onWaypointClick={handleWaypointClick}
+              onWaypointAdd={handleAddWaypoint}
+              onWaypointDrop={(id, x, y) => {
+                const wp = waypoints.find((w) => w.id === id)
+                if (wp && (wp.x_percent !== x || wp.y_percent !== y)) {
+                  handleUpdateWaypoint({ ...wp, x_percent: x, y_percent: y })
+                }
+              }}
+              className="h-80 sm:h-[600px] border border-slate-200 rounded-lg overflow-hidden"
+            />
+          </div>
         </div>
       )}
 
       {/* Waypoints List */}
-      {waypoints.length > 0 && (
+      {filteredWaypoints.length > 0 && (
         <Card className="mt-8">
-          <h2 className="text-lg font-semibold text-white mb-4">Waypoints</h2>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
-            {waypoints.map((wp) => (
-              <div
-                key={wp.id}
-                className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200 cursor-pointer hover:bg-slate-100 transition"
-                onClick={() => handleWaypointClick(wp)}
-              >
-                <div className="flex-1">
-                  {editingAreaName === wp.id ? (
-                    <Input
-                      value={wp.area_name}
-                      onChange={(e) => {
-                        const newName = e.target.value
-                        setWaypoints(
-                          waypoints.map((w) =>
-                            w.id === wp.id ? { ...w, area_name: newName } : w,
-                          ),
-                        )
+          <h2 className="text-lg font-semibold text-white mb-4">Waypoints {selectedStatuses.length < 4 && `(${filteredWaypoints.length})`}</h2>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {Array.from(groupedWaypoints.entries()).map(([status, wps]) => (
+              wps.length > 0 && (
+                <div key={status}>
+                  <button
+                    onClick={() => toggleCategory(status)}
+                    className="w-full text-left mb-2 flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  >
+                    <span
+                      className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{
+                        backgroundColor:
+                          status === 'needs_repair'
+                            ? '#ef4444'
+                            : status === 'in_progress'
+                              ? '#fbbf24'
+                              : status === 'temporary_repair'
+                                ? '#3b82f6'
+                                : '#10b981',
                       }}
-                      onBlur={() => handleAreaNameChange(wp.id, wp.area_name)}
-                      onKeyDown={(e) => {
-                        e.stopPropagation()
-                        if (e.key === 'Enter') {
-                          handleAreaNameChange(wp.id, wp.area_name)
-                        }
-                      }}
-                      autoFocus
-                      className="max-w-xs"
-                      onClick={(e) => e.stopPropagation()}
                     />
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-black">{wp.area_name}</p>
-                        {floorPlanPages.length > 0 && wp.floor_plan_page_id && (
-                          <span className="text-xs bg-slate-300 text-slate-700 px-2 py-0.5 rounded">
-                            P{floorPlanPages.find(p => p.id === wp.floor_plan_page_id)?.page_number || '?'}
-                          </span>
-                        )}
+                    <h3 className="text-sm font-semibold text-white flex-1">
+                      {getStatusLabel(status)} ({wps.length})
+                    </h3>
+                    <span className="text-white text-xs">{expandedCategories.has(status) ? '▼' : '▶'}</span>
+                  </button>
+                  {expandedCategories.has(status) && (
+                    <div className="space-y-2 pl-4">
+                      {wps.map((wp) => (
+                      <div
+                        key={wp.id}
+                        className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200 cursor-pointer hover:bg-slate-100 transition"
+                        onClick={() => handleWaypointClick(wp)}
+                      >
+                        <div className="flex-1">
+                          {editingAreaName === wp.id ? (
+                            <Input
+                              value={wp.area_name}
+                              onChange={(e) => {
+                                const newName = e.target.value
+                                setWaypoints(
+                                  waypoints.map((w) =>
+                                    w.id === wp.id ? { ...w, area_name: newName } : w,
+                                  ),
+                                )
+                              }}
+                              onBlur={() => handleAreaNameChange(wp.id, wp.area_name)}
+                              onKeyDown={(e) => {
+                                e.stopPropagation()
+                                if (e.key === 'Enter') {
+                                  handleAreaNameChange(wp.id, wp.area_name)
+                                }
+                              }}
+                              autoFocus
+                              className="max-w-xs"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-black">{wp.area_name}</p>
+                                {floorPlanPages.length > 0 && wp.floor_plan_page_id && (
+                                  <span className="text-xs bg-slate-300 text-slate-700 px-2 py-0.5 rounded">
+                                    P{floorPlanPages.find(p => p.id === wp.floor_plan_page_id)?.page_number || '?'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-secondary">
+                                ({wp.x_percent.toFixed(1)}%, {wp.y_percent.toFixed(1)}%)
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleWaypointDelete(wp.id)
+                          }}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                          aria-label="Delete waypoint"
+                        >
+                          🗑
+                        </button>
                       </div>
-                      <p className="text-xs text-secondary">
-                        {wp.status.replace('_', ' ')} • ({wp.x_percent.toFixed(1)}%, {wp.y_percent.toFixed(1)}%)
-                      </p>
-                    </>
+                    ))}
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className="inline-block w-3 h-3 rounded-full"
-                    style={{
-                      backgroundColor:
-                        wp.status === 'needs_repair'
-                          ? '#ef4444'
-                          : wp.status === 'in_progress'
-                            ? '#fbbf24'
-                            : '#10b981',
-                    }}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleWaypointDelete(wp.id)
-                    }}
-                    className="text-red-500 hover:text-red-700 transition-colors p-1"
-                    aria-label="Delete waypoint"
-                  >
-                    🗑
-                  </button>
-                </div>
-              </div>
+              )
             ))}
           </div>
         </Card>

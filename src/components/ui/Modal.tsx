@@ -21,8 +21,8 @@ export function Modal({ isOpen, onClose, title, children, className, size = 'md'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className={clsx('bg-surface rounded-lg shadow-lg w-full mx-auto', maxWidthClass, className)}>
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-200">
+      <div className={clsx('rounded-lg shadow-lg w-full mx-auto', maxWidthClass, className)} style={{ backgroundColor: '#282828' }}>
+        <div className="flex items-center justify-between p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}

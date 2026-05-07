@@ -4,16 +4,19 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { supabase } from '../../lib/supabase'
-import { getProjects, createProject } from '../../services/projects'
-import type { Project, ProjectFormValues } from '../../types'
-import { Card, Button, Input, Modal, EmptyState, SkeletonGrid, BackButton } from '../../components/ui'
+import { getProjects, createProject, getClients } from '../../services/projects'
+import type { Project, ProjectFormValues, Profile } from '../../types'
+import { Card, Button, Input, Modal, EmptyState, SkeletonGrid, BackButton, Select } from '../../components/ui'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
+  client_id: z.string().min(1, 'Client is required'),
 })
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
+  const [clients, setClients] = useState<Profile[]>([])
+  const [clientMap, setClientMap] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,11 +37,22 @@ export default function ProjectsPage() {
   const loadData = async () => {
     try {
       setIsLoading(true)
-      const projectsData = await getProjects()
+      const [projectsData, clientsData] = await Promise.all([
+        getProjects(),
+        getClients(),
+      ])
       setProjects(projectsData)
+      setClients(clientsData)
+
+      const map = clientsData.reduce((acc, client) => {
+        acc[client.id] = client.email
+        return acc
+      }, {} as Record<string, string>)
+      setClientMap(map)
+
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects')
+      setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
     }
@@ -122,12 +136,12 @@ export default function ProjectsPage() {
       <div className="mb-4">
         <BackButton label="Back to Dashboard" />
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Projects</h1>
           <p className="text-secondary mt-1 text-sm sm:text-base">Manage your client projects</p>
         </div>
-        <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
+        <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto sm:mt-1">
           New Project
         </Button>
       </div>
@@ -158,13 +172,16 @@ export default function ProjectsPage() {
                   <Link key={project.id} to={`/staff/projects/${project.id}`}>
                     <Card className="card-hover cursor-pointer">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-white">{project.name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
                           <p className="text-xs sm:text-sm text-secondary mt-1">
                             Created {new Date(project.created_at).toLocaleDateString()}
                           </p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            Attached Client User: {project.client_id ? (clientMap[project.client_id] || 'unknown') : 'none'}
+                          </p>
                         </div>
-                        <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1">
+                        <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1 flex-shrink-0">
                           <button
                             onClick={(e) => handleArchiveProject(e, project.id, project.archived || false)}
                             className="text-amber-600 hover:text-amber-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
@@ -202,13 +219,16 @@ export default function ProjectsPage() {
                     <Link key={project.id} to={`/staff/projects/${project.id}`}>
                       <Card className="card-hover cursor-pointer bg-slate-50">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white">{project.name}</h3>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
                             <p className="text-xs sm:text-sm text-secondary mt-1">
                               Created {new Date(project.created_at).toLocaleDateString()}
                             </p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              Attached Client User: {project.client_id ? (clientMap[project.client_id] || 'unknown') : 'none'}
+                            </p>
                           </div>
-                          <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1">
+                          <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1 flex-shrink-0">
                             <button
                               onClick={(e) => handleArchiveProject(e, project.id, project.archived || false)}
                               className="text-blue-600 hover:text-blue-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
@@ -238,6 +258,22 @@ export default function ProjectsPage() {
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Project">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Project Name" error={errors.name?.message} {...register('name')} />
+          <div>
+            <Select
+              label="Link Client"
+              {...register('client_id')}
+              options={[
+                { value: '', label: 'Select a client...' },
+                ...clients.map((client) => ({
+                  value: client.id,
+                  label: client.full_name || client.email,
+                })),
+              ]}
+            />
+            {errors.client_id?.message && (
+              <p className="text-red-600 text-sm mt-1">{errors.client_id.message}</p>
+            )}
+          </div>
           <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting}>
             Create Project
           </Button>

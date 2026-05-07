@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import type { Project, ProjectFormValues } from '../types'
+import type { Project, ProjectFormValues, Profile } from '../types'
 
 export async function getProjects(): Promise<Project[]> {
   const { data, error } = await supabase
@@ -22,13 +22,25 @@ export async function getProjectById(id: string): Promise<Project> {
   return data
 }
 
+export async function getClients(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'client')
+    .neq('archived', true)
+    .order('full_name', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
 export async function createProject(values: ProjectFormValues): Promise<Project> {
   const { data, error } = await supabase
     .from('projects')
     .insert([
       {
         name: values.name,
-        client_id: 'f8c5ffd1-202b-4ade-94db-088494aa1ad5',
+        client_id: values.client_id || 'f8c5ffd1-202b-4ade-94db-088494aa1ad5',
       },
     ])
     .select()

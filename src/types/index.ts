@@ -2,7 +2,7 @@
 export type UserRole = 'richco_staff' | 'client'
 export type MediaType = 'image' | 'video' | '3d_scan' | 'pdf'
 export type SurveyStatus = 'draft' | 'published' | 'archived'
-export type WaypointStatus = 'needs_repair' | 'in_progress' | 'completed'
+export type WaypointStatus = 'needs_repair' | 'in_progress' | 'completed' | 'temporary_repair' | 'permanent_repair'
 export type WaypointPhotoType = 'before' | 'after' | 'progress' | 'general'
 
 export const UserRole = {
@@ -27,6 +27,8 @@ export const WaypointStatus = {
   NEEDS_REPAIR: 'needs_repair' as const,
   IN_PROGRESS: 'in_progress' as const,
   COMPLETED: 'completed' as const,
+  TEMPORARY_REPAIR: 'temporary_repair' as const,
+  PERMANENT_REPAIR: 'permanent_repair' as const,
 }
 
 // Database Models
@@ -187,6 +189,7 @@ export interface SurveyFormValues {
 
 export interface ProjectFormValues {
   name: string
+  client_id?: string
 }
 
 export interface ClientSubmissionFormValues {

@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { supabase } from '../../lib/supabase'
 import { getReportPagesByProject } from '../../services/reportPages'
 import { Flipbook } from '../../components/flipbook'
 import { Button, Spinner, BackButton } from '../../components/ui'
-import type { ReportPage } from '../../types'
+import type { ReportPage, Project } from '../../types'
 import AnimatedBackground from '../../components/dashboard/AnimatedBackground'
 
 export default function ClientDashboard() {
   const { profile } = useAuthStore()
   const [pages, setPages] = useState<ReportPage[]>([])
+  const [projects, setProjects] = useState<Project[]>([])
   const [stats, setStats] = useState({
     activeProjects: 0,
     surveysFiled: 0,
@@ -18,22 +20,59 @@ export default function ClientDashboard() {
   const isStaff = profile?.role === 'richco_staff'
 
   useEffect(() => {
-    if (profile?.project_id || isStaff) {
+    if (profile?.id) {
       loadData()
     } else {
       setIsLoading(false)
     }
-  }, [profile, isStaff])
+  }, [profile])
 
   const loadData = async () => {
-    if (!profile?.project_id) return
+    if (!profile?.id) {
+      console.log('No profile ID, skipping data load')
+      setIsLoading(false)
+      return
+    }
     try {
-      const data = await getReportPagesByProject(profile.project_id)
-      setPages(data)
-      setStats({
-        activeProjects: 1,
-        surveysFiled: data.length,
-      })
+      console.log('Loading projects for client:', profile.id)
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('client_id', profile.id)
+        .eq('archived', false)
+
+      console.log('Projects query result:', { projectsData, projectsError })
+
+      if (projectsError) {
+        console.error('Projects error:', projectsError)
+        throw projectsError
+      }
+
+      setProjects(projectsData || [])
+
+      if (projectsData && projectsData.length > 0) {
+        const allPages: ReportPage[] = []
+        for (const p of projectsData) {
+          try {
+            const data = await getReportPagesByProject(p.id)
+            allPages.push(...data)
+          } catch (err) {
+            console.error(`Failed to load reports for project ${p.id}:`, err)
+          }
+        }
+        setPages(allPages)
+        setStats({
+          activeProjects: projectsData.length,
+          surveysFiled: allPages.length,
+        })
+      } else {
+        setStats({
+          activeProjects: 0,
+          surveysFiled: 0,
+        })
+      }
+    } catch (err) {
+      console.error('Failed to load client data:', err)
     } finally {
       setIsLoading(false)
     }
@@ -47,24 +86,6 @@ export default function ClientDashboard() {
     )
   }
 
-  if (!profile?.project_id && !isStaff) {
-    return (
-      <div className="relative min-h-screen overflow-hidden">
-        <AnimatedBackground />
-        <div className="absolute inset-0 z-20 px-6 pt-8 pointer-events-none">
-          <div className="mb-4 pointer-events-auto">
-            <BackButton label="Back to Dashboard" />
-          </div>
-          <div className="flex items-center justify-center min-h-screen pointer-events-auto">
-            <div className="text-center max-w-md">
-              <h1 className="text-4xl font-light text-white mb-4" style={{ fontFamily: '"Syne", sans-serif' }}>Access Restricted</h1>
-              <p className="text-secondary mb-8">Your account does not have access to a project yet. Please contact support.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -74,13 +95,14 @@ export default function ClientDashboard() {
       <div className="fixed top-0 left-0 right-0 h-1 pointer-events-none" style={{ background: 'linear-gradient(to right, transparent, rgba(239, 68, 68, 0.5), transparent)', animation: 'scan-line 8s linear infinite', zIndex: 5 }}></div>
 
       <div className="relative z-10">
+
         {/* Hero Section */}
-        <div className="min-h-screen flex flex-col items-center justify-start px-6 pt-8">
+        <div className="flex flex-col items-center px-6 pt-12">
 
           {/* Main content */}
           <div className="max-w-2xl w-full text-center">
             {/* Logo */}
-            <img src="/richco-logo.png" alt="Richco" className="h-40 w-auto mx-auto mb-8" />
+            <img src="/richco-logo.png" alt="Richco" className="h-40 w-auto mx-auto mb-4" />
 
             {/* Headline */}
             <h1 className="text-6xl md:text-7xl font-light tracking-tight text-white mb-6" style={{ fontFamily: '"Syne", sans-serif' }}>
@@ -89,16 +111,23 @@ export default function ClientDashboard() {
 
             {/* Subtitle */}
             <p className="text-lg md:text-xl text-secondary mb-12 font-medium leading-relaxed">
-              Richco Site Surveys and Client Repair Requests
+              Richco Site Surveys and Repair Requests
             </p>
 
-            {/* CTA Button */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
               <Link to="/client/submit" className="w-full sm:w-auto">
-                <Button className="w-full px-8 py-3 bg-white text-black hover:bg-gray-100 font-medium rounded-lg transition-colors">
+                <Button className="px-8 py-3 font-medium rounded-lg transition-colors">
                   Submit Repair Request
                 </Button>
               </Link>
+              {projects.length > 0 && (
+                <Link to={`/client/map/${projects[0].id}`} className="w-full sm:w-auto">
+                  <Button className="px-8 py-3 font-medium rounded-lg transition-colors">
+                    View Floor Plan Map
+                  </Button>
+                </Link>
+              )}
             </div>
 
             {/* Floating stat nodes */}

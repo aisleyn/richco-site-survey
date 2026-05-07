@@ -23,6 +23,8 @@ import ClientDashboard from '../pages/client/ClientDashboard'
 import ClientProfilePage from '../pages/client/ProfilePage'
 import ClientSubmitPage from '../pages/client/ClientSubmitPage'
 import ClientMapPage from '../pages/client/ClientMapPage'
+import ClientFlipbookPage from '../pages/client/ClientFlipbookPage'
+import ClientFloorPlanPage from '../pages/client/ClientFloorPlanPage'
 
 export const router = createBrowserRouter([
   {
@@ -124,8 +126,16 @@ export const router = createBrowserRouter([
         element: <ClientMapPage />,
       },
       {
+        path: 'floor-plan',
+        element: <ClientFloorPlanPage />,
+      },
+      {
         path: 'submit',
         element: <ClientSubmitPage />,
+      },
+      {
+        path: 'flipbook',
+        element: <ClientFlipbookPage />,
       },
       {
         path: 'profile',

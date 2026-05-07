@@ -85,8 +85,8 @@ export default function ReportsPage() {
         <BackButton label="Back to Dashboard" />
       </div>
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">All Reports</h1>
-        <p className="text-secondary mt-2 text-sm sm:text-base">Flipbook reports by project</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Flipbook</h1>
+        <p className="text-secondary mt-2 text-sm sm:text-base">View all reports in an interactive flipbook</p>
       </div>
 
       {projects.length === 0 ? (

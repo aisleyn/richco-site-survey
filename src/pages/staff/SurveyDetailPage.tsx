@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
 import { getSurveyById, getSurveyMedia, publishSurvey, archiveSurvey, deleteSurvey, updateSurvey, addSurveyMedia } from '../../services/surveys'
 import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdates'
-import { deleteWaypointByLinkedSurvey } from '../../services/mapWaypoints'
+import { updateWaypointStatusByLinkedSurvey } from '../../services/mapWaypoints'
 import { getWaypointHistory } from '../../services/waypointRepairHistory'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { uploadFile } from '../../services/storage'
@@ -13,6 +13,7 @@ import { apiFetch } from '../../lib/api'
 import type { Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner, MediaPreviewModal, Input, Textarea, BackButton } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
+import { WaypointCompletionModal } from '../../components/map/WaypointCompletionModal'
 
 export default function SurveyDetailPage() {
   const { surveyId } = useParams<{ surveyId: string }>()
@@ -33,6 +34,8 @@ export default function SurveyDetailPage() {
   const [cachedWaypointLocation, setCachedWaypointLocation] = useState<any>(null)
   const [showRepairTypeModal, setShowRepairTypeModal] = useState(false)
   const [showConvertToPermanentModal, setShowConvertToPermanentModal] = useState(false)
+  const [pendingRepairType, setPendingRepairType] = useState<'temporary_repair' | 'permanent_repair' | null>(null)
+  const [linkedWaypoint, setLinkedWaypoint] = useState<any>(null)
 
   useEffect(() => {
     loadData()
@@ -134,24 +137,40 @@ export default function SurveyDetailPage() {
     }
   }
 
-  const handleTemporaryRepair = async () => {
-    if (!survey) return
+  const handleCompletionModalSubmit = async () => {
+    if (!survey || !pendingRepairType) return
     setIsPublishing(true)
-    setShowRepairTypeModal(false)
     try {
-      await publishSurvey(survey.id, survey.project_id)
-      setSurvey({ ...survey, status: 'published' })
+      const isTemporary = pendingRepairType === 'temporary_repair'
+      if (isTemporary) {
+        await publishSurvey(survey.id, survey.project_id)
+        setSurvey({ ...survey, status: 'published' })
+      } else {
+        await archiveSurvey(survey.id, survey.project_id)
+        setSurvey({ ...survey, status: 'archived' })
+      }
 
-      // Capture waypoint location but do NOT delete the waypoint
+      // Update waypoint status
+      await updateWaypointStatusByLinkedSurvey(survey.id, pendingRepairType)
+
+      // Capture waypoint location
       await captureWaypointData()
 
       // Reload survey updates to include captured waypoint data
       const updates = await getSurveyUpdates(survey.id)
       setSurveyUpdates(updates)
 
+      setPendingRepairType(null)
+      setLinkedWaypoint(null)
+      setShowRepairTypeModal(false)
+      setShowConvertToPermanentModal(false)
+
+      const message = pendingRepairType === 'temporary_repair'
+        ? 'Repair marked temporarily completed — waypoint stays on map as blue'
+        : 'Repair permanently completed — waypoint stays on map as green'
       addToast({
         type: 'success',
-        message: 'Repair marked complete — waypoint remains on map',
+        message,
       })
     } catch (err) {
       addToast({
@@ -163,40 +182,33 @@ export default function SurveyDetailPage() {
     }
   }
 
+  const handleTemporaryRepair = async () => {
+    if (!survey) return
+    // Get linked waypoint for modal
+    const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
+    const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
+    if (waypointUpdate?.waypoint_id) {
+      const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
+      if (waypoints && waypoints.length > 0) {
+        setLinkedWaypoint(waypoints[0])
+      }
+    }
+    setPendingRepairType('temporary_repair')
+  }
+
   const handlePermanentRepair = async () => {
     if (!survey) return
-    setIsPublishing(true)
-    setShowRepairTypeModal(false)
-    setShowConvertToPermanentModal(false)
-    try {
-      await archiveSurvey(survey.id, survey.project_id)
-      setSurvey({ ...survey, status: 'archived' })
-
-      // Capture waypoint location and delete the waypoint
-      await captureWaypointData()
-
-      // Reload survey updates to include captured waypoint data
-      const updates = await getSurveyUpdates(survey.id)
-      setSurveyUpdates(updates)
-
-      try {
-        await deleteWaypointByLinkedSurvey(survey.id)
-      } catch (err) {
-        console.warn('Failed to delete waypoint:', err)
+    // Get linked waypoint for modal
+    const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
+    const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
+    if (waypointUpdate?.waypoint_id) {
+      const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
+      if (waypoints && waypoints.length > 0) {
+        setLinkedWaypoint(waypoints[0])
       }
-
-      addToast({
-        type: 'success',
-        message: 'Repair permanently complete and waypoint removed',
-      })
-    } catch (err) {
-      addToast({
-        type: 'error',
-        message: 'Failed to complete repair',
-      })
-    } finally {
-      setIsPublishing(false)
     }
+    setPendingRepairType('permanent_repair')
+    setShowConvertToPermanentModal(false)
   }
 
   const handleDownloadReport = async () => {
@@ -458,8 +470,8 @@ export default function SurveyDetailPage() {
             </Button>
           )}
           {survey.status === 'published' && (
-            <Button variant="secondary" onClick={() => setShowConvertToPermanentModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
-              ✓ Mark as Permanent
+            <Button variant="secondary" onClick={handlePermanentRepair} isLoading={isPublishing} className="w-full xs:w-auto">
+              ✓ Mark as Permanently Completed
             </Button>
           )}
           <Button variant="danger" onClick={handleDelete} isLoading={isDeleting} className="w-full xs:w-auto">
@@ -837,17 +849,17 @@ export default function SurveyDetailPage() {
                 <p className="text-sm text-white mb-4">Choose whether this is a temporary or permanent repair completion.</p>
               </div>
               <div className="border border-slate-300 rounded-lg p-4 bg-slate-200">
-                <h4 className="font-semibold text-slate-900 mb-2">Temporary Repair</h4>
-                <p className="text-sm text-slate-700 mb-3">Report will be generated, but the waypoint will remain on the floor plan for future reference or follow-up.</p>
+                <h4 className="font-semibold text-slate-900 mb-2">Temporarily Completed</h4>
+                <p className="text-sm text-slate-700 mb-3">Report will be generated. The waypoint stays on the floor plan as a <strong>blue</strong> marker for future reference or follow-up.</p>
                 <Button variant="primary" onClick={handleTemporaryRepair} isLoading={isPublishing} className="w-full">
-                  Mark as Temporary
+                  Mark as Temporarily Completed
                 </Button>
               </div>
               <div className="border border-slate-300 rounded-lg p-4 bg-slate-200">
-                <h4 className="font-semibold text-slate-900 mb-2">Permanent Repair</h4>
-                <p className="text-sm text-slate-700 mb-3">Report will be generated and the waypoint will be removed from the floor plan.</p>
+                <h4 className="font-semibold text-slate-900 mb-2">Permanently Completed</h4>
+                <p className="text-sm text-slate-700 mb-3">Report will be generated. The waypoint stays on the floor plan as a <strong>green</strong> marker to indicate the repair is complete.</p>
                 <Button variant="primary" onClick={handlePermanentRepair} isLoading={isPublishing} className="w-full">
-                  Mark as Permanent
+                  Mark as Permanently Completed
                 </Button>
               </div>
               <Button variant="ghost" onClick={() => setShowRepairTypeModal(false)} className="w-full bg-slate-300 hover:bg-slate-400 text-slate-900">
@@ -858,28 +870,20 @@ export default function SurveyDetailPage() {
         </div>
       )}
 
-      {showConvertToPermanentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="max-w-md mx-4">
-            <CardHeader>
-              <CardTitle>Convert to Permanent Repair?</CardTitle>
-            </CardHeader>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-white mb-4">This will permanently complete the repair and remove the waypoint from the floor plan.</p>
-              </div>
-              <div className="border border-slate-300 rounded-lg p-4 bg-slate-200">
-                <p className="text-sm text-slate-700 mb-3">The report will remain available for download, and the waypoint will be permanently removed from the map.</p>
-                <Button variant="primary" onClick={handlePermanentRepair} isLoading={isPublishing} className="w-full">
-                  Mark as Permanent
-                </Button>
-              </div>
-              <Button variant="ghost" onClick={() => setShowConvertToPermanentModal(false)} className="w-full bg-slate-300 hover:bg-slate-400 text-slate-900">
-                Cancel
-              </Button>
-            </div>
-          </Card>
-        </div>
+      {linkedWaypoint && survey && (pendingRepairType === 'temporary_repair' || pendingRepairType === 'permanent_repair') && (
+        <WaypointCompletionModal
+          isOpen={true}
+          survey={survey}
+          waypoint={linkedWaypoint}
+          projectId={survey.project_id}
+          repairType={pendingRepairType}
+          onSubmit={handleCompletionModalSubmit}
+          onClose={() => {
+            setPendingRepairType(null)
+            setLinkedWaypoint(null)
+            setShowRepairTypeModal(false)
+          }}
+        />
       )}
     </div>
   )

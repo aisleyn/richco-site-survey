@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getProjectById } from '../../services/projects'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
+import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { InteractiveMap } from '../../components/map'
 import { WaypointDetailModal } from '../../components/map/WaypointDetailModal'
-import { Card, Spinner, BackButton } from '../../components/ui'
-import type { Project, MapWaypoint } from '../../types'
+import { Card, Spinner, BackButton, Button } from '../../components/ui'
+import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
 
 export default function ClientMapPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [project, setProject] = useState<Project | null>(null)
   const [waypoints, setWaypoints] = useState<MapWaypoint[]>([])
+  const [floorPlanPages, setFloorPlanPages] = useState<FloorPlanPage[]>([])
+  const [activePageId, setActivePageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
@@ -22,16 +25,23 @@ export default function ClientMapPage() {
   const loadData = async () => {
     if (!projectId) return
     try {
-      const [p, wp] = await Promise.all([
+      const [p, wp, pages] = await Promise.all([
         getProjectById(projectId),
-        getWaypointsByProject(projectId),
+        getWaypointsByProject(projectId).catch(() => []),
+        getFloorPlanPagesByProject(projectId).catch(() => []),
       ])
       setProject(p)
       setWaypoints(wp)
+      setFloorPlanPages(pages)
+      if (pages.length > 0) {
+        setActivePageId(pages[0].id)
+      }
     } finally {
       setIsLoading(false)
     }
   }
+
+  const activePage = floorPlanPages.find(p => p.id === activePageId)
 
   const handleWaypointClick = (waypoint: MapWaypoint) => {
     setSelectedWaypoint(waypoint)
@@ -58,11 +68,11 @@ export default function ClientMapPage() {
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Site Map</h1>
         <p className="text-secondary mt-2 text-sm sm:text-base">
-          {waypoints.length} repair location{waypoints.length !== 1 ? 's' : ''}
+          {activePage ? `${activePage.label || `Floor Plan ${activePage.page_number}`}` : ''}
         </p>
       </div>
 
-      {!project.map_image_url ? (
+      {floorPlanPages.length === 0 ? (
         <Card>
           <div className="text-center py-12">
             <p className="text-secondary mb-4">Floor plan not yet available</p>
@@ -72,20 +82,42 @@ export default function ClientMapPage() {
           </div>
         </Card>
       ) : (
-        <InteractiveMap
-          imageUrl={project.map_image_url}
-          waypoints={waypoints}
-          isEditable={false}
-          onWaypointClick={handleWaypointClick}
-        />
+        <>
+          {activePage && (
+            <InteractiveMap
+              imageUrl={activePage.image_url}
+              waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
+              isEditable={false}
+              onWaypointClick={handleWaypointClick}
+            />
+          )}
+
+          {floorPlanPages.length > 1 && (
+            <Card className="mt-6 p-4">
+              <p className="text-sm text-secondary mb-3">View Floor Plan:</p>
+              <div className="flex gap-2 flex-wrap">
+                {floorPlanPages.map((page) => (
+                  <Button
+                    key={page.id}
+                    onClick={() => setActivePageId(page.id)}
+                    variant={activePageId === page.id ? 'primary' : 'secondary'}
+                    size="sm"
+                  >
+                    {page.label || `Floor Plan ${page.page_number}`}
+                  </Button>
+                ))}
+              </div>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Repair Locations Summary */}
-      {waypoints.length > 0 && (
+      {activePage && waypoints.filter(wp => wp.floor_plan_page_id === activePageId).length > 0 && (
         <Card className="mt-8">
           <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Repair Locations</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {waypoints.map((wp) => (
+            {waypoints.filter(wp => wp.floor_plan_page_id === activePageId).map((wp) => (
               <button
                 key={wp.id}
                 onClick={() => handleWaypointClick(wp)}

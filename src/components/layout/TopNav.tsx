@@ -1,13 +1,14 @@
 import { useAuthStore } from '../../store/authStore'
 import { Badge } from '../ui'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import clsx from 'clsx'
+import { getClientSubmissionCount } from '../../services/clientSubmissions'
 
 const staffNavItems = [
   { label: 'Projects', href: '/staff/projects' },
   { label: 'Surveys', href: '/staff/surveys' },
-  { label: 'Reports', href: '/staff/reports' },
+  { label: 'Flipbook', href: '/staff/reports' },
   { label: 'Clients', href: '/staff/vendors' },
   { label: 'Accounts', href: '/staff/accounts' },
   { label: 'Settings', href: '/staff/settings' },
@@ -19,6 +20,15 @@ export function TopNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [submissionCount, setSubmissionCount] = useState(0)
+
+  useEffect(() => {
+    if (profile?.role === 'richco_staff') {
+      getClientSubmissionCount()
+        .then(setSubmissionCount)
+        .catch(console.error)
+    }
+  }, [profile])
 
   const handleSignOut = async () => {
     await signOut()
@@ -39,7 +49,15 @@ export function TopNav() {
   }
 
   const isStaff = profile?.role === 'richco_staff'
-  const navItems = isStaff ? staffNavItems : []
+  const isClient = profile?.role === 'client'
+
+  const clientNavItems = [
+    { label: 'Submit Repair Request', href: '/client/floor-plan', id: 'repair-requests' },
+    { label: 'Floor Plan Map', href: '/client/floor-plan', id: 'floor-plan' },
+    { label: 'Flipbook', href: '/client/flipbook', id: 'flipbook' },
+  ]
+
+  const navItems = isStaff ? staffNavItems : isClient ? clientNavItems : []
 
   return (
     <nav className="bg-surface border-b border-white/10 sticky top-0 z-50">
@@ -53,23 +71,39 @@ export function TopNav() {
           <h1 className="hidden md:block text-base lg:text-lg font-bold text-white" style={{ fontFamily: '"Syne", sans-serif' }}>Richco Site Survey</h1>
         </button>
 
-        {/* Center: Navigation (staff only, hidden on mobile) */}
-        {isStaff && (
+        {/* Center: Navigation (hidden on mobile) */}
+        {(isStaff || isClient) && (
           <div className="hidden md:flex items-center gap-1 ml-8">
             {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.href.split('/').slice(0, 3).join('/'))
+              let isActive = false
+              if (isStaff) {
+                isActive = location.pathname.startsWith(item.href.split('/').slice(0, 3).join('/'))
+              } else {
+                // For clients, check based on item id
+                if (item.id === 'repair-requests') {
+                  isActive = location.pathname === '/client/submit'
+                } else if (item.id === 'floor-plan') {
+                  isActive = location.pathname === '/client/floor-plan'
+                } else if (item.id === 'flipbook') {
+                  isActive = location.pathname === '/client/flipbook'
+                }
+              }
+              const isClientsLink = item.href === '/staff/vendors'
               return (
                 <button
                   key={item.href}
                   onClick={() => navigate(item.href)}
                   className={clsx(
-                    'px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-xs lg:text-sm',
+                    'px-3 lg:px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-xs lg:text-sm relative',
                     isActive
                       ? 'bg-elevated text-white'
                       : 'text-secondary hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {item.label}
+                  {isClientsLink && submissionCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
                 </button>
               )
             })}
@@ -107,7 +141,7 @@ export function TopNav() {
           )}
 
           {/* Mobile menu button */}
-          {isStaff && (
+          {(isStaff || isClient) && (
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -126,23 +160,39 @@ export function TopNav() {
       </div>
 
       {/* Mobile menu */}
-      {isStaff && mobileMenuOpen && (
+      {(isStaff || isClient) && mobileMenuOpen && (
         <div className="md:hidden border-t border-white/10 bg-elevated">
           <div className="px-4 py-2 space-y-1">
             {navItems.map((item) => {
-              const isActive = location.pathname.startsWith(item.href.split('/').slice(0, 3).join('/'))
+              let isActive = false
+              if (isStaff) {
+                isActive = location.pathname.startsWith(item.href.split('/').slice(0, 3).join('/'))
+              } else {
+                // For clients, check based on item id
+                if (item.id === 'repair-requests') {
+                  isActive = location.pathname === '/client/submit'
+                } else if (item.id === 'floor-plan') {
+                  isActive = location.pathname === '/client/floor-plan'
+                } else if (item.id === 'flipbook') {
+                  isActive = location.pathname === '/client/flipbook'
+                }
+              }
+              const isClientsLink = item.href === '/staff/vendors'
               return (
                 <button
                   key={item.href}
                   onClick={() => handleNavClick(item.href)}
                   className={clsx(
-                    'block w-full text-left px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm',
+                    'block w-full text-left px-4 py-2 rounded-lg font-medium transition-colors duration-200 text-sm relative',
                     isActive
                       ? 'bg-white/10 text-white'
                       : 'text-secondary hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {item.label}
+                  {isClientsLink && submissionCount > 0 && (
+                    <span className="absolute top-2 right-4 w-2 h-2 bg-red-500 rounded-full"></span>
+                  )}
                 </button>
               )
             })}

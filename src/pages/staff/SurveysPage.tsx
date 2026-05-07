@@ -10,8 +10,33 @@ export default function SurveysPage() {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [showArchivedSurveys, setShowArchivedSurveys] = useState(false)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set(['draft', 'published', 'archived'])
+  )
   const addToast = useToast()
+
+  const toggleCategory = (category: string) => {
+    const newExpandedCategories = new Set(expandedCategories)
+    if (newExpandedCategories.has(category)) {
+      newExpandedCategories.delete(category)
+    } else {
+      newExpandedCategories.add(category)
+    }
+    setExpandedCategories(newExpandedCategories)
+  }
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'draft':
+        return 'Active'
+      case 'published':
+        return 'Temporarily Completed'
+      case 'archived':
+        return 'Archived'
+      default:
+        return status
+    }
+  }
 
   useEffect(() => {
     loadSurveys()
@@ -87,91 +112,113 @@ export default function SurveysPage() {
         />
       ) : (
         <div className="space-y-6">
-          {/* Drafts */}
+          {/* Active */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-3">Drafts</h2>
-            {draftSurveys.length === 0 ? (
-              <Card>
-                <p className="text-center text-secondary py-8">No draft surveys</p>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {draftSurveys.map((survey) => (
-                  <Card key={survey.id} className="card-hover">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <Link to={`/staff/surveys/${survey.id}`} className="flex-1 cursor-pointer hover:opacity-80">
-                        <h3 className="text-base sm:text-lg font-semibold text-white">{survey.area_name}</h3>
-                        <p className="text-xs sm:text-sm text-secondary mt-1">
-                          {survey.project_name} • {new Date(survey.survey_date).toLocaleDateString()}
-                        </p>
-                      </Link>
-                      <div className="flex items-center gap-3">
-                        <Badge variant={survey.status}>{survey.status}</Badge>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDelete(survey.id)}
-                          isLoading={deletingId === survey.id}
-                          className="w-full xs:w-auto"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
+            <button
+              onClick={() => toggleCategory('draft')}
+              className="flex items-center gap-2 mb-3 text-white font-semibold hover:opacity-80 transition-opacity"
+            >
+              <span className="text-lg">{expandedCategories.has('draft') ? '▼' : '▶'}</span>
+              Active ({draftSurveys.length})
+            </button>
+            {expandedCategories.has('draft') && (
+              <>
+                {draftSurveys.length === 0 ? (
+                  <Card>
+                    <p className="text-center text-secondary py-8">No active surveys</p>
                   </Card>
-                ))}
-              </div>
+                ) : (
+                  <div className="space-y-4">
+                    {draftSurveys.map((survey) => (
+                      <Card key={survey.id} className="card-hover">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <Link to={`/staff/surveys/${survey.id}`} className="flex-1 cursor-pointer hover:opacity-80 flex items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-white">{survey.area_name}</h3>
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                          </Link>
+                          <p className="text-xs sm:text-sm text-secondary">
+                            {survey.project_name} • {new Date(survey.survey_date).toLocaleDateString()}
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <Badge variant={survey.status}>{survey.status}</Badge>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(survey.id)}
+                              isLoading={deletingId === survey.id}
+                              className="w-full xs:w-auto"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Temporary Repairs */}
+          {/* Temporarily Completed */}
           <div>
-            <h2 className="text-lg font-semibold text-white mb-3">Temporary Repairs</h2>
-            {temporarySurveys.length === 0 ? (
-              <Card>
-                <p className="text-center text-secondary py-8">No temporary repairs</p>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {temporarySurveys.map((survey) => (
-                  <Card key={survey.id} className="card-hover">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <Link to={`/staff/surveys/${survey.id}`} className="flex-1 cursor-pointer hover:opacity-80">
-                        <h3 className="text-base sm:text-lg font-semibold text-white">{survey.area_name}</h3>
-                        <p className="text-xs sm:text-sm text-secondary mt-1">
-                          {survey.project_name} • {new Date(survey.survey_date).toLocaleDateString()}
-                        </p>
-                      </Link>
-                      <div className="flex items-center gap-3">
-                        <Badge variant={survey.status}>{survey.status}</Badge>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDelete(survey.id)}
-                          isLoading={deletingId === survey.id}
-                          className="w-full xs:w-auto"
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
+            <button
+              onClick={() => toggleCategory('published')}
+              className="flex items-center gap-2 mb-3 text-white font-semibold hover:opacity-80 transition-opacity"
+            >
+              <span className="text-lg">{expandedCategories.has('published') ? '▼' : '▶'}</span>
+              Temporarily Completed ({temporarySurveys.length})
+            </button>
+            {expandedCategories.has('published') && (
+              <>
+                {temporarySurveys.length === 0 ? (
+                  <Card>
+                    <p className="text-center text-secondary py-8">No temporarily completed surveys</p>
                   </Card>
-                ))}
-              </div>
+                ) : (
+                  <div className="space-y-4">
+                    {temporarySurveys.map((survey) => (
+                      <Card key={survey.id} className="card-hover">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <Link to={`/staff/surveys/${survey.id}`} className="flex-1 cursor-pointer hover:opacity-80 flex items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-semibold text-white">{survey.area_name}</h3>
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          </Link>
+                          <p className="text-xs sm:text-sm text-secondary">
+                            {survey.project_name} • {new Date(survey.survey_date).toLocaleDateString()}
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <Badge variant={survey.status}>{getStatusLabel(survey.status)}</Badge>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              onClick={() => handleDelete(survey.id)}
+                              isLoading={deletingId === survey.id}
+                              className="w-full xs:w-auto"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Permanent Repairs */}
+          {/* Archived */}
           {permanentSurveys.length > 0 && (
             <div>
               <button
-                onClick={() => setShowArchivedSurveys(!showArchivedSurveys)}
+                onClick={() => toggleCategory('archived')}
                 className="flex items-center gap-2 mb-3 text-white font-semibold hover:opacity-80 transition-opacity"
               >
-                <span className="text-lg">{showArchivedSurveys ? '▼' : '▶'}</span>
-                Permanent Repairs ({permanentSurveys.length})
+                <span className="text-lg">{expandedCategories.has('archived') ? '▼' : '▶'}</span>
+                Permanently Completed ({permanentSurveys.length})
               </button>
-              {showArchivedSurveys && (
+              {expandedCategories.has('archived') && (
                 <div className="space-y-4">
                   {permanentSurveys.map((survey) => (
                     <Card key={survey.id} className="card-hover opacity-75">
@@ -183,7 +230,7 @@ export default function SurveysPage() {
                           </p>
                         </Link>
                         <div className="flex items-center gap-3">
-                          <Badge variant={survey.status}>{survey.status}</Badge>
+                          <Badge variant={survey.status}>{getStatusLabel(survey.status)}</Badge>
                           <Button
                             variant="danger"
                             size="sm"

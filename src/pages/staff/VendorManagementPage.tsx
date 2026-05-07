@@ -321,7 +321,7 @@ export default function ClientManagementPage() {
             <select
               value={selectedUserClientId}
               onChange={(e) => setSelectedUserClientId(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-black bg-white"
             >
               <option value="">Select client user...</option>
               {userClients.map((client) => (
@@ -334,7 +334,7 @@ export default function ClientManagementPage() {
             <select
               value={selectedVendorForAssignment}
               onChange={(e) => setSelectedVendorForAssignment(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-black bg-white"
             >
               <option value="">Select vendor...</option>
               {clients.map((client) => (
@@ -346,8 +346,8 @@ export default function ClientManagementPage() {
 
             <Button
               onClick={handleAssignVendor}
-              variant="primary"
-              className="w-full"
+              variant="secondary"
+              size="sm"
               isLoading={isAssigning}
             >
               Assign Vendor
@@ -361,7 +361,7 @@ export default function ClientManagementPage() {
             <select
               value={selectedClientForProject}
               onChange={(e) => setSelectedClientForProject(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-black bg-white"
             >
               <option value="">Select client...</option>
               {clients.map((client) => (
@@ -374,7 +374,7 @@ export default function ClientManagementPage() {
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-black bg-white"
             >
               <option value="">Select project...</option>
               {projects.map((project) => (
@@ -384,13 +384,13 @@ export default function ClientManagementPage() {
               ))}
             </select>
 
-            <Button onClick={handleLinkClientToProject} variant="primary" className="w-full">
+            <Button onClick={handleLinkClientToProject} variant="secondary" size="sm">
               Link Client to Project
             </Button>
           </div>
 
           {vendorProjects.length > 0 && (
-            <div className="mt-6 pt-6 border-t">
+            <div className="mt-6 pt-6 border-t" style={{ borderTopColor: '#4f4e4e' }}>
               <h3 className="font-semibold text-white mb-3">Linked Projects</h3>
               <div className="space-y-2">
                 {vendorProjects.map((vp) => {

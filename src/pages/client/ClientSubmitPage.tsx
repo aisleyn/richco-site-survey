@@ -114,19 +114,20 @@ export default function ClientSubmitPage() {
   }
 
   return (
-    <div>
-      <div className="mb-4">
-        <BackButton label="Back to Dashboard" />
-      </div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-8">Submit Repair Request</h1>
-
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-800">{error}</p>
+    <div className="flex flex-col items-center min-h-screen px-4 sm:px-6">
+      <div className="w-full max-w-2xl">
+        <div className="mb-4">
+          <BackButton label="Back to Dashboard" />
         </div>
-      )}
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-8">Submit Repair Request</h1>
 
-      <Card className="max-w-2xl">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        <Card>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Textarea
             label="Describe the repair needed"
@@ -162,6 +163,7 @@ export default function ClientSubmitPage() {
           </div>
         </form>
       </Card>
+      </div>
 
       {/* Waypoint Placement Modal */}
       {isShowingMapModal && mapImageUrl && (

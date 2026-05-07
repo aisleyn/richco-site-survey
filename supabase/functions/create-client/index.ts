@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const tempPassword = Math.random().toString(36).slice(-12);
+    const tempPassword = "Richco123";
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") || "",

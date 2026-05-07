@@ -25,6 +25,8 @@ export default function AccountsPage() {
   const [createdClient, setCreatedClient] = useState<ClientCreationResult | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [expandedClients, setExpandedClients] = useState(true)
+  const [expandedStaff, setExpandedStaff] = useState(true)
 
   useEffect(() => {
     loadClients()
@@ -162,8 +164,8 @@ export default function AccountsPage() {
             />
             <Button
               onClick={handleCreateClient}
-              variant="primary"
-              className="w-full"
+              variant="secondary"
+              size="sm"
               isLoading={isCreating}
             >
               Create Account
@@ -218,7 +220,14 @@ Please log in and change your password on first login.`}
 
       {/* Active Clients */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Active Clients</h2>
+        <button
+          onClick={() => setExpandedClients(!expandedClients)}
+          className="text-2xl font-bold text-white mb-4 hover:text-secondary transition-colors flex items-center justify-between"
+        >
+          Active Clients
+          <span className="text-sm ml-4">{expandedClients ? '▼' : '▶'}</span>
+        </button>
+        {expandedClients && (
         <div className="grid gap-4">
           {activeClients.length === 0 ? (
             <Card className="p-6">
@@ -245,11 +254,19 @@ Please log in and change your password on first login.`}
             ))
           )}
         </div>
+        )}
       </div>
 
       {/* Active Staff */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Active Staff</h2>
+        <button
+          onClick={() => setExpandedStaff(!expandedStaff)}
+          className="text-2xl font-bold text-white mb-4 hover:text-secondary transition-colors flex items-center justify-between"
+        >
+          Active Staff
+          <span className="text-sm ml-4">{expandedStaff ? '▼' : '▶'}</span>
+        </button>
+        {expandedStaff && (
         <div className="grid gap-4">
           {activeStaff.length === 0 ? (
             <Card className="p-6">
@@ -269,6 +286,7 @@ Please log in and change your password on first login.`}
             ))
           )}
         </div>
+        )}
       </div>
 
 
@@ -277,10 +295,10 @@ Please log in and change your password on first login.`}
         <div>
           <button
             onClick={() => setShowArchived(!showArchived)}
-            className="text-lg font-bold text-secondary hover:text-white transition-colors flex items-center gap-2"
+            className="text-lg font-bold text-secondary hover:text-white transition-colors flex items-center justify-between"
           >
-            <span>{showArchived ? '▼' : '▶'}</span>
             Archived Clients ({archivedClients.length})
+            <span className="text-sm">{showArchived ? '▼' : '▶'}</span>
           </button>
 
           {showArchived && (

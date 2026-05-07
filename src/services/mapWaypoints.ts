@@ -147,3 +147,24 @@ export async function deleteWaypointByLinkedSurvey(surveyId: string): Promise<vo
     throw err
   }
 }
+
+export async function updateWaypointStatusByLinkedSurvey(
+  surveyId: string,
+  newStatus: WaypointStatus,
+  userId?: string,
+): Promise<void> {
+  try {
+    console.log('updateWaypointStatusByLinkedSurvey: finding waypoint for survey', surveyId)
+    const waypoints = await apiFetch<MapWaypoint[]>(
+      `map_waypoints?linked_survey_id=eq.${surveyId}`
+    )
+    if (waypoints && waypoints.length > 0) {
+      const w = waypoints[0]
+      console.log('updateWaypointStatusByLinkedSurvey: found waypoint', w.id, 'updating to status:', newStatus)
+      await updateWaypointStatus(w.id, w.project_id, newStatus, userId)
+    }
+  } catch (err) {
+    console.error('updateWaypointStatusByLinkedSurvey error:', err)
+    throw err
+  }
+}

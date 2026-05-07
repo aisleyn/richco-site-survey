@@ -22,6 +22,7 @@ interface WaypointCompletionModalProps {
   projectId: string
   onSubmit: () => Promise<void>
   onClose: () => void
+  repairType?: 'temporary_repair' | 'permanent_repair'
 }
 
 export function WaypointCompletionModal({
@@ -31,6 +32,7 @@ export function WaypointCompletionModal({
   projectId,
   onSubmit,
   onClose,
+  repairType = 'permanent_repair',
 }: WaypointCompletionModalProps) {
   const { profile } = useAuthStore()
   const addToast = useToast()
@@ -104,7 +106,9 @@ export function WaypointCompletionModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <Card className="w-full max-w-2xl my-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Mark as Completed</h2>
+            <h2 className="text-2xl font-bold text-white">
+              Mark as {repairType === 'temporary_repair' ? 'Temporarily Completed' : 'Permanently Completed'}
+            </h2>
             <button
               onClick={onClose}
               className="text-slate-400 hover:text-slate-600"
@@ -145,7 +149,7 @@ export function WaypointCompletionModal({
                 isLoading={isSubmitting}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Submitting...' : 'Submit & Complete'}
+                {isSubmitting ? 'Submitting...' : `Submit ${repairType === 'temporary_repair' ? 'Temporarily' : 'Permanently'} Completed`}
               </Button>
               <Button
                 type="button"

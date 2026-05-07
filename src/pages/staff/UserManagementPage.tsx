@@ -29,10 +29,15 @@ export default function UserManagementPage() {
   const [selectedVendor, setSelectedVendor] = useState('')
   const [selectedRole, setSelectedRole] = useState('client')
   const [isUpdating, setIsUpdating] = useState(false)
+  const [showResetPasswordForm, setShowResetPasswordForm] = useState(false)
 
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    setShowResetPasswordForm(false)
+  }, [selectedUser])
 
   const loadData = async () => {
     try {
@@ -296,15 +301,16 @@ export default function UserManagementPage() {
         <div className="space-y-2">
           {/* Current user section */}
           {currentUser && (
-            <div className="mb-3 pb-3 border-b border-slate-200">
+            <div className="mb-3 pb-3">
               <p className="text-xs font-semibold text-secondary mb-2 uppercase">Your Account</p>
               <button
                 onClick={() => handleSelectUser(currentUser)}
                 className={`w-full text-left p-3 rounded-lg border transition-colors ${
                   selectedUser?.id === currentUser.id
-                    ? 'bg-brand-amber/10 border-brand-amber'
-                    : 'border-slate-200 hover:bg-slate-50'
+                    ? 'bg-brand-amber/10'
+                    : 'hover:bg-slate-50'
                 }`}
+                style={{ borderColor: '#4f4e4e' }}
               >
                 <p className="font-medium text-white text-sm">{currentUser.email}</p>
                 <p className="text-xs text-secondary">Staff</p>
@@ -314,7 +320,7 @@ export default function UserManagementPage() {
 
           {/* Staff users */}
           {staffUsers.length > 0 && (
-            <div className="mb-3 pb-3 border-b border-slate-200">
+            <div className="mb-3 pb-3">
               <p className="text-xs font-semibold text-secondary mb-2 uppercase">Staff</p>
               {staffUsers.map((user) => (
                 <button
@@ -322,9 +328,10 @@ export default function UserManagementPage() {
                   onClick={() => handleSelectUser(user)}
                   className={`w-full text-left p-3 rounded-lg border transition-colors mb-2 ${
                     selectedUser?.id === user.id
-                      ? 'bg-brand-amber/10 border-brand-amber'
-                      : 'border-slate-200 hover:bg-slate-50'
+                      ? 'bg-brand-amber/10'
+                      : 'hover:bg-slate-50'
                   }`}
+                  style={{ borderColor: '#4f4e4e' }}
                 >
                   <p className="font-medium text-white text-sm">{user.email}</p>
                   <p className="text-xs text-secondary">Staff Member</p>
@@ -341,9 +348,10 @@ export default function UserManagementPage() {
               onClick={() => handleSelectUser(user)}
               className={`w-full text-left p-3 rounded-lg border transition-colors ${
                 selectedUser?.id === user.id
-                  ? 'bg-brand-amber/10 border-brand-amber'
-                  : 'border-slate-200 hover:bg-slate-50'
+                  ? 'bg-brand-amber/10'
+                  : 'hover:bg-slate-50'
               }`}
+              style={{ borderColor: '#4f4e4e' }}
             >
               <p className="font-medium text-white text-sm">{user.email}</p>
               <p className="text-xs text-secondary">
@@ -423,33 +431,46 @@ export default function UserManagementPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-white mb-2 block">Reset Password</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="password"
-                    placeholder="New password (min 8 characters)"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                  <Button
-                    onClick={handleResetPassword}
-                    variant="primary"
-                    isLoading={isUpdating}
-                    disabled={newPassword.length < 8}
+                {!showResetPasswordForm ? (
+                  <button
+                    onClick={() => setShowResetPasswordForm(true)}
+                    className="text-xs font-medium text-secondary uppercase hover:text-white transition-colors"
                   >
-                    Reset
-                  </Button>
-                </div>
+                    Reset Password ?
+                  </button>
+                ) : (
+                  <div>
+                    <label className="text-xs font-medium text-secondary uppercase block mb-2">Reset Password</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="password"
+                        placeholder="New password (min 8 characters)"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
+                      <Button
+                        onClick={handleResetPassword}
+                        variant="secondary"
+                        isLoading={isUpdating}
+                        disabled={newPassword.length < 8}
+                        size="sm"
+                      >
+                        Reset
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {selectedRole !== 'richco_staff' && (
                 <div>
-                  <label className="text-sm font-medium text-white mb-2 block">Assign Vendor</label>
+                  <label className="text-sm font-medium text-white mb-2 block">Assign Company</label>
                   <div className="flex gap-2">
                     <select
                       value={selectedVendor}
                       onChange={(e) => setSelectedVendor(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+                      className="flex-1 px-3 py-2 border rounded-lg text-black bg-white"
+                      style={{ borderColor: '#4f4e4e' }}
                     >
                       <option value="">None</option>
                       {vendors.map((vendor) => (
@@ -460,8 +481,9 @@ export default function UserManagementPage() {
                     </select>
                     <Button
                       onClick={handleUpdateVendor}
-                      variant="primary"
+                      variant="secondary"
                       isLoading={isUpdating}
+                      size="sm"
                     >
                       Update
                     </Button>
@@ -475,22 +497,24 @@ export default function UserManagementPage() {
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-white bg-black"
+                    className="flex-1 px-3 py-2 border rounded-lg text-black bg-white"
+                    style={{ borderColor: '#4f4e4e' }}
                   >
                     <option value="client">Client</option>
                     <option value="richco_staff">Staff</option>
                   </select>
                   <Button
                     onClick={handleUpdateRole}
-                    variant="primary"
+                    variant="secondary"
                     isLoading={isUpdating}
+                    size="sm"
                   >
                     Update
                   </Button>
                 </div>
               </div>
 
-              <div className="border-t pt-4 space-y-2">
+              <div className="pt-4 space-y-2">
                 <Button
                   onClick={handleArchiveAccount}
                   variant={selectedUser.archived ? 'primary' : 'secondary'}

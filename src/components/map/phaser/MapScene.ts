@@ -510,6 +510,15 @@ export class MapScene extends Phaser.Scene {
         repeat: -1,
         ease: 'Linear',
       })
+    } else if (waypoint.status === 'temporary_repair') {
+      this.tweens.add({
+        targets: ring,
+        scaleX: { from: 1, to: 1.4 },
+        scaleY: { from: 1, to: 1.4 },
+        alpha: { from: 0.6, to: 0 },
+        duration: 1800,
+        repeat: -1,
+      })
     }
   }
 
@@ -519,6 +528,10 @@ export class MapScene extends Phaser.Scene {
         return 0xef4444
       case 'in_progress':
         return 0xfbbf24
+      case 'temporary_repair':
+        return 0x3b82f6
+      case 'permanent_repair':
+        return 0x10b981
       case 'completed':
         return 0x10b981
       default:
