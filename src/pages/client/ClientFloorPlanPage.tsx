@@ -183,148 +183,148 @@ export default function ClientFloorPlanPage() {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen px-4 sm:px-6">
-      <div className="w-full max-w-6xl">
-        <div className="mb-4">
-          <BackButton label="Back to Dashboard" />
-        </div>
-        <div className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Floor Plan Map</h1>
-          {activePage && (
-            <p className="text-secondary mt-2 text-sm sm:text-base">
-              {activePage.label || `Floor Plan ${activePage.page_number}`}
-            </p>
-          )}
-        </div>
-
+    <div className="space-y-8">
+      <div className="mb-4">
+        <BackButton label="Back to Dashboard" />
+      </div>
+      <div className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">{project.name} — Floor Plan Map</h1>
         {activePage && (
+          <p className="text-secondary mt-2 text-sm sm:text-base">
+            {activePage.label || `Floor Plan ${activePage.page_number}`}
+          </p>
+        )}
+      </div>
+
+      {activePage && (
+        <div style={{ height: '500px' }}>
           <InteractiveMap
             imageUrl={activePage.image_url}
             waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
             isEditable={false}
             onWaypointClick={handleWaypointClick}
           />
-        )}
+        </div>
+      )}
 
-        {floorPlanPages.length > 1 && (
-          <Card className="mt-6 p-4">
-            <p className="text-sm text-secondary mb-3">View Floor Plan:</p>
-            <div className="flex gap-2 flex-wrap">
-              {floorPlanPages.map((page) => (
-                <Button
-                  key={page.id}
-                  onClick={() => setActivePageId(page.id)}
-                  variant={activePageId === page.id ? 'primary' : 'secondary'}
-                  size="sm"
+      {floorPlanPages.length > 1 && (
+        <Card className="p-4">
+          <p className="text-sm text-secondary mb-3">View Floor Plan:</p>
+          <div className="flex gap-2 flex-wrap">
+            {floorPlanPages.map((page) => (
+              <Button
+                key={page.id}
+                onClick={() => setActivePageId(page.id)}
+                variant={activePageId === page.id ? 'primary' : 'secondary'}
+                size="sm"
+              >
+                {page.label || `Floor Plan ${page.page_number}`}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {projects.length > 1 && (
+        <Card className="p-4">
+          <p className="text-sm text-secondary mb-3">View Project:</p>
+          <div className="flex gap-2 flex-wrap">
+            {projects.map((p) => (
+              <Button
+                key={p.id}
+                onClick={() => setCurrentProjectId(p.id)}
+                variant={currentProjectId === p.id ? 'primary' : 'secondary'}
+                size="sm"
+              >
+                {p.name}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {waypoints.length > 0 && (
+        <Card>
+          <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Repair Locations</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {waypoints
+              .filter(wp => wp.floor_plan_page_id === activePageId)
+              .map((wp) => (
+                <button
+                  key={wp.id}
+                  onClick={() => handleWaypointClick(wp)}
+                  className="text-left p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition cursor-pointer"
                 >
-                  {page.label || `Floor Plan ${page.page_number}`}
-                </Button>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {projects.length > 1 && (
-          <Card className="mt-6 p-4">
-            <p className="text-sm text-secondary mb-3">View Project:</p>
-            <div className="flex gap-2 flex-wrap">
-              {projects.map((p) => (
-                <Button
-                  key={p.id}
-                  onClick={() => setCurrentProjectId(p.id)}
-                  variant={currentProjectId === p.id ? 'primary' : 'secondary'}
-                  size="sm"
-                >
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {waypoints.length > 0 && (
-          <Card className="mt-8">
-            <h2 className="text-base sm:text-lg font-semibold text-white mb-4">Repair Locations</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {waypoints
-                .filter(wp => wp.floor_plan_page_id === activePageId)
-                .map((wp) => (
-                  <button
-                    key={wp.id}
-                    onClick={() => handleWaypointClick(wp)}
-                    className="text-left p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 transition cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium text-white">{wp.area_name}</p>
-                        <p className="text-xs text-secondary mt-1">
-                          {wp.status.replace('_', ' ')}
-                        </p>
-                      </div>
-                      <span
-                        className="inline-block w-3 h-3 rounded-full mt-1"
-                        style={{
-                          backgroundColor:
-                            wp.status === 'needs_repair'
-                              ? '#ef4444'
-                              : wp.status === 'in_progress'
-                                ? '#fbbf24'
-                                : wp.status === 'temporary_repair'
-                                  ? '#3b82f6'
-                                  : '#10b981',
-                        }}
-                      />
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium text-white">{wp.area_name}</p>
+                      <p className="text-xs text-secondary mt-1">
+                        {wp.status.replace('_', ' ')}
+                      </p>
                     </div>
-                  </button>
-                ))}
-            </div>
-          </Card>
-        )}
+                    <span
+                      className="inline-block w-3 h-3 rounded-full mt-1"
+                      style={{
+                        backgroundColor:
+                          wp.status === 'needs_repair'
+                            ? '#ef4444'
+                            : wp.status === 'in_progress'
+                              ? '#fbbf24'
+                              : wp.status === 'temporary_repair'
+                                ? '#3b82f6'
+                                : '#10b981',
+                      }}
+                    />
+                  </div>
+                </button>
+              ))}
+          </div>
+        </Card>
+      )}
 
-        {/* Submit Repair Request Modal */}
-        <Modal
-          isOpen={isSubmitModalOpen}
-          onClose={() => {
-            setIsSubmitModalOpen(false)
-            setSelectedWaypoint(null)
-            reset()
-          }}
-          title={selectedWaypoint ? `Submit Repair Request for ${selectedWaypoint.area_name}` : 'Submit Repair Request'}
-        >
-          <form onSubmit={handleSubmit(onSubmitRepairRequest)} className="space-y-4">
-            <Textarea
-              label="Describe the repair needed"
-              placeholder="What needs to be repaired or fixed?"
-              error={errors.notes?.message}
-              {...register('notes')}
-              rows={6}
-            />
+      {/* Submit Repair Request Modal */}
+      <Modal
+        isOpen={isSubmitModalOpen}
+        onClose={() => {
+          setIsSubmitModalOpen(false)
+          setSelectedWaypoint(null)
+          reset()
+        }}
+        title={selectedWaypoint ? `Submit Repair Request for ${selectedWaypoint.area_name}` : 'Submit Repair Request'}
+      >
+        <form onSubmit={handleSubmit(onSubmitRepairRequest)} className="space-y-4">
+          <Textarea
+            label="Describe the repair needed"
+            placeholder="What needs to be repaired or fixed?"
+            error={errors.notes?.message}
+            {...register('notes')}
+            rows={6}
+          />
 
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="submit"
-                variant="primary"
-                className="flex-1"
-                isLoading={isSubmitting}
-              >
-                Submit Request
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1"
-                onClick={() => {
-                  setIsSubmitModalOpen(false)
-                  setSelectedWaypoint(null)
-                  reset()
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      </div>
+          <div className="flex gap-3 pt-4">
+            <Button
+              type="submit"
+              variant="primary"
+              className="flex-1"
+              isLoading={isSubmitting}
+            >
+              Submit Request
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex-1"
+              onClick={() => {
+                setIsSubmitModalOpen(false)
+                setSelectedWaypoint(null)
+                reset()
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }
