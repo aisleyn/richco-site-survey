@@ -173,7 +173,7 @@ export default function ClientDashboard() {
                 </Button>
               </Link>
               {projects.length > 0 && (
-                <Link to={`/client/map/${projects[0].id}`} className="w-full sm:w-auto">
+                <Link to="/client/floor-plan" className="w-full sm:w-auto">
                   <Button className="px-8 py-3 font-medium rounded-lg transition-colors">
                     View Floor Plan Map
                   </Button>
