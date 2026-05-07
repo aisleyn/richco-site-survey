@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getProjectById } from '../../services/projects'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
-import { InteractiveMap } from '../../components/map'
+import { PhaserMap } from '../../components/map/PhaserMap'
+import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 import { Card, Spinner, BackButton, Button, Textarea, Modal } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
 import { createClientSubmission } from '../../services/clientSubmissions'
@@ -20,6 +21,7 @@ const submitSchema = z.object({
 export default function ClientFloorPlanPage() {
   const { profile } = useAuthStore()
   const addToast = useToast()
+  const phaserMapRef = useRef<PhaserMapHandle>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
@@ -231,12 +233,17 @@ export default function ClientFloorPlanPage() {
           )}
 
           {activePage && (
-            <div style={{ height: '500px' }}>
-              <InteractiveMap
+            <div style={{ height: '600px' }}>
+              <PhaserMap
+                ref={phaserMapRef}
                 imageUrl={activePage.image_url}
                 waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
                 isEditable={false}
+                isPlacingWaypoint={false}
+                isMovingWaypoint={false}
                 onWaypointClick={handleWaypointClick}
+                onWaypointAdd={() => {}}
+                onWaypointDrop={() => {}}
               />
             </div>
           )}
