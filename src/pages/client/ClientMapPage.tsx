@@ -138,7 +138,9 @@ export default function ClientMapPage() {
                           ? '#ef4444'
                           : wp.status === 'in_progress'
                             ? '#fbbf24'
-                            : '#10b981',
+                            : wp.status === 'temporary_repair'
+                              ? '#3b82f6'
+                              : '#10b981',
                     }}
                   />
                 </div>
