@@ -17,6 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const { signIn } = useAuthStore()
   const [serverError, setServerError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -61,13 +62,29 @@ export default function LoginPage() {
             {...register('email')}
           />
 
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            {...register('password')}
-          />
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-secondary uppercase">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg text-sm text-black placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                {...register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                tabIndex={-1}
+              >
+                {showPassword ? '👁️' : '👁️‍🗨️'}
+              </button>
+            </div>
+            {errors.password?.message && (
+              <p className="text-sm text-red-600">{errors.password.message}</p>
+            )}
+          </div>
 
           <Button
             type="submit"
