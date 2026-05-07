@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
+import { supabase } from '../../lib/supabase'
 import { getReportPagesByProject } from '../../services/reportPages'
 import { getProjects } from '../../services/projects'
 import { Flipbook } from '../../components/flipbook'
@@ -20,27 +21,52 @@ export default function ClientFlipbookPage() {
   const loadData = async () => {
     if (!profile?.id) return
     try {
+      let clientProjects: ReportPage[] = []
+
+      // Load projects directly assigned to client
       const { data: projectsData, error: projectsError } = await getProjects()
         .then(data => ({ data, error: null }))
         .catch(error => ({ data: null, error }))
 
       if (!projectsError && projectsData) {
-        // Filter projects where user is the client
-        const clientProjects = projectsData.filter(p => p.client_id === profile.id && !p.archived)
+        const directProjects = projectsData.filter(p => p.client_id === profile.id && !p.archived)
 
-        if (clientProjects.length > 0) {
-          const allPages: ReportPage[] = []
-          for (const p of clientProjects) {
+        if (directProjects.length > 0) {
+          for (const p of directProjects) {
             try {
               const data = await getReportPagesByProject(p.id)
-              allPages.push(...data)
+              clientProjects.push(...data)
             } catch (err) {
               console.error(`Failed to load reports for project ${p.id}:`, err)
             }
           }
-          setPages(allPages)
         }
       }
+
+      // Load projects through vendor/company assignment
+      if (profile.vendor_id && projectsData) {
+        // Get vendor_projects links
+        const { data: vendorProjectsData } = await supabase
+          .from('vendor_projects')
+          .select('project_id')
+          .eq('vendor_id', profile.vendor_id)
+
+        if (vendorProjectsData && vendorProjectsData.length > 0) {
+          const vendorProjectIds = new Set(vendorProjectsData.map((vp: any) => vp.project_id))
+          const linkedProjects = projectsData.filter(p => vendorProjectIds.has(p.id) && !p.archived)
+
+          for (const p of linkedProjects) {
+            try {
+              const data = await getReportPagesByProject(p.id)
+              clientProjects.push(...data)
+            } catch (err) {
+              console.error(`Failed to load reports for project ${p.id}:`, err)
+            }
+          }
+        }
+      }
+
+      setPages(clientProjects)
     } finally {
       setIsLoading(false)
     }

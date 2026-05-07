@@ -34,24 +34,57 @@ export default function ClientDashboard() {
     }
     try {
       console.log('Loading projects for client:', profile.id)
-      const { data: projectsData, error: projectsError } = await supabase
+      let allProjects: Project[] = []
+
+      // Load projects directly assigned to client
+      const { data: directProjects, error: directError } = await supabase
         .from('projects')
         .select('*')
         .eq('client_id', profile.id)
         .eq('archived', false)
 
-      console.log('Projects query result:', { projectsData, projectsError })
-
-      if (projectsError) {
-        console.error('Projects error:', projectsError)
-        throw projectsError
+      if (directError) {
+        console.error('Direct projects error:', directError)
+      } else if (directProjects) {
+        allProjects = [...(directProjects || [])]
       }
 
-      setProjects(projectsData || [])
+      // Load projects through vendor/company assignment if user has vendor_id
+      if (profile.vendor_id) {
+        console.log('Loading projects for vendor:', profile.vendor_id)
+        const { data: vendorProjects, error: vendorError } = await supabase
+          .from('vendor_projects')
+          .select('project_id')
+          .eq('vendor_id', profile.vendor_id)
 
-      if (projectsData && projectsData.length > 0) {
+        if (vendorError) {
+          console.error('Vendor projects error:', vendorError)
+        } else if (vendorProjects && vendorProjects.length > 0) {
+          // Fetch the actual project details
+          const projectIds = vendorProjects.map((vp: any) => vp.project_id)
+          const { data: vendorProjectDetails } = await supabase
+            .from('projects')
+            .select('*')
+            .in('id', projectIds)
+            .eq('archived', false)
+
+          if (vendorProjectDetails) {
+            // Merge with direct projects, avoiding duplicates
+            const existingIds = new Set(allProjects.map(p => p.id))
+            allProjects = [
+              ...allProjects,
+              ...vendorProjectDetails.filter(p => !existingIds.has(p.id))
+            ]
+          }
+        }
+      }
+
+      console.log('All projects loaded:', allProjects)
+      setProjects(allProjects)
+
+      if (allProjects.length > 0) {
         const allPages: ReportPage[] = []
-        for (const p of projectsData) {
+        for (const p of allProjects) {
           try {
             const data = await getReportPagesByProject(p.id)
             allPages.push(...data)
@@ -61,7 +94,7 @@ export default function ClientDashboard() {
         }
         setPages(allPages)
         setStats({
-          activeProjects: projectsData.length,
+          activeProjects: allProjects.length,
           surveysFiled: allPages.length,
         })
       } else {

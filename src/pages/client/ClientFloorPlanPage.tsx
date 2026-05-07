@@ -50,15 +50,47 @@ export default function ClientFloorPlanPage() {
   const loadProjects = async () => {
     if (!profile?.id) return
     try {
-      const { data: projectsData, error } = await supabase
+      let allProjects: Project[] = []
+
+      // Load projects directly assigned to client
+      const { data: directProjects, error: directError } = await supabase
         .from('projects')
         .select('*')
         .eq('client_id', profile.id)
         .eq('archived', false)
 
-      if (!error && projectsData && projectsData.length > 0) {
-        setProjects(projectsData)
-        setCurrentProjectId(projectsData[0].id)
+      if (!directError && directProjects) {
+        allProjects = [...directProjects]
+      }
+
+      // Load projects through vendor/company assignment
+      if (profile.vendor_id) {
+        const { data: vendorProjects, error: vendorError } = await supabase
+          .from('vendor_projects')
+          .select('project_id')
+          .eq('vendor_id', profile.vendor_id)
+
+        if (!vendorError && vendorProjects && vendorProjects.length > 0) {
+          const projectIds = vendorProjects.map((vp: any) => vp.project_id)
+          const { data: vendorProjectDetails } = await supabase
+            .from('projects')
+            .select('*')
+            .in('id', projectIds)
+            .eq('archived', false)
+
+          if (vendorProjectDetails) {
+            const existingIds = new Set(allProjects.map(p => p.id))
+            allProjects = [
+              ...allProjects,
+              ...vendorProjectDetails.filter(p => !existingIds.has(p.id))
+            ]
+          }
+        }
+      }
+
+      if (allProjects.length > 0) {
+        setProjects(allProjects)
+        setCurrentProjectId(allProjects[0].id)
       } else {
         setIsLoading(false)
       }
