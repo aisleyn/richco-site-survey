@@ -29,19 +29,35 @@ export default function ProfilePage() {
 
   const loadVendor = async () => {
     if (!profile?.vendor_id) {
+      console.log('No vendor_id in profile:', profile)
       setIsLoading(false)
       return
     }
 
     try {
+      console.log('Loading vendor with ID:', profile.vendor_id)
+      const token = getAuthToken()
+      const headers = {
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/vendors?id=eq.${profile.vendor_id}`,
-        {
-          headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY },
-        }
+        { headers }
       )
+
+      if (!response.ok) {
+        console.error('Vendor fetch failed:', response.status, response.statusText)
+        setIsLoading(false)
+        return
+      }
+
       const data = await response.json()
+      console.log('Vendor data:', data)
       setVendor(data.length > 0 ? data[0] : null)
+    } catch (err) {
+      console.error('Error loading vendor:', err)
     } finally {
       setIsLoading(false)
     }
