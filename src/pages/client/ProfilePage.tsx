@@ -210,14 +210,14 @@ export default function ProfilePage() {
 
       {!isLoading && (
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Vendor Assignment</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">Company Assignment</h2>
           {vendor ? (
             <div>
-              <p className="text-sm text-secondary">Assigned Vendor</p>
+              <p className="text-sm text-secondary">Assigned Company</p>
               <p className="text-lg font-medium text-white">{vendor.name}</p>
             </div>
           ) : (
-            <p className="text-secondary">Not assigned to a vendor yet. Contact your administrator.</p>
+            <p className="text-secondary">Not assigned to a company yet. Contact your administrator to assign your account.</p>
           )}
         </Card>
       )}
