@@ -4,7 +4,7 @@ import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getReportPagesByProject } from '../../services/reportPages'
 import { Flipbook } from '../../components/flipbook'
-import { Button, Spinner, BackButton } from '../../components/ui'
+import { Button, Spinner } from '../../components/ui'
 import type { ReportPage, Project } from '../../types'
 import AnimatedBackground from '../../components/dashboard/AnimatedBackground'
 
@@ -17,7 +17,6 @@ export default function ClientDashboard() {
     surveysFiled: 0,
   })
   const [isLoading, setIsLoading] = useState(true)
-  const isStaff = profile?.role === 'richco_staff'
 
   useEffect(() => {
     if (profile?.id) {

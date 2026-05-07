@@ -33,6 +33,8 @@ export function InteractiveMap({
     needs_repair: true,
     in_progress: true,
     completed: true,
+    temporary_repair: true,
+    permanent_repair: true,
   })
 
   // Initialize map
@@ -277,6 +279,8 @@ function createWaypointMarker(
     needs_repair: '#FF3B3B',
     in_progress: '#FFB020',
     completed: '#00E676',
+    temporary_repair: '#3B82F6',
+    permanent_repair: '#10B981',
   }
 
   const latlng = L.latLng((waypoint.y_percent / 100) * 100, (waypoint.x_percent / 100) * 100)

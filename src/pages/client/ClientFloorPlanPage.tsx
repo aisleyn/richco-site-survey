@@ -1,28 +1,23 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getProjectById } from '../../services/projects'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { InteractiveMap } from '../../components/map'
-import { WaypointDetailModal } from '../../components/map/WaypointDetailModal'
 import { Card, Spinner, BackButton, Button, Textarea, Modal } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
 import { createClientSubmission } from '../../services/clientSubmissions'
-import { uploadFile } from '../../services/storage'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
-import { MediaType } from '../../types'
 
 const submitSchema = z.object({
   notes: z.string().min(1, 'Please describe the repair needed'),
 })
 
 export default function ClientFloorPlanPage() {
-  const navigate = useNavigate()
   const { profile } = useAuthStore()
   const addToast = useToast()
   const [project, setProject] = useState<Project | null>(null)
@@ -33,7 +28,6 @@ export default function ClientFloorPlanPage() {
   const [activePageId, setActivePageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -106,7 +100,7 @@ export default function ClientFloorPlanPage() {
 
     setIsSubmitting(true)
     try {
-      const submission = await createClientSubmission(
+      await createClientSubmission(
         currentProjectId,
         profile.id,
         data.notes,

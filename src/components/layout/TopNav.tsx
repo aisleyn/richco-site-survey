@@ -6,13 +6,13 @@ import clsx from 'clsx'
 import { getClientSubmissionCount } from '../../services/clientSubmissions'
 
 const staffNavItems = [
-  { label: 'Projects', href: '/staff/projects' },
-  { label: 'Surveys', href: '/staff/surveys' },
-  { label: 'Flipbook', href: '/staff/reports' },
-  { label: 'Clients', href: '/staff/vendors' },
-  { label: 'Accounts', href: '/staff/accounts' },
-  { label: 'Settings', href: '/staff/settings' },
-  { label: 'Client Portal', href: '/client' },
+  { label: 'Projects', href: '/staff/projects', id: 'projects' },
+  { label: 'Surveys', href: '/staff/surveys', id: 'surveys' },
+  { label: 'Flipbook', href: '/staff/reports', id: 'flipbook' },
+  { label: 'Clients', href: '/staff/vendors', id: 'clients' },
+  { label: 'Accounts', href: '/staff/accounts', id: 'accounts' },
+  { label: 'Settings', href: '/staff/settings', id: 'settings' },
+  { label: 'Client Portal', href: '/client', id: 'client-portal' },
 ]
 
 export function TopNav() {

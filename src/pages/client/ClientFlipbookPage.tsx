@@ -4,11 +4,10 @@ import { getReportPagesByProject } from '../../services/reportPages'
 import { getProjects } from '../../services/projects'
 import { Flipbook } from '../../components/flipbook'
 import { Card, Spinner, BackButton } from '../../components/ui'
-import type { ReportPage, Project } from '../../types'
+import type { ReportPage } from '../../types'
 
 export default function ClientFlipbookPage() {
   const { profile } = useAuthStore()
-  const [projects, setProjects] = useState<Project[]>([])
   const [pages, setPages] = useState<ReportPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -28,7 +27,6 @@ export default function ClientFlipbookPage() {
       if (!projectsError && projectsData) {
         // Filter projects where user is the client
         const clientProjects = projectsData.filter(p => p.client_id === profile.id && !p.archived)
-        setProjects(clientProjects)
 
         if (clientProjects.length > 0) {
           const allPages: ReportPage[] = []

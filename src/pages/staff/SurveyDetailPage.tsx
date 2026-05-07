@@ -33,7 +33,6 @@ export default function SurveyDetailPage() {
   const [editingUpdateData, setEditingUpdateData] = useState<any>(null)
   const [cachedWaypointLocation, setCachedWaypointLocation] = useState<any>(null)
   const [showRepairTypeModal, setShowRepairTypeModal] = useState(false)
-  const [showConvertToPermanentModal, setShowConvertToPermanentModal] = useState(false)
   const [pendingRepairType, setPendingRepairType] = useState<'temporary_repair' | 'permanent_repair' | null>(null)
   const [linkedWaypoint, setLinkedWaypoint] = useState<any>(null)
 
@@ -163,7 +162,6 @@ export default function SurveyDetailPage() {
       setPendingRepairType(null)
       setLinkedWaypoint(null)
       setShowRepairTypeModal(false)
-      setShowConvertToPermanentModal(false)
 
       const message = pendingRepairType === 'temporary_repair'
         ? 'Repair marked temporarily completed — waypoint stays on map as blue'
@@ -208,7 +206,6 @@ export default function SurveyDetailPage() {
       }
     }
     setPendingRepairType('permanent_repair')
-    setShowConvertToPermanentModal(false)
   }
 
   const handleDownloadReport = async () => {

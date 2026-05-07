@@ -189,7 +189,7 @@ export interface SurveyFormValues {
 
 export interface ProjectFormValues {
   name: string
-  client_id?: string
+  client_id: string
 }
 
 export interface ClientSubmissionFormValues {
