@@ -52,7 +52,7 @@ export function TopNav() {
   const isClient = profile?.role === 'client'
 
   const clientNavItems = [
-    { label: 'Submit Repair Request', href: '/client/floor-plan', id: 'repair-requests' },
+    { label: 'Submit Repair Request', href: '/client/submit', id: 'repair-requests' },
     { label: 'Floor Plan Map', href: '/client/floor-plan', id: 'floor-plan' },
     { label: 'Flipbook', href: '/client/flipbook', id: 'flipbook' },
   ]
