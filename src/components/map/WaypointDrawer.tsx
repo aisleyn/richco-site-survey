@@ -246,14 +246,14 @@ export function WaypointDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 opacity-0 transition-opacity duration-250 pointer-events-none"
+        className="fixed inset-0 bg-black/40 opacity-0 transition-opacity duration-250 pointer-events-none z-40"
         style={{ opacity: isOpen ? 1 : 0, pointerEvents: isOpen ? 'auto' : 'none' }}
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div
-        className="fixed right-0 top-24 h-[calc(100%-6rem)] w-[420px] bg-white shadow-xl overflow-y-auto transition-transform duration-250 ease-out"
+        className="fixed right-0 top-24 h-[calc(100%-6rem)] w-[420px] bg-white shadow-xl overflow-y-auto transition-transform duration-250 ease-out z-[60]"
         style={{ transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
       >
         {/* Header */}

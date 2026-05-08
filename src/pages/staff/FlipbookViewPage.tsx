@@ -27,11 +27,15 @@ export default function FlipbookViewPage() {
         getReportPagesByProject(projectId),
       ])
       setProject(p)
+      console.log(`[FlipbookViewPage] Loaded ${reportPages.length} report pages for project ${projectId}`)
+      console.log(`[FlipbookViewPage] Pages:`, reportPages)
       setPages(reportPages)
 
       // Generate shareable URL (in real app, would create signed token)
       const baseUrl = window.location.origin
       setShareUrl(`${baseUrl}/#/client?projectId=${projectId}`)
+    } catch (err) {
+      console.error('[FlipbookViewPage] Error loading data:', err)
     } finally {
       setIsLoading(false)
     }

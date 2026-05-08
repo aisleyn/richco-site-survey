@@ -12,6 +12,7 @@ interface FlipbookProps {
 
 export function Flipbook({ pages, onPageChange, className }: FlipbookProps) {
   const [spreadIndex, setSpreadIndex] = useState(0)
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(null)
 
   const handlePrevious = () => {
     const newIndex = Math.max(0, spreadIndex - 1)
@@ -44,25 +45,68 @@ export function Flipbook({ pages, onPageChange, className }: FlipbookProps) {
 
   return (
     <div className={clsx('flex flex-col gap-6', className)}>
-      {/* Month Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {pages.map((page, index) => (
-          <button
-            key={page.id}
-            onClick={() => {
-              setSpreadIndex(Math.floor(index / 2))
-              onPageChange?.(index)
-            }}
-            className={clsx(
-              'whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-colors',
-              Math.floor(index / 2) === spreadIndex
-                ? 'bg-white text-black'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-            )}
-          >
-            {page.month_tag}
-          </button>
-        ))}
+      {/* Month Selector */}
+      <div>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          {Array.from(
+            pages.reduce((acc, page) => {
+              acc.add(page.month_tag)
+              return acc
+            }, new Set<string>())
+          ).sort().map((month) => (
+            <button
+              key={month}
+              onClick={() => setExpandedMonth(expandedMonth === month ? null : month)}
+              className={clsx(
+                'whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-colors',
+                expandedMonth === month
+                  ? 'bg-white text-black'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+              )}
+            >
+              {month}
+            </button>
+          ))}
+        </div>
+
+        {/* Day Selector Card */}
+        {expandedMonth && (
+          <div className="bg-black rounded-lg p-6 mt-2 grid grid-cols-7 gap-2">
+            {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+              // Find first page of that month with this day
+              const dayPageIndex = pages.findIndex(p => {
+                if (p.month_tag !== expandedMonth) return false
+                if (!p.published_at) return false
+                const pageDate = new Date(p.published_at)
+                return pageDate.getDate() === day
+              })
+
+              const hasPage = dayPageIndex >= 0
+
+              return (
+                <button
+                  key={day}
+                  onClick={() => {
+                    if (hasPage) {
+                      setSpreadIndex(Math.floor(dayPageIndex / 2))
+                      onPageChange?.(dayPageIndex)
+                      setExpandedMonth(null)
+                    }
+                  }}
+                  disabled={!hasPage}
+                  className={clsx(
+                    'py-2 rounded font-medium transition-colors text-sm',
+                    hasPage
+                      ? 'bg-white text-black hover:bg-slate-200 cursor-pointer'
+                      : 'bg-slate-700 text-slate-500 cursor-not-allowed',
+                  )}
+                >
+                  {day}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Book Container - Two Page Spread */}
