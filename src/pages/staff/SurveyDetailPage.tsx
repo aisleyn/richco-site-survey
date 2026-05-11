@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { format } from 'date-fns'
+import { useAuthStore } from '../../store/authStore'
 import { getSurveyById, getSurveyMedia, publishSurvey, archiveSurvey, deleteSurvey, updateSurvey, addSurveyMedia } from '../../services/surveys'
 import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdates'
 import { updateWaypointStatusByLinkedSurvey } from '../../services/mapWaypoints'
@@ -19,6 +20,8 @@ export default function SurveyDetailPage() {
   const { surveyId } = useParams<{ surveyId: string }>()
   const navigate = useNavigate()
   const addToast = useToast()
+  const { profile } = useAuthStore()
+  const isStaff = profile?.user_role === 'richco_staff'
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [media, setMedia] = useState<SurveyMedia[]>([])
   const [surveyUpdates, setSurveyUpdates] = useState<(SurveyUpdate & { media: SurveyUpdateMedia[] })[]>([])
@@ -438,7 +441,19 @@ export default function SurveyDetailPage() {
   }
 
   if (isLoading) return <div className="flex items-center justify-center min-h-screen"><Spinner size="lg" /></div>
-  if (!survey) return <div>Survey not found</div>
+  if (!survey) return (
+    <div>
+      <div className="mb-4">
+        <BackButton label="Back" />
+      </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-white text-lg mb-4">Survey not found or not accessible</p>
+          <p className="text-secondary text-sm">The survey may have been deleted or you don't have permission to view it.</p>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div>
@@ -456,7 +471,7 @@ export default function SurveyDetailPage() {
           </div>
         </div>
         <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
-          {survey.status === 'draft' && (
+          {isStaff && survey.status === 'draft' && (
             <Button variant="primary" onClick={() => setShowRepairTypeModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
               ✓ Complete Repair
             </Button>
@@ -466,14 +481,16 @@ export default function SurveyDetailPage() {
               📥 Download Report
             </Button>
           )}
-          {survey.status === 'published' && (
+          {isStaff && survey.status === 'published' && (
             <Button variant="secondary" onClick={handlePermanentRepair} isLoading={isPublishing} className="w-full xs:w-auto">
               ✓ Mark as Permanently Completed
             </Button>
           )}
-          <Button variant="danger" onClick={handleDelete} isLoading={isDeleting} className="w-full xs:w-auto">
-            Delete
-          </Button>
+          {isStaff && (
+            <Button variant="danger" onClick={handleDelete} isLoading={isDeleting} className="w-full xs:w-auto">
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -483,14 +500,14 @@ export default function SurveyDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>{!survey.suggested_system && !survey.install_notes ? 'Initial Issue' : 'Survey Details'}</CardTitle>
-                {editingUpdateId !== 'main' && (
+                {isStaff && editingUpdateId !== 'main' && (
                   <Button size="sm" variant="secondary" onClick={() => handleStartEditUpdate({ ...survey, id: 'main' })}>
                     ✏️ Edit
                   </Button>
                 )}
               </div>
             </CardHeader>
-            {editingUpdateId === 'main' ? (
+            {isStaff && editingUpdateId === 'main' ? (
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-slate-700 block mb-2">Area Name</label>
@@ -672,13 +689,13 @@ export default function SurveyDetailPage() {
                     <p className="text-sm text-slate-500">
                       {format(new Date(update.updated_at), 'MMM d, yyyy h:mm a')}
                     </p>
-                    {editingUpdateId !== update.id && (
+                    {isStaff && editingUpdateId !== update.id && (
                       <Button size="sm" variant="secondary" onClick={() => handleStartEditUpdate(update)}>
                         ✏️ Edit
                       </Button>
                     )}
                   </div>
-                  {editingUpdateId === update.id ? (
+                  {isStaff && editingUpdateId === update.id ? (
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium text-slate-700 block mb-2">Update Notes</label>

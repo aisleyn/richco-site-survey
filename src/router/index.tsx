@@ -25,6 +25,7 @@ import ClientSubmitPage from '../pages/client/ClientSubmitPage'
 import ClientMapPage from '../pages/client/ClientMapPage'
 import ClientFlipbookPage from '../pages/client/ClientFlipbookPage'
 import ClientFloorPlanPage from '../pages/client/ClientFloorPlanPage'
+import ClientSurveysPage from '../pages/client/ClientSurveysPage'
 
 export const router = createBrowserRouter([
   {
@@ -128,6 +129,14 @@ export const router = createBrowserRouter([
       {
         path: 'floor-plan',
         element: <ClientFloorPlanPage />,
+      },
+      {
+        path: 'surveys/:projectId',
+        element: <ClientSurveysPage />,
+      },
+      {
+        path: 'surveys/:projectId/detail/:surveyId',
+        element: <SurveyDetailPage />,
       },
       {
         path: 'submit',

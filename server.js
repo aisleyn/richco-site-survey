@@ -253,6 +253,40 @@ app.post('/api/delete-user-by-email', async (req, res) => {
   }
 })
 
+// Get surveys by linked waypoint IDs (for clients with RLS restrictions)
+app.post('/api/surveys-by-ids', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Admin client not configured' })
+  }
+
+  try {
+    const { surveyIds } = req.body
+
+    if (!surveyIds || !Array.isArray(surveyIds) || surveyIds.length === 0) {
+      return res.status(400).json({ error: 'surveyIds array required' })
+    }
+
+    log('Fetching surveys:', surveyIds.length, 'IDs')
+
+    const { data, error } = await supabaseAdmin
+      .from('surveys')
+      .select('*')
+      .in('id', surveyIds)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      log('Error fetching surveys:', error.message)
+      return res.status(400).json({ error: error.message })
+    }
+
+    log('Surveys fetched:', data?.length || 0)
+    res.json({ surveys: data || [] })
+  } catch (error) {
+    log('Surveys fetch exception:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Serve static files from dist folder
 app.use(express.static(path.join(__dirname, 'dist')))
 
