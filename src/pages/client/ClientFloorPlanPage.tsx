@@ -7,6 +7,7 @@ import { getWaypointsByProject, createWaypoint } from '../../services/mapWaypoin
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
+import { ClientWaypointDrawer } from '../../components/map/ClientWaypointDrawer'
 import { Card, Spinner, BackButton, Button, Modal, Input, Textarea } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
 import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
@@ -26,6 +27,7 @@ export default function ClientFloorPlanPage() {
   const [isPlacingWaypoint, setIsPlacingWaypoint] = useState(false)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
   const [newWaypointCoords, setNewWaypointCoords] = useState<{ x: number; y: number } | null>(null)
+  const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
 
   useEffect(() => {
     if (profile?.id) {
@@ -114,10 +116,8 @@ export default function ClientFloorPlanPage() {
 
   const activePage = floorPlanPages.find(p => p.id === activePageId)
 
-  const handleWaypointClick = async (waypoint: MapWaypoint) => {
-    if (currentProjectId) {
-      navigate(`/client/surveys/${currentProjectId}`)
-    }
+  const handleWaypointClick = (waypoint: MapWaypoint) => {
+    setSelectedWaypoint(waypoint)
   }
 
   const handleStartAddRepair = () => {
@@ -310,6 +310,13 @@ export default function ClientFloorPlanPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {selectedWaypoint && (
+        <ClientWaypointDrawer
+          waypoint={selectedWaypoint}
+          onClose={() => setSelectedWaypoint(null)}
+        />
       )}
     </div>
   )
