@@ -54,6 +54,7 @@ export function TopNav() {
   const clientNavItems = [
     { label: 'Submit Repair Request', href: '/client/submit', id: 'repair-requests' },
     { label: 'Floor Plan Map', href: '/client/floor-plan', id: 'floor-plan' },
+    { label: 'Surveys', href: '/client/surveys', id: 'surveys' },
     { label: 'Flipbook', href: '/client/flipbook', id: 'flipbook' },
   ]
 
@@ -84,6 +85,8 @@ export function TopNav() {
                   isActive = location.pathname === '/client/submit'
                 } else if (item.id === 'floor-plan') {
                   isActive = location.pathname === '/client/floor-plan'
+                } else if (item.id === 'surveys') {
+                  isActive = location.pathname.startsWith('/client/survey')
                 } else if (item.id === 'flipbook') {
                   isActive = location.pathname === '/client/flipbook'
                 }
