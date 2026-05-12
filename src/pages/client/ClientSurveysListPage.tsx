@@ -126,11 +126,12 @@ export default function ClientSurveysListPage() {
           ) : (
             <div className="grid gap-4">
               {surveys.map(survey => (
-                <Card
+                <button
                   key={survey.id}
                   onClick={() => navigate(`/client/survey/${survey.id}`)}
-                  className="cursor-pointer hover:shadow-lg transition p-4 sm:p-6"
+                  className="w-full text-left cursor-pointer hover:shadow-lg transition"
                 >
+                  <Card className="p-4 sm:p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
@@ -161,7 +162,8 @@ export default function ClientSurveysListPage() {
                       <p>Click to view</p>
                     </div>
                   </div>
-                </Card>
+                  </Card>
+                </button>
               ))}
             </div>
           )}

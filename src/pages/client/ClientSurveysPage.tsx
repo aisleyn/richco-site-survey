@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, Spinner, EmptyState, Badge, BackButton } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
-import { getSurveyById } from '../../services/surveys'
 import { useToast } from '../../components/ui/Toast'
 import type { Survey } from '../../types'
 

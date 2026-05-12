@@ -21,7 +21,7 @@ export default function SurveyDetailPage() {
   const navigate = useNavigate()
   const addToast = useToast()
   const { profile } = useAuthStore()
-  const isStaff = profile?.user_role === 'richco_staff'
+  const isStaff = profile?.role === 'richco_staff'
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [media, setMedia] = useState<SurveyMedia[]>([])
   const [surveyUpdates, setSurveyUpdates] = useState<(SurveyUpdate & { media: SurveyUpdateMedia[] })[]>([])

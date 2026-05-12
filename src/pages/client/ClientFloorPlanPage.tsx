@@ -1,21 +1,17 @@
 import { useEffect, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getProjectById } from '../../services/projects'
-import { getWaypointsByProject, createWaypoint } from '../../services/mapWaypoints'
+import { getWaypointsByProject } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 import { ClientWaypointDrawer } from '../../components/map/ClientWaypointDrawer'
-import { Card, Spinner, BackButton, Button, Modal, Input, Textarea } from '../../components/ui'
-import { useToast } from '../../components/ui/Toast'
+import { Card, Spinner, BackButton, Button, Modal } from '../../components/ui'
 import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
 
 export default function ClientFloorPlanPage() {
-  const navigate = useNavigate()
   const { profile } = useAuthStore()
-  const addToast = useToast()
   const phaserMapRef = useRef<PhaserMapHandle>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
@@ -26,7 +22,6 @@ export default function ClientFloorPlanPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isPlacingWaypoint, setIsPlacingWaypoint] = useState(false)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
-  const [newWaypointCoords, setNewWaypointCoords] = useState<{ x: number; y: number } | null>(null)
   const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
 
   useEffect(() => {
@@ -124,15 +119,13 @@ export default function ClientFloorPlanPage() {
     setIsPlacingWaypoint(!isPlacingWaypoint)
   }
 
-  const handleWaypointAdd = (xPercent: number, yPercent: number) => {
-    setNewWaypointCoords({ x: xPercent, y: yPercent })
+  const handleWaypointAdd = () => {
     setIsPlacingWaypoint(false)
     setIsSubmitModalOpen(true)
   }
 
   const handleCloseModal = () => {
     setIsSubmitModalOpen(false)
-    setNewWaypointCoords(null)
   }
 
   if (isLoading) {
@@ -291,26 +284,25 @@ export default function ClientFloorPlanPage() {
         </div>
       )}
 
-      {isSubmitModalOpen && newWaypointCoords && (
-        <Modal
-          title="Add Repair Location"
-          onClose={handleCloseModal}
-        >
-          <div className="space-y-4">
-            <p className="text-gray-600">
-              Location has been marked on the floor plan. Staff will review and create a survey for this repair.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="secondary"
-                onClick={handleCloseModal}
-              >
-                Close
-              </Button>
-            </div>
+      <Modal
+        isOpen={isSubmitModalOpen}
+        title="Add Repair Location"
+        onClose={handleCloseModal}
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Location has been marked on the floor plan. Staff will review and create a survey for this repair.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="secondary"
+              onClick={handleCloseModal}
+            >
+              Close
+            </Button>
           </div>
-        </Modal>
-      )}
+        </div>
+      </Modal>
 
       {selectedWaypoint && (
         <ClientWaypointDrawer
