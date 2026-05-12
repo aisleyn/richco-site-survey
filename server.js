@@ -287,6 +287,87 @@ app.post('/api/surveys-by-ids', async (req, res) => {
   }
 })
 
+// Get single survey with all related data (bypass RLS for clients)
+app.get('/api/survey-detail/:surveyId', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Admin client not configured' })
+  }
+
+  try {
+    const { surveyId } = req.params
+
+    if (!surveyId) {
+      return res.status(400).json({ error: 'surveyId required' })
+    }
+
+    log('Fetching survey detail:', surveyId)
+
+    // Fetch survey
+    const { data: survey, error: surveyError } = await supabaseAdmin
+      .from('surveys')
+      .select('*')
+      .eq('id', surveyId)
+      .single()
+
+    if (surveyError) {
+      log('Error fetching survey:', surveyError.message)
+      return res.status(404).json({ error: 'Survey not found' })
+    }
+
+    // Fetch survey updates
+    const { data: updates, error: updatesError } = await supabaseAdmin
+      .from('survey_updates')
+      .select('*')
+      .eq('survey_id', surveyId)
+      .order('created_at', { ascending: true })
+
+    if (updatesError) {
+      log('Error fetching survey updates:', updatesError.message)
+      return res.status(400).json({ error: updatesError.message })
+    }
+
+    // Fetch media for survey
+    const { data: media, error: mediaError } = await supabaseAdmin
+      .from('survey_media')
+      .select('*')
+      .eq('survey_id', surveyId)
+      .order('uploaded_at', { ascending: true })
+
+    if (mediaError) {
+      log('Error fetching survey media:', mediaError.message)
+      return res.status(400).json({ error: mediaError.message })
+    }
+
+    // Fetch update media
+    const updateIds = (updates || []).map(u => u.id)
+    let updateMedia = []
+    if (updateIds.length > 0) {
+      const { data: uMedia, error: uMediaError } = await supabaseAdmin
+        .from('survey_update_media')
+        .select('*')
+        .in('survey_update_id', updateIds)
+        .order('uploaded_at', { ascending: true })
+
+      if (uMediaError) {
+        log('Error fetching survey update media:', uMediaError.message)
+        return res.status(400).json({ error: uMediaError.message })
+      }
+      updateMedia = uMedia || []
+    }
+
+    log('Survey detail fetched successfully')
+    res.json({
+      survey,
+      updates,
+      media,
+      updateMedia,
+    })
+  } catch (error) {
+    log('Survey detail fetch exception:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // Serve static files from dist folder
 app.use(express.static(path.join(__dirname, 'dist')))
 

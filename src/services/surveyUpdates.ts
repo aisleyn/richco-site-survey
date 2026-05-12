@@ -93,24 +93,25 @@ export async function updateSurveyUpdate(
 export async function getSurveyUpdates(
   surveyId: string,
 ): Promise<(SurveyUpdate & { media: SurveyUpdateMedia[] })[]> {
-  const updates = await apiFetch<SurveyUpdate[]>(
-    `survey_updates?survey_id=eq.${surveyId}&select=*,waypoint_location_json&order=updated_at.asc`
-  )
+  try {
+    const response = await fetch(`/api/survey-detail/${surveyId}`)
+    if (!response.ok) {
+      if (response.status === 404) return []
+      throw new Error(`Failed to fetch survey updates: ${response.status}`)
+    }
+    const { updates, updateMedia } = await response.json()
 
-  if (!updates || updates.length === 0) return []
+    if (!updates || updates.length === 0) return []
 
-  // Fetch media for each update
-  const updatesWithMedia = await Promise.all(
-    updates.map(async (update) => {
-      const media = await apiFetch<SurveyUpdateMedia[]>(
-        `survey_update_media?survey_update_id=eq.${update.id}&order=uploaded_at.asc`
-      )
-      return {
-        ...update,
-        media: media || [],
-      }
-    })
-  )
+    // Map media back to updates
+    const updatesWithMedia = updates.map((update: SurveyUpdate) => ({
+      ...update,
+      media: updateMedia?.filter((m: SurveyUpdateMedia) => m.survey_update_id === update.id) || [],
+    }))
 
-  return updatesWithMedia
+    return updatesWithMedia
+  } catch (error) {
+    console.error('Error fetching survey updates:', error)
+    return []
+  }
 }
