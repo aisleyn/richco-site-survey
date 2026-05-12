@@ -303,14 +303,19 @@ app.get('/api/survey-detail/:surveyId', async (req, res) => {
     log('Fetching survey detail:', surveyId)
 
     // Fetch survey
-    const { data: survey, error: surveyError } = await supabaseAdmin
+    const { data: surveys, error: surveyError } = await supabaseAdmin
       .from('surveys')
       .select('*')
       .eq('id', surveyId)
-      .single()
 
     if (surveyError) {
-      log('Error fetching survey:', surveyError.message)
+      log('Error fetching survey:', JSON.stringify(surveyError))
+      return res.status(400).json({ error: surveyError.message || 'Survey not found' })
+    }
+
+    const survey = surveys && surveys.length > 0 ? surveys[0] : null
+    if (!survey) {
+      log('Survey not found:', surveyId)
       return res.status(404).json({ error: 'Survey not found' })
     }
 
