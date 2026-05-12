@@ -15,33 +15,21 @@ export async function getSurveysByProject(projectId: string): Promise<Survey[]> 
 }
 
 export async function getSurveyById(id: string): Promise<Survey | null> {
-  try {
-    const response = await fetch(`/api/survey-detail/${id}`)
-    if (!response.ok) {
-      if (response.status === 404) return null
-      throw new Error(`Failed to fetch survey: ${response.status}`)
-    }
-    const { survey } = await response.json()
-    return survey || null
-  } catch (error) {
-    console.error('Error fetching survey:', error)
-    return null
-  }
+  const { data, error } = await supabase.from('surveys').select('*').eq('id', id)
+
+  if (error) throw error
+  return data && data.length > 0 ? data[0] : null
 }
 
 export async function getSurveyMedia(surveyId: string): Promise<SurveyMedia[]> {
-  try {
-    const response = await fetch(`/api/survey-detail/${surveyId}`)
-    if (!response.ok) {
-      if (response.status === 404) return []
-      throw new Error(`Failed to fetch survey media: ${response.status}`)
-    }
-    const { media } = await response.json()
-    return media || []
-  } catch (error) {
-    console.error('Error fetching survey media:', error)
-    return []
-  }
+  const { data, error } = await supabase
+    .from('survey_media')
+    .select('*')
+    .eq('survey_id', surveyId)
+    .order('uploaded_at', { ascending: true })
+
+  if (error) throw error
+  return data || []
 }
 
 export async function createSurvey(

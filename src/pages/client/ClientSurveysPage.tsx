@@ -72,22 +72,19 @@ export default function ClientSurveysPage() {
 
       console.log('Found waypoints with linked surveys:', linkedSurveyIds.length)
 
-      // Fetch actual surveys by their linked IDs via backend endpoint (bypasses RLS)
+      // Fetch actual surveys by their linked IDs
       if (linkedSurveyIds.length > 0) {
         try {
-          const response = await fetch('/api/surveys-by-ids', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ surveyIds: linkedSurveyIds }),
-          })
+          const { data: surveyData, error: surveyError } = await supabase
+            .from('surveys')
+            .select('*')
+            .in('id', linkedSurveyIds)
+            .order('created_at', { ascending: false })
 
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
+          if (surveyError) throw surveyError
 
-          const data = await response.json()
-          console.log('Surveys loaded:', data.surveys?.length || 0)
-          setSurveys(data.surveys || [])
+          console.log('Surveys loaded:', surveyData?.length || 0)
+          setSurveys(surveyData || [])
         } catch (err) {
           console.error('Failed to load surveys:', err)
           addToast({ type: 'error', message: 'Failed to load surveys' })
