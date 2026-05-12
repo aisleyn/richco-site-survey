@@ -75,7 +75,7 @@ export default function ClientSurveysPage() {
       // Fetch actual surveys by their linked IDs via backend endpoint (bypasses RLS)
       if (linkedSurveyIds.length > 0) {
         try {
-          const response = await fetch('http://localhost:3002/api/surveys-by-ids', {
+          const response = await fetch('/api/surveys-by-ids', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ surveyIds: linkedSurveyIds }),
