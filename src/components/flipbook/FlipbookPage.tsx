@@ -36,13 +36,15 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
             console.warn(`Survey ${surveyId} not found, skipping`)
             return null
           }
-          const media = await getSurveyMedia(surveyId)
-          const updates = await getSurveyUpdates(surveyId)
+          const [media, updates] = await Promise.all([
+            getSurveyMedia(surveyId).catch(() => []),
+            getSurveyUpdates(surveyId).catch(() => []),
+          ])
           console.log(`Loaded survey ${surveyId}:`, survey)
           return { survey, media, updates }
         } catch (err) {
           console.error(`Failed to load survey ${surveyId}:`, err)
-          throw err
+          return null
         }
       })
 

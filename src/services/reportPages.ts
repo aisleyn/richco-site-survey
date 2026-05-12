@@ -13,13 +13,50 @@ export async function getReportPagesByProject(projectId: string): Promise<Report
 
   console.log(`[ReportPages] Found ${data?.length || 0} pages for project ${projectId}`)
 
-  // Check how many surveys exist and how many have pages
+  // Check how many surveys exist and validate report page survey_ids
   const { data: surveys } = await supabase
     .from('surveys')
     .select('id')
     .eq('project_id', projectId)
 
   const totalSurveys = surveys?.length || 0
+  const existingSurveyIds = new Set(surveys?.map(s => s.id) || [])
+
+  // Clean up report pages with orphaned survey IDs
+  const pagesToCleanup = data?.filter(page =>
+    page.survey_ids?.some((id: string) => !existingSurveyIds.has(id))
+  ) || []
+
+  if (pagesToCleanup.length > 0) {
+    console.log(`[ReportPages] Found ${pagesToCleanup.length} pages with orphaned survey IDs, cleaning up...`)
+
+    const cleanedPages = data?.map(page => {
+      if (!page.survey_ids) return page
+      const validIds = page.survey_ids.filter((id: string) => existingSurveyIds.has(id))
+      return { ...page, survey_ids: validIds }
+    }) || []
+
+    // Update pages with cleaned survey_ids or delete if empty
+    for (const page of cleanedPages) {
+      if (page.survey_ids && page.survey_ids.length > 0) {
+        const { error: updateError } = await supabase
+          .from('report_pages')
+          .update({ survey_ids: page.survey_ids })
+          .eq('id', page.id)
+        if (updateError) console.error(`Failed to update page ${page.id}:`, updateError)
+      } else {
+        const { error: deleteError } = await supabase
+          .from('report_pages')
+          .delete()
+          .eq('id', page.id)
+        if (deleteError) console.error(`Failed to delete page ${page.id}:`, deleteError)
+      }
+    }
+
+    // Return the cleaned version
+    return cleanedPages.filter(p => p.survey_ids && p.survey_ids.length > 0)
+  }
+
   const surveysCovered = data?.reduce((sum, page) => sum + (page.survey_ids?.length || 0), 0) || 0
 
   console.log(`[ReportPages] Total surveys: ${totalSurveys}, covered by pages: ${surveysCovered}`)
