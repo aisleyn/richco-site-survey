@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useAuthStore } from '../../store/authStore'
 import { getProjectById, getProjects } from '../../services/projects'
 import { createSurvey, addSurveyMedia, getSurveyById, updateSurvey } from '../../services/surveys'
+import { getSubcategoriesByProject } from '../../services/subcategories'
 import { uploadFile } from '../../services/storage'
 import { MediaType } from '../../types'
-import type { Project, Survey } from '../../types'
+import type { Project, Survey, ProjectSubcategory } from '../../types'
 import { Card, Button, Input, Textarea, FileDropzone, Spinner, Select, BackButton } from '../../components/ui'
 
 const surveySchema = z.object({
@@ -19,6 +20,7 @@ const surveySchema = z.object({
   survey_notes: z.string().optional().default(''),
   suggested_system: z.string().optional().default(''),
   install_notes: z.string().optional().default(''),
+  subcategory_id: z.string().nullable().optional().default(null),
   client_name: z.string().optional().default(''),
   images: z.any().optional(),
   scans_3d: z.any().optional(),
@@ -27,11 +29,16 @@ const surveySchema = z.object({
 
 export default function SurveyFormPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { projectId, surveyId } = useParams<{ projectId?: string; surveyId?: string }>()
   const { profile } = useAuthStore()
+  const preselectedZoneId: string | null = (location.state as any)?.subcategoryId ?? null
+
   const [project, setProject] = useState<Project | null>(null)
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
+  const [subcategories, setSubcategories] = useState<ProjectSubcategory[]>([])
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(preselectedZoneId)
   const [isLoading, setIsLoading] = useState(!!projectId || !!surveyId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,9 +95,14 @@ export default function SurveyFormPage() {
         setSurvey(s)
         const p = await getProjectById(s.project_id)
         setProject(p)
+        const subs = await getSubcategoriesByProject(s.project_id)
+        setSubcategories(subs)
+        setSelectedZoneId(s.subcategory_id ?? null)
       } else if (projectId) {
         const p = await getProjectById(projectId)
         setProject(p)
+        const subs = await getSubcategoriesByProject(projectId)
+        setSubcategories(subs)
       }
     } catch (err) {
       setError('Failed to load data')
@@ -114,6 +126,7 @@ export default function SurveyFormPage() {
         ...data,
         project_id: projId,
         client_name: project?.name || '',
+        subcategory_id: selectedZoneId,
       }
 
       let surveyResult: Survey
@@ -193,6 +206,18 @@ export default function SurveyFormPage() {
           )}
 
           <Input label="Area Name / Room Number" error={getErrorMessage(formErrors.area_name)} {...register('area_name')} />
+
+          {subcategories.length > 0 && (
+            <Select
+              label="Queue / Zone"
+              options={[
+                { value: '', label: 'No zone' },
+                ...subcategories.map(s => ({ value: s.id, label: s.name })),
+              ]}
+              value={selectedZoneId ?? ''}
+              onChange={e => setSelectedZoneId(e.target.value || null)}
+            />
+          )}
 
           <Input
             label="Survey Date"

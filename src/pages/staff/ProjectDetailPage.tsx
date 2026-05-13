@@ -1,15 +1,23 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { getProjectById } from '../../services/projects'
 import { getSurveysByProject } from '../../services/surveys'
-import type { Project, Survey } from '../../types'
+import { getSubcategoriesByProject } from '../../services/subcategories'
+import type { Project, Survey, ProjectSubcategory } from '../../types'
 import { Card, Button, Spinner, Badge, BackButton } from '../../components/ui'
+import { SubcategoryModal } from '../../components/project/SubcategoryModal'
+import { ZoneTileGrid } from '../../components/project/ZoneTileGrid'
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeZoneId = searchParams.get('zone')
+
   const [project, setProject] = useState<Project | null>(null)
   const [surveys, setSurveys] = useState<Survey[]>([])
+  const [subcategories, setSubcategories] = useState<ProjectSubcategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubcategoryModalOpen, setIsSubcategoryModalOpen] = useState(false)
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(['draft', 'published', 'archived'])
   )
@@ -44,20 +52,29 @@ export default function ProjectDetailPage() {
   const loadData = async () => {
     if (!projectId) return
     try {
-      const [p, s] = await Promise.all([
+      const [p, s, sc] = await Promise.all([
         getProjectById(projectId),
         getSurveysByProject(projectId),
+        getSubcategoriesByProject(projectId),
       ])
       setProject(p)
       setSurveys(s)
+      setSubcategories(sc)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const draftSurveys = surveys.filter((s) => s.status === 'draft')
-  const publishedSurveys = surveys.filter((s) => s.status === 'published')
-  const archivedSurveys = surveys.filter((s) => s.status === 'archived')
+  const visibleSurveys = activeZoneId
+    ? surveys.filter((s) => s.subcategory_id === activeZoneId)
+    : surveys
+
+  const draftSurveys = visibleSurveys.filter((s) => s.status === 'draft')
+  const publishedSurveys = visibleSurveys.filter((s) => s.status === 'published')
+  const archivedSurveys = visibleSurveys.filter((s) => s.status === 'archived')
+
+  const hasSubcategories = subcategories.length > 0
+  const activeSubcategory = activeZoneId ? subcategories.find((z) => z.id === activeZoneId) : null
 
   if (isLoading) return <div className="flex items-center justify-center min-h-screen"><Spinner size="lg" /></div>
   if (!project) return <div>Project not found</div>
@@ -67,6 +84,17 @@ export default function ProjectDetailPage() {
       <div className="mb-4">
         <BackButton label="Back to Projects" />
       </div>
+      {/* Breadcrumb for zone view */}
+      {hasSubcategories && activeZoneId && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-slate-400">
+          <button onClick={() => setSearchParams({})} className="hover:text-white underline">
+            {project.name}
+          </button>
+          <span>/</span>
+          <span className="text-white font-medium">{activeSubcategory?.name}</span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-white">{project.name}</h1>
@@ -81,13 +109,28 @@ export default function ProjectDetailPage() {
           <Link to={`/staff/projects/${projectId}/flipbook`}>
             <Button variant="secondary">View Flipbook</Button>
           </Link>
-          <Link to={`/staff/projects/${projectId}/surveys/new`}>
+          <Link to={`/staff/projects/${projectId}/surveys/new`} state={{ subcategoryId: activeZoneId }}>
             <Button variant="primary">New Survey</Button>
           </Link>
+          <Button
+            variant="secondary"
+            onClick={() => setIsSubcategoryModalOpen(true)}
+          >
+            Subcategory
+          </Button>
         </div>
       </div>
 
       <div className="space-y-6">
+        {/* Zone Tiles (if zones exist and no zone selected) */}
+        {hasSubcategories && !activeZoneId && (
+          <ZoneTileGrid
+            subcategories={subcategories}
+            surveys={surveys}
+            onSelectZone={(zoneId) => setSearchParams({ zone: zoneId })}
+          />
+        )}
+
         {/* Active (Draft) Surveys */}
         <div>
           <button
@@ -201,6 +244,16 @@ export default function ProjectDetailPage() {
           </Card>
         )}
       </div>
+
+      {/* Subcategory Modal */}
+      <SubcategoryModal
+        isOpen={isSubcategoryModalOpen}
+        projectId={projectId!}
+        subcategories={subcategories}
+        onCreated={(sub) => setSubcategories([...subcategories, sub])}
+        onDeleted={(id) => setSubcategories(subcategories.filter((s) => s.id !== id))}
+        onClose={() => setIsSubcategoryModalOpen(false)}
+      />
     </div>
   )
 }

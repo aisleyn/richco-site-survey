@@ -9,6 +9,7 @@ import {
   deleteWaypoint,
 } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
+import { getSubcategoriesByProject } from '../../services/subcategories'
 import { publishSurvey, archiveSurvey } from '../../services/surveys'
 import { useAuthStore } from '../../store/authStore'
 import { PhaserMap } from '../../components/map/PhaserMap'
@@ -18,7 +19,7 @@ import { WaypointInitialModal } from '../../components/map/WaypointInitialModal'
 import { StatusLegend } from '../../components/map/StatusLegend'
 import { Card, Button, Spinner, Input, BackButton } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
-import type { Project, MapWaypoint, FloorPlanPage, WaypointStatus } from '../../types'
+import type { Project, MapWaypoint, FloorPlanPage, WaypointStatus, ProjectSubcategory } from '../../types'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 
 const getStatusLabel = (status: string): string => {
@@ -45,6 +46,7 @@ export default function MapPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [waypoints, setWaypoints] = useState<MapWaypoint[]>([])
   const [floorPlanPages, setFloorPlanPages] = useState<FloorPlanPage[]>([])
+  const [subcategories, setSubcategories] = useState<ProjectSubcategory[]>([])
   const [activePageId, setActivePageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false)
@@ -75,14 +77,16 @@ export default function MapPage() {
   const loadData = async () => {
     if (!projectId) return
     try {
-      const [p, wp, pages] = await Promise.all([
+      const [p, wp, pages, subs] = await Promise.all([
         getProjectById(projectId),
         getWaypointsByProject(projectId).catch(() => []),
         getFloorPlanPagesByProject(projectId).catch(() => []),
+        getSubcategoriesByProject(projectId).catch(() => []),
       ])
       setProject(p)
       setWaypoints(wp)
       setFloorPlanPages(pages)
+      setSubcategories(subs)
       // Set active page to first page if exists
       if (pages.length > 0) {
         setActivePageId(pages[0].id)
@@ -638,6 +642,8 @@ export default function MapPage() {
           waypointId={newWaypoint.id}
           waypointName={newWaypoint.area_name}
           projectId={projectId!}
+          subcategories={subcategories}
+          defaultSubcategoryId={null}
           onNameUpdate={(newName) => {
             setNewWaypoint({ ...newWaypoint, area_name: newName })
             setWaypoints((prev) =>

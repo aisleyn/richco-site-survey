@@ -6,13 +6,15 @@ import { uploadFile } from '../../services/storage'
 import { updateWaypoint } from '../../services/mapWaypoints'
 import { useToast } from '../ui/Toast'
 import { useAuthStore } from '../../store/authStore'
-import type { SurveyFormValues } from '../../types'
+import type { SurveyFormValues, ProjectSubcategory } from '../../types'
 
 interface WaypointInitialModalProps {
   isOpen: boolean
   waypointId: string
   waypointName: string
   projectId: string
+  subcategories?: ProjectSubcategory[]
+  defaultSubcategoryId?: string | null
   onClose: () => void
   onNameUpdate?: (newName: string) => void
   onSurveyLinked?: (surveyId: string) => void
@@ -23,6 +25,8 @@ export function WaypointInitialModal({
   waypointId,
   waypointName,
   projectId,
+  subcategories,
+  defaultSubcategoryId,
   onClose,
   onNameUpdate,
   onSurveyLinked,
@@ -33,6 +37,7 @@ export function WaypointInitialModal({
   const [notes, setNotes] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [zoneId, setZoneId] = useState<string | null>(defaultSubcategoryId ?? null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   console.log('WaypointInitialModal: rendering, isOpen=', isOpen, 'waypointId=', waypointId)
@@ -100,6 +105,7 @@ export function WaypointInitialModal({
         survey_notes: notes,
         suggested_system: '',
         install_notes: '',
+        subcategory_id: zoneId,
         images: files,
         scans_3d: [],
         videos: [],
@@ -117,7 +123,7 @@ export function WaypointInitialModal({
       }
 
       // Link survey to waypoint
-      await updateWaypoint(waypointId, { linked_survey_id: survey.id })
+      await updateWaypoint(waypointId, { linked_survey_id: survey.id, subcategory_id: zoneId })
 
       // Notify parent that survey was linked
       onSurveyLinked?.(survey.id)
@@ -182,6 +188,25 @@ export function WaypointInitialModal({
                 placeholder="e.g., Floor Damage"
               />
             </div>
+
+            {/* Queue / Zone */}
+            {subcategories && subcategories.length > 0 && (
+              <div>
+                <label className="block text-sm font-semibold text-white mb-2">
+                  Queue / Zone
+                </label>
+                <select
+                  value={zoneId ?? ''}
+                  onChange={e => setZoneId(e.target.value || null)}
+                  className="w-full px-3 py-2 bg-white text-black rounded border border-slate-300 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">No zone</option>
+                  {subcategories.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Notes Section */}
             <div>

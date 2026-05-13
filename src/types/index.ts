@@ -66,6 +66,7 @@ export interface Survey {
   suggested_system: string | null
   install_notes: string | null
   status: SurveyStatus
+  subcategory_id: string | null
 }
 
 export interface SurveyMedia {
@@ -111,6 +112,13 @@ export interface FloorPlanPage {
   created_at: string
 }
 
+export interface ProjectSubcategory {
+  id: string
+  project_id: string
+  name: string
+  created_at: string
+}
+
 export interface MapWaypoint {
   id: string
   project_id: string
@@ -120,6 +128,7 @@ export interface MapWaypoint {
   status: WaypointStatus
   linked_survey_id: string | null
   floor_plan_page_id: string | null
+  subcategory_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -182,6 +191,7 @@ export interface SurveyFormValues {
   survey_notes: string
   suggested_system: string
   install_notes: string
+  subcategory_id: string | null
   images: File[]
   scans_3d: File[]
   videos: File[]

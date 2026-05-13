@@ -53,6 +53,7 @@ export async function createSurvey(
         survey_notes: values.survey_notes,
         suggested_system: values.suggested_system,
         install_notes: values.install_notes,
+        subcategory_id: values.subcategory_id ?? null,
         status: 'draft',
       },
     ])
