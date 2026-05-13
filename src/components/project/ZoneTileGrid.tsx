@@ -23,19 +23,21 @@ export function ZoneTileGrid({ subcategories, surveys, onSelectZone }: ZoneTileG
         const hasDraft = hasDraftSurveys(zone.id)
 
         return (
-          <Card
+          <button
             key={zone.id}
             onClick={() => onSelectZone(zone.id)}
-            className="p-4 cursor-pointer hover:bg-slate-600 transition-colors flex flex-col items-center justify-center min-h-[120px] relative"
+            className="text-left"
           >
-            {hasDraft && (
-              <div className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-            )}
-            <h3 className="text-white font-semibold text-center mb-2">{zone.name}</h3>
-            <p className="text-slate-300 text-sm text-center">
-              {count} {count === 1 ? 'survey' : 'surveys'}
-            </p>
-          </Card>
+            <Card className="p-4 cursor-pointer hover:bg-slate-600 transition-colors flex flex-col items-center justify-center min-h-[120px] relative">
+              {hasDraft && (
+                <div className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+              )}
+              <h3 className="text-white font-semibold text-center mb-2">{zone.name}</h3>
+              <p className="text-slate-300 text-sm text-center">
+                {count} {count === 1 ? 'survey' : 'surveys'}
+              </p>
+            </Card>
+          </button>
         )
       })}
     </div>

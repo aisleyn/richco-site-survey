@@ -24,7 +24,7 @@ export function SubcategoryModal({
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
+  const toast = useToast()
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -44,7 +44,7 @@ export function SubcategoryModal({
       const result = await createSubcategory(projectId, name.trim())
       onCreated(result)
       setName('')
-      toast('Zone created', 'success')
+      toast({ message: 'Zone created', type: 'success' })
     } catch (err) {
       setError('Failed to create zone')
       console.error(err)
@@ -59,10 +59,10 @@ export function SubcategoryModal({
     try {
       await deleteSubcategory(id)
       onDeleted(id)
-      toast('Zone deleted', 'success')
+      toast({ message: 'Zone deleted', type: 'success' })
     } catch (err) {
       console.error(err)
-      toast('Failed to delete zone', 'error')
+      toast({ message: 'Failed to delete zone', type: 'error' })
     }
   }
 
@@ -85,7 +85,7 @@ export function SubcategoryModal({
               onKeyDown={handleKeyDown}
               placeholder="e.g., Queue A, Zone 1"
               disabled={isLoading}
-              error={error}
+              error={error || undefined}
             />
             <Button
               onClick={handleCreate}
