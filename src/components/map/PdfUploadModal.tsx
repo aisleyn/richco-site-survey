@@ -68,7 +68,8 @@ export function PdfUploadModal({
         const fileName = `${projectId}/floor-plan-${Date.now()}.png`
         const uploadResult = await uploadFile('floor-plans', fileName, file)
 
-        const page = await createFloorPlanPage(projectId, 1, '', uploadResult.signedUrl)
+        const label = file.name.replace(/\.[^/.]+$/, '') || 'Floor Plan'
+        const page = await createFloorPlanPage(projectId, 1, label, uploadResult.signedUrl)
         pages.push(page)
       } else {
         // Multi-page PDF

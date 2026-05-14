@@ -30,6 +30,21 @@ export async function createFloorPlanPage(
   return data[0]
 }
 
+export async function updateFloorPlanPage(
+  id: string,
+  label: string,
+): Promise<FloorPlanPage> {
+  const data = await apiFetch<FloorPlanPage[]>(
+    `floor_plan_pages?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ label }),
+    }
+  )
+  return data[0]
+}
+
 export async function deleteFloorPlanPage(id: string): Promise<void> {
   await apiFetch(`floor_plan_pages?id=eq.${id}`, { method: 'DELETE' })
 }

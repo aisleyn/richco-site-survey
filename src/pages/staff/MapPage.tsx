@@ -8,12 +8,13 @@ import {
   updateWaypointStatus,
   deleteWaypoint,
 } from '../../services/mapWaypoints'
-import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
+import { getFloorPlanPagesByProject, updateFloorPlanPage } from '../../services/floorPlanPages'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { publishSurvey, archiveSurvey } from '../../services/surveys'
 import { useAuthStore } from '../../store/authStore'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import { PdfUploadModal } from '../../components/map/PdfUploadModal'
+import { FloorPlanRenameModal } from '../../components/map/FloorPlanRenameModal'
 import { WaypointDrawer } from '../../components/map/WaypointDrawer'
 import { WaypointInitialModal } from '../../components/map/WaypointInitialModal'
 import { StatusLegend } from '../../components/map/StatusLegend'
@@ -66,6 +67,8 @@ export default function MapPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<WaypointStatus>>(
     new Set(['needs_repair', 'in_progress', 'temporary_repair', 'permanent_repair'])
   )
+  const [renamingPageId, setRenamingPageId] = useState<string | null>(null)
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
   const phaserMapRef = useRef<PhaserMapHandle>(null)
 
   useEffect(() => {
@@ -335,6 +338,26 @@ export default function MapPage() {
     }
   }
 
+  const handleRenameFloorPlan = async (newLabel: string) => {
+    if (!renamingPageId) return
+    try {
+      const updated = await updateFloorPlanPage(renamingPageId, newLabel)
+      setFloorPlanPages(
+        floorPlanPages.map((p) => (p.id === renamingPageId ? updated : p))
+      )
+      setRenamingPageId(null)
+      addToast({
+        type: 'success',
+        message: 'Floor plan renamed',
+      })
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: 'Failed to rename floor plan',
+      })
+    }
+  }
+
   const handleStatusToggle = (status: WaypointStatus) => {
     setSelectedStatuses((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
@@ -481,9 +504,14 @@ export default function MapPage() {
                   key={page.id}
                   variant={activePageId === page.id ? 'primary' : 'secondary'}
                   onClick={() => setActivePageId(page.id)}
+                  onDoubleClick={() => {
+                    setRenamingPageId(page.id)
+                    setIsRenameModalOpen(true)
+                  }}
                   className="text-sm"
+                  title="Double-click to rename"
                 >
-                  Page {page.page_number}
+                  {page.label}
                 </Button>
               ))}
             </div>
@@ -619,6 +647,20 @@ export default function MapPage() {
         projectId={project.id}
         onSuccess={handlePdfUploadSuccess}
       />
+
+      {/* Floor Plan Rename Modal */}
+      {renamingPageId && (
+        <FloorPlanRenameModal
+          isOpen={isRenameModalOpen}
+          onClose={() => {
+            setIsRenameModalOpen(false)
+            setRenamingPageId(null)
+          }}
+          currentLabel={floorPlanPages.find(p => p.id === renamingPageId)?.label || ''}
+          pageNumber={floorPlanPages.find(p => p.id === renamingPageId)?.page_number || 0}
+          onSave={handleRenameFloorPlan}
+        />
+      )}
 
       {/* Waypoint Drawer */}
       <WaypointDrawer
