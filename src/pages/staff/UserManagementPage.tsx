@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Input, Spinner, BackButton } from '../../components/ui'
+import { useToast } from '../../components/ui/Toast'
 import { useAuthStore } from '../../store/authStore'
 import type { Profile } from '../../types'
 
 interface Vendor {
   id: string
   name: string
+}
+
+interface ClientCreationResult {
+  user_id: string
+  email: string
+  temp_password: string
 }
 
 function getAuthToken(): string | null {
@@ -18,6 +25,7 @@ function getAuthToken(): string | null {
 
 export default function UserManagementPage() {
   const { profile: currentUser } = useAuthStore()
+  const addToast = useToast()
   const [staffUsers, setStaffUsers] = useState<Profile[]>([])
   const [clientUsers, setClientUsers] = useState<Profile[]>([])
   const [vendors, setVendors] = useState<Vendor[]>([])
@@ -30,6 +38,10 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState('client')
   const [isUpdating, setIsUpdating] = useState(false)
   const [showResetPasswordForm, setShowResetPasswordForm] = useState(false)
+  const [newClientEmail, setNewClientEmail] = useState('')
+  const [newClientName, setNewClientName] = useState('')
+  const [createdClient, setCreatedClient] = useState<ClientCreationResult | null>(null)
+  const [isCreating, setIsCreating] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -284,6 +296,58 @@ export default function UserManagementPage() {
       alert('Failed to delete account')
     } finally {
       setIsUpdating(false)
+    }
+  }
+
+  const handleCreateClient = async () => {
+    if (!newClientEmail.trim()) return
+
+    setIsCreating(true)
+    try {
+      const token = getAuthToken()
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-client`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            email: newClientEmail,
+            full_name: newClientName,
+          }),
+        }
+      )
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        addToast({
+          type: 'error',
+          message: `Error: ${result.error}`,
+        })
+        return
+      }
+
+      setCreatedClient(result)
+      setNewClientEmail('')
+      setNewClientName('')
+      loadData()
+      addToast({
+        type: 'success',
+        message: 'Client account created successfully',
+      })
+    } catch (err) {
+      console.error('Failed to create client', err)
+      addToast({
+        type: 'error',
+        message: 'Failed to create client account',
+      })
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -548,6 +612,85 @@ export default function UserManagementPage() {
           </Card>
         )}
       </div>
+      </div>
+
+      {/* Create New Client Account - At the bottom */}
+      <div className="mt-12 pt-8 border-t border-white/10">
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold text-white mb-4">Create New Client Account</h2>
+          <div className="space-y-4">
+            <Input
+              label="Client Email"
+              type="email"
+              placeholder="client@example.com"
+              value={newClientEmail}
+              onChange={(e) => setNewClientEmail(e.target.value)}
+            />
+            <Input
+              label="Full Name (Optional)"
+              type="text"
+              placeholder="John Doe"
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
+            />
+            <Button
+              onClick={handleCreateClient}
+              variant="secondary"
+              size="sm"
+              isLoading={isCreating}
+              disabled={!newClientEmail.trim()}
+            >
+              Create Account
+            </Button>
+          </div>
+        </Card>
+
+        {createdClient && (
+          <Card className="p-6 mt-6 bg-green-50 border border-green-200">
+            <h3 className="text-lg font-semibold text-green-900 mb-4">Account Created Successfully!</h3>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-green-700">Email:</p>
+                <p className="font-mono text-green-900 break-all">{createdClient.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-green-700">Temporary Password:</p>
+                <p className="font-mono text-green-900 break-all">{createdClient.temp_password}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded text-sm text-green-800">
+                <p className="font-semibold mb-2">Send this to the client:</p>
+                <pre className="whitespace-pre-wrap break-words text-xs">
+{`Email: ${createdClient.email}
+Password: ${createdClient.temp_password}
+
+Please log in and change your password on first login.`}
+                </pre>
+              </div>
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `Email: ${createdClient.email}\nPassword: ${createdClient.temp_password}`
+                  )
+                  addToast({
+                    type: 'success',
+                    message: 'Credentials copied to clipboard!',
+                  })
+                }}
+                variant="primary"
+                size="sm"
+              >
+                Copy Credentials
+              </Button>
+              <Button
+                onClick={() => setCreatedClient(null)}
+                variant="secondary"
+                size="sm"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   )

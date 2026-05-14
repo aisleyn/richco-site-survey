@@ -121,11 +121,6 @@ export default function StaffDashboard() {
                   Start Survey
                 </Button>
               </Link>
-              <Link to="/client" className="w-full sm:w-auto">
-                <Button variant="secondary" className="w-full px-8 py-3 border border-white text-white hover:bg-white/10 font-medium rounded-lg transition-colors">
-                  Client Portal
-                </Button>
-              </Link>
             </div>
 
             {/* Floating stat nodes */}

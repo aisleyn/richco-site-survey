@@ -17,7 +17,6 @@ import ReportsPage from '../pages/staff/ReportsPage'
 import SettingsPage from '../pages/staff/SettingsPage'
 import ClientManagementPage from '../pages/staff/VendorManagementPage'
 import VendorProjectsPage from '../pages/staff/VendorProjectsPage'
-import AccountsPage from '../pages/staff/ClientAccountsPage'
 import UserManagementPage from '../pages/staff/UserManagementPage'
 import ClientDashboard from '../pages/client/ClientDashboard'
 import ClientProfilePage from '../pages/client/ProfilePage'
@@ -72,10 +71,6 @@ export const router = createBrowserRouter([
       {
         path: 'vendor-projects',
         element: <VendorProjectsPage />,
-      },
-      {
-        path: 'accounts',
-        element: <AccountsPage />,
       },
       {
         path: 'users',

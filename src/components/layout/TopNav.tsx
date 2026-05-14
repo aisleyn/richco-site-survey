@@ -10,9 +10,7 @@ const staffNavItems = [
   { label: 'Surveys', href: '/staff/surveys', id: 'surveys' },
   { label: 'Flipbook', href: '/staff/reports', id: 'flipbook' },
   { label: 'Clients', href: '/staff/vendors', id: 'clients' },
-  { label: 'Accounts', href: '/staff/accounts', id: 'accounts' },
   { label: 'Settings', href: '/staff/settings', id: 'settings' },
-  { label: 'Client Portal', href: '/client', id: 'client-portal' },
 ]
 
 export function TopNav() {
