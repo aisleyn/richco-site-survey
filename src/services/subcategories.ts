@@ -1,5 +1,5 @@
 import { apiFetch } from '../lib/api'
-import type { ProjectSubcategory } from '../types'
+import type { ProjectSubcategory, ZoneStatus } from '../types'
 
 export async function getSubcategoriesByProject(projectId: string): Promise<ProjectSubcategory[]> {
   return await apiFetch<ProjectSubcategory[]>(
@@ -13,6 +13,21 @@ export async function createSubcategory(projectId: string, name: string): Promis
     headers: { Prefer: 'return=representation' },
     body: JSON.stringify({ project_id: projectId, name }),
   })
+  return data[0]
+}
+
+export async function updateSubcategoryStatus(
+  id: string,
+  status: ZoneStatus,
+): Promise<ProjectSubcategory> {
+  const data = await apiFetch<ProjectSubcategory[]>(
+    `project_subcategories?id=eq.${id}`,
+    {
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ status }),
+    }
+  )
   return data[0]
 }
 
