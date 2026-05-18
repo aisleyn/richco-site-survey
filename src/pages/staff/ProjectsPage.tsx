@@ -27,14 +27,14 @@ export default function ProjectsPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ProjectFormValues>({
+  } = useForm({
     resolver: zodResolver(projectSchema),
     defaultValues: {
       name: '',
       client_id: '',
       project_type: 'new_project',
     },
-  })
+  } as any)
 
   useEffect(() => {
     loadData()
