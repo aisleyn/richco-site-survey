@@ -11,6 +11,7 @@ import { Card, Button, Input, Modal, EmptyState, SkeletonGrid, BackButton, Selec
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   client_id: z.string().min(1, 'Client is required'),
+  project_type: z.enum(['maintenance', 'development']).default('maintenance'),
 })
 
 export default function ProjectsPage() {
@@ -173,7 +174,16 @@ export default function ProjectsPage() {
                     <Card className="card-hover cursor-pointer">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
+                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                              project.project_type === 'development'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+                            </span>
+                          </div>
                           <p className="text-xs sm:text-sm text-secondary mt-1">
                             Created {new Date(project.created_at).toLocaleDateString()}
                           </p>
@@ -220,7 +230,16 @@ export default function ProjectsPage() {
                       <Card className="card-hover cursor-pointer bg-slate-50">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
+                              <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                                project.project_type === 'development'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+                              </span>
+                            </div>
                             <p className="text-xs sm:text-sm text-secondary mt-1">
                               Created {new Date(project.created_at).toLocaleDateString()}
                             </p>
@@ -273,6 +292,29 @@ export default function ProjectsPage() {
             {errors.client_id?.message && (
               <p className="text-red-600 text-sm mt-1">{errors.client_id.message}</p>
             )}
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-white mb-2">Project Type</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="maintenance"
+                  {...register('project_type')}
+                  className="w-4 h-4"
+                />
+                <span className="text-white">Maintenance</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="development"
+                  {...register('project_type')}
+                  className="w-4 h-4"
+                />
+                <span className="text-white">Development</span>
+              </label>
+            </div>
           </div>
           <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting}>
             Create Project
