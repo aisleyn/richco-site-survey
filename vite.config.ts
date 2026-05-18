@@ -7,6 +7,10 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['phaser'],
   },
+  server: {
+    port: 5175,
+    strictPort: false,
+  },
   build: {
     sourcemap: false,
     rollupOptions: {

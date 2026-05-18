@@ -84,6 +84,7 @@ export default function SamplesPage() {
             <SampleCard
               key={sample.id}
               sample={sample}
+              projectName={project?.name}
               onStatusChange={handleSampleStatusUpdated}
             />
           ))}

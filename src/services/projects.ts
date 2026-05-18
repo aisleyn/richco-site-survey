@@ -41,7 +41,7 @@ export async function createProject(values: ProjectFormValues): Promise<Project>
       {
         name: values.name,
         client_id: values.client_id || 'f8c5ffd1-202b-4ade-94db-088494aa1ad5',
-        project_type: values.project_type || 'maintenance',
+        project_type: values.project_type || 'new_project',
       },
     ])
     .select()

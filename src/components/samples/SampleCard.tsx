@@ -1,15 +1,22 @@
 import { useState } from 'react'
 import { Card, Button } from '../ui'
 import { updateSampleStatus } from '../../services/samples'
+import { sendSampleStatusEmail } from '../../services/email'
 import type { Sample } from '../../types'
 import { useToast } from '../ui/Toast'
+import { useAuthStore } from '../../store/authStore'
 
 interface SampleCardProps {
   sample: Sample
   onStatusChange?: (sample: Sample) => void
 }
 
-export function SampleCard({ sample, onStatusChange }: SampleCardProps) {
+interface SampleCardPropsWithHandlers extends SampleCardProps {
+  projectName?: string
+  staffEmail?: string
+}
+
+export function SampleCard({ sample, onStatusChange, projectName, staffEmail }: SampleCardPropsWithHandlers) {
   const [isUpdating, setIsUpdating] = useState(false)
   const toast = useToast()
 
@@ -18,6 +25,16 @@ export function SampleCard({ sample, onStatusChange }: SampleCardProps) {
     try {
       const updated = await updateSampleStatus(sample.id, newStatus)
       onStatusChange?.(updated)
+
+      // Send email to staff if email provided
+      if (staffEmail && projectName) {
+        try {
+          await sendSampleStatusEmail(staffEmail, projectName, sample.title, newStatus)
+        } catch (emailErr) {
+          console.error('Failed to send email:', emailErr)
+        }
+      }
+
       toast({
         message: `Sample ${newStatus}`,
         type: newStatus === 'approved' ? 'success' : 'info',

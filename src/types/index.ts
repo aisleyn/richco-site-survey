@@ -4,7 +4,7 @@ export type MediaType = 'image' | 'video' | '3d_scan' | 'pdf'
 export type SurveyStatus = 'draft' | 'published' | 'archived'
 export type WaypointStatus = 'needs_repair' | 'in_progress' | 'completed' | 'temporary_repair' | 'permanent_repair'
 export type WaypointPhotoType = 'before' | 'after' | 'progress' | 'general'
-export type ProjectType = 'maintenance' | 'development'
+export type ProjectType = 'new_project' | 'in_development' | 'maintenance'
 export type ZoneStatus = 'concept' | 'in_development' | 'approved' | 'denied' | 'on_hold'
 export type WaypointType = 'repair' | 'new_work'
 export type SampleStatus = 'pending' | 'approved' | 'denied'
@@ -36,8 +36,9 @@ export const WaypointStatus = {
 }
 
 export const ProjectType = {
+  NEW_PROJECT: 'new_project' as const,
+  IN_DEVELOPMENT: 'in_development' as const,
   MAINTENANCE: 'maintenance' as const,
-  DEVELOPMENT: 'development' as const,
 }
 
 export const ZoneStatus = {

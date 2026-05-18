@@ -4,9 +4,11 @@ import { Modal, Button, Input, Textarea } from '../ui'
 import { createSample } from '../../services/samples'
 import { uploadFile } from '../../services/storage'
 import { upsertSampleReportPage } from '../../services/reportPages'
+import { sendSampleCreatedEmail } from '../../services/email'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../ui/Toast'
-import type { Sample } from '../../types'
+import type { Sample, Project } from '../../types'
+import { getProjectById } from '../../services/projects'
 
 interface SampleCreateModalProps {
   isOpen: boolean
@@ -53,6 +55,21 @@ export function SampleCreateModal({ isOpen, projectId, onCreated, onClose }: Sam
       }, profile?.id || '')
 
       await upsertSampleReportPage(projectId, newSample.id)
+
+      // Send email to client about new sample
+      try {
+        const project = await getProjectById(projectId)
+        const clientProfile = await fetch(`/api/profiles/${project.client_id}`)
+          .then(r => r.json())
+          .catch(() => null)
+
+        if (clientProfile?.email) {
+          await sendSampleCreatedEmail(clientProfile.email, project.name, data.title)
+        }
+      } catch (emailErr) {
+        console.error('Failed to send email:', emailErr)
+        // Don't fail the sample creation if email fails
+      }
 
       onCreated(newSample)
       reset()

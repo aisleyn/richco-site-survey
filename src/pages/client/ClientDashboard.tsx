@@ -3,15 +3,21 @@ import { Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getReportPagesByProject } from '../../services/reportPages'
+import { getSubcategoriesByProject } from '../../services/subcategories'
+import { getSamplesByProject } from '../../services/samples'
 import { Flipbook } from '../../components/flipbook'
-import { Button, Spinner } from '../../components/ui'
-import type { ReportPage, Project } from '../../types'
+import { Button, Spinner, Card, Badge } from '../../components/ui'
+import { SampleCard } from '../../components/samples/SampleCard'
+import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications'
+import type { ReportPage, Project, ProjectSubcategory, Sample } from '../../types'
 import AnimatedBackground from '../../components/dashboard/AnimatedBackground'
 
 export default function ClientDashboard() {
   const { profile } = useAuthStore()
   const [pages, setPages] = useState<ReportPage[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [projectZones, setProjectZones] = useState<Map<string, ProjectSubcategory[]>>(new Map())
+  const [projectSamples, setProjectSamples] = useState<Map<string, Sample[]>>(new Map())
   const [stats, setStats] = useState({
     activeProjects: 0,
     surveysFiled: 0,
@@ -25,6 +31,18 @@ export default function ClientDashboard() {
       setIsLoading(false)
     }
   }, [profile])
+
+  // Subscribe to realtime sample status changes
+  useRealtimeNotifications(projects.map(p => p.id))
+
+  const handleSampleStatusUpdated = (projectId: string, updatedSample: Sample) => {
+    setProjectSamples(prev => {
+      const newMap = new Map(prev)
+      const samples = newMap.get(projectId) || []
+      newMap.set(projectId, samples.map(s => s.id === updatedSample.id ? updatedSample : s))
+      return newMap
+    })
+  }
 
   const loadData = async () => {
     if (!profile?.id) {
@@ -103,6 +121,9 @@ export default function ClientDashboard() {
 
       if (allProjects.length > 0) {
         const allPages: ReportPage[] = []
+        const zonesMap = new Map<string, ProjectSubcategory[]>()
+        const samplesMap = new Map<string, Sample[]>()
+
         for (const p of allProjects) {
           try {
             const data = await getReportPagesByProject(p.id)
@@ -110,8 +131,29 @@ export default function ClientDashboard() {
           } catch (err) {
             console.error(`Failed to load reports for project ${p.id}:`, err)
           }
+
+          // Load zones for development projects
+          if (p.project_type === 'development') {
+            try {
+              const zones = await getSubcategoriesByProject(p.id)
+              zonesMap.set(p.id, zones)
+            } catch (err) {
+              console.error(`Failed to load zones for project ${p.id}:`, err)
+            }
+
+            // Load samples for development projects
+            try {
+              const samples = await getSamplesByProject(p.id)
+              samplesMap.set(p.id, samples)
+            } catch (err) {
+              console.error(`Failed to load samples for project ${p.id}:`, err)
+            }
+          }
         }
+
         setPages(allPages)
+        setProjectZones(zonesMap)
+        setProjectSamples(samplesMap)
         setStats({
           activeProjects: allProjects.length,
           surveysFiled: allPages.length,
@@ -197,6 +239,74 @@ export default function ClientDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Project Zones Section (Development Projects) */}
+        {Array.from(projectZones.entries()).length > 0 && (
+          <div className="py-16 px-6 border-t border-slate-700">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-3xl font-bold text-white mb-12 text-center" style={{ fontFamily: '"Syne", sans-serif' }}>Project Zones</h2>
+              <div className="space-y-8">
+                {Array.from(projectZones.entries()).map(([projectId, zones]) => {
+                  const project = projects.find(p => p.id === projectId)
+                  return zones.length > 0 ? (
+                    <div key={projectId}>
+                      <h3 className="text-xl font-semibold text-white mb-4">{project?.name}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {zones.map(zone => {
+                          const statusColor =
+                            zone.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            zone.status === 'in_development' ? 'bg-amber-100 text-amber-800' :
+                            zone.status === 'denied' ? 'bg-red-100 text-red-800' :
+                            zone.status === 'on_hold' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+
+                          return (
+                            <Card key={zone.id} className="p-4">
+                              <h4 className="text-lg font-semibold text-white mb-2">{zone.name}</h4>
+                              <div className={`inline-block px-3 py-1 rounded text-sm font-medium ${statusColor}`}>
+                                {zone.status.charAt(0).toUpperCase() + zone.status.slice(1)}
+                              </div>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  ) : null
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pending Samples Section */}
+        {Array.from(projectSamples.values()).some(samples => samples.some(s => s.status === 'pending')) && (
+          <div className="py-16 px-6 border-t border-slate-700">
+            <div className="max-w-6xl mx-auto">
+              <h2 className="text-3xl font-bold text-white mb-12 text-center" style={{ fontFamily: '"Syne", sans-serif' }}>Pending Samples</h2>
+              <div className="space-y-8">
+                {Array.from(projectSamples.entries()).map(([projectId, samples]) => {
+                  const project = projects.find(p => p.id === projectId)
+                  const pendingSamples = samples.filter(s => s.status === 'pending')
+                  return pendingSamples.length > 0 ? (
+                    <div key={projectId}>
+                      <h3 className="text-xl font-semibold text-white mb-4">{project?.name}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {pendingSamples.map(sample => (
+                          <SampleCard
+                            key={sample.id}
+                            sample={sample}
+                            projectName={project?.name}
+                            onStatusChange={(updated) => handleSampleStatusUpdated(projectId, updated)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Reports Section */}
         {pages.length > 0 && (

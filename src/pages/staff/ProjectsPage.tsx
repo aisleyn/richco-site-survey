@@ -4,14 +4,15 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { supabase } from '../../lib/supabase'
-import { getProjects, createProject, getClients } from '../../services/projects'
+import { getProjects, createProject, getClients, updateProject } from '../../services/projects'
 import type { Project, ProjectFormValues, Profile } from '../../types'
 import { Card, Button, Input, Modal, EmptyState, SkeletonGrid, BackButton, Select } from '../../components/ui'
+import { CollapsibleActionMenu } from '../../components/project/CollapsibleActionMenu'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   client_id: z.string().min(1, 'Client is required'),
-  project_type: z.enum(['maintenance', 'development']).default('maintenance'),
+  project_type: z.enum(['new_project', 'in_development', 'maintenance']).default('new_project'),
 })
 
 export default function ProjectsPage() {
@@ -29,6 +30,9 @@ export default function ProjectsPage() {
     formState: { errors, isSubmitting },
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
+    defaultValues: {
+      project_type: 'new_project',
+    },
   })
 
   useEffect(() => {
@@ -77,11 +81,29 @@ export default function ProjectsPage() {
     if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return
 
     try {
+      const msg = `[${new Date().toISOString()}] Starting delete for ${projectId}`
+      console.log(msg)
+      localStorage.setItem('debug-delete', msg)
+
       const { error } = await supabase.from('projects').delete().eq('id', projectId)
-      if (error) throw error
+      if (error) {
+        const errMsg = `Delete error: ${JSON.stringify(error)}`
+        console.error(errMsg)
+        localStorage.setItem('debug-delete', errMsg)
+        throw error
+      }
+
+      const msg2 = `[${new Date().toISOString()}] Delete succeeded`
+      console.log(msg2)
+      localStorage.setItem('debug-delete', msg2)
+
       setProjects(projects.filter((p) => p.id !== projectId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete project')
+      const errMsg = err instanceof Error ? err.message : String(err)
+      const fullMsg = `[${new Date().toISOString()}] Delete error: ${errMsg}`
+      console.error(fullMsg)
+      localStorage.setItem('debug-delete', fullMsg)
+      setError(errMsg)
     }
   }
 
@@ -90,33 +112,23 @@ export default function ProjectsPage() {
     e.stopPropagation()
 
     try {
-      const projectId2 = import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0]
-      let token: string | null = null
-      if (projectId2) {
-        const sbKey = `sb-${projectId2}-auth-token`
-        const raw = localStorage.getItem(sbKey)
-        token = raw ? JSON.parse(raw)?.access_token ?? null : null
-      }
+      const msg = `[${new Date().toISOString()}] Starting archive for ${projectId}`
+      console.log(msg)
+      localStorage.setItem('debug-archive', msg)
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/projects?id=eq.${projectId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({ archived: !archived }),
-        }
-      )
+      await updateProject(projectId, { archived: !archived })
 
-      if (!response.ok) {
-        throw new Error('Failed to update project')
-      }
+      const msg2 = `[${new Date().toISOString()}] Archive succeeded`
+      console.log(msg2)
+      localStorage.setItem('debug-archive', msg2)
+
       loadData()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update project')
+      const errMsg = err instanceof Error ? err.message : String(err)
+      const fullMsg = `[${new Date().toISOString()}] Archive error: ${errMsg}`
+      console.error(fullMsg)
+      localStorage.setItem('debug-archive', fullMsg)
+      setError(errMsg)
     }
   }
 
@@ -170,43 +182,41 @@ export default function ProjectsPage() {
               {projects
                 .filter((p) => !p.archived)
                 .map((project) => (
-                  <Link key={project.id} to={`/staff/projects/${project.id}`}>
+                  <Link
+                    key={project.id}
+                    to={`/staff/projects/${project.id}`}
+                  >
                     <Card className="card-hover cursor-pointer">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                      <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
-                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                              project.project_type === 'development'
-                                ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {project.project_type === 'development' ? 'Development' : 'Maintenance'}
-                            </span>
-                          </div>
+                          <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
                           <p className="text-xs sm:text-sm text-secondary mt-1">
                             Created {new Date(project.created_at).toLocaleDateString()}
                           </p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            Attached Client User: {project.client_id ? (clientMap[project.client_id] || 'unknown') : 'none'}
-                          </p>
                         </div>
-                        <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1 flex-shrink-0">
-                          <button
-                            onClick={(e) => handleArchiveProject(e, project.id, project.archived || false)}
-                            className="text-amber-600 hover:text-amber-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
-                          >
-                            Archive
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteProject(e, project.id)}
-                            className="text-red-600 hover:text-red-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
-                          >
-                            Delete
-                          </button>
-                          <svg className="hidden xs:block w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                            project.project_type === 'development'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+                          </span>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <CollapsibleActionMenu
+                              actions={[
+                                {
+                                  label: 'Archive',
+                                  onClick: (e: any) => handleArchiveProject(e, project.id, project.archived || false),
+                                },
+                                {
+                                  label: 'Delete',
+                                  variant: 'danger' as const,
+                                  onClick: (e: any) => handleDeleteProject(e, project.id),
+                                },
+                              ]}
+                            />
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -226,43 +236,41 @@ export default function ProjectsPage() {
                 {projects
                   .filter((p) => p.archived)
                   .map((project) => (
-                    <Link key={project.id} to={`/staff/projects/${project.id}`}>
+                    <Link
+                      key={project.id}
+                      to={`/staff/projects/${project.id}`}
+                    >
                       <Card className="card-hover cursor-pointer bg-slate-50">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                        <div className="flex items-center justify-between gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
-                              <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                                project.project_type === 'development'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-gray-100 text-gray-800'
-                              }`}>
-                                {project.project_type === 'development' ? 'Development' : 'Maintenance'}
-                              </span>
-                            </div>
+                            <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{project.name}</h3>
                             <p className="text-xs sm:text-sm text-secondary mt-1">
                               Created {new Date(project.created_at).toLocaleDateString()}
                             </p>
-                            <p className="text-xs text-slate-400 mt-1">
-                              Attached Client User: {project.client_id ? (clientMap[project.client_id] || 'unknown') : 'none'}
-                            </p>
                           </div>
-                          <div className="flex flex-col xs:flex-row items-stretch xs:items-center xs:gap-2 gap-1 flex-shrink-0">
-                            <button
-                              onClick={(e) => handleArchiveProject(e, project.id, project.archived || false)}
-                              className="text-blue-600 hover:text-blue-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
-                            >
-                              Restore
-                            </button>
-                            <button
-                              onClick={(e) => handleDeleteProject(e, project.id)}
-                              className="text-red-600 hover:text-red-700 text-xs xs:text-sm font-medium transition-colors px-2 py-1 rounded hover:bg-white/5"
-                            >
-                              Delete
-                            </button>
-                            <svg className="hidden xs:block w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+                              project.project_type === 'development'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+                            </span>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <CollapsibleActionMenu
+                                actions={[
+                                  {
+                                    label: 'Restore',
+                                    onClick: (e: any) => handleArchiveProject(e, project.id, project.archived || false),
+                                  },
+                                  {
+                                    label: 'Delete',
+                                    variant: 'danger' as const,
+                                    onClick: (e: any) => handleDeleteProject(e, project.id),
+                                  },
+                                ]}
+                              />
+                            </div>
                           </div>
                         </div>
                       </Card>
@@ -299,20 +307,29 @@ export default function ProjectsPage() {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
+                  value="new_project"
+                  {...register('project_type')}
+                  className="w-4 h-4"
+                />
+                <span className="text-white">New Project</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  value="in_development"
+                  {...register('project_type')}
+                  className="w-4 h-4"
+                />
+                <span className="text-white">In Development</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
                   value="maintenance"
                   {...register('project_type')}
                   className="w-4 h-4"
                 />
                 <span className="text-white">Maintenance</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  value="development"
-                  {...register('project_type')}
-                  className="w-4 h-4"
-                />
-                <span className="text-white">Development</span>
               </label>
             </div>
           </div>

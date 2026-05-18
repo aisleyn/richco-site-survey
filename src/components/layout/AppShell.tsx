@@ -1,7 +1,28 @@
+import { useEffect, useState } from 'react'
 import { TopNav } from './TopNav'
 import { Outlet } from 'react-router-dom'
+import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications'
+import { supabase } from '../../lib/supabase'
 
 export function AppShell() {
+  const [projectIds, setProjectIds] = useState<string[]>([])
+
+  useEffect(() => {
+    loadProjectIds()
+  }, [])
+
+  const loadProjectIds = async () => {
+    try {
+      const { data } = await supabase.from('projects').select('id')
+      setProjectIds(data?.map(p => p.id) || [])
+    } catch (err) {
+      console.error('Failed to load project IDs:', err)
+    }
+  }
+
+  // Subscribe to realtime sample status changes
+  useRealtimeNotifications(projectIds)
+
   return (
     <div className="flex flex-col h-screen bg-base" style={{ background: 'linear-gradient(135deg, #080808 0%, #080808 100%), radial-gradient(ellipse 800px 600px at 20% 30%, rgba(76, 110, 100, 0.15) 0%, transparent 70%), radial-gradient(ellipse 600px 500px at 80% 70%, rgba(71, 85, 105, 0.12) 0%, transparent 65%)', backgroundAttachment: 'fixed' }}>
       <TopNav />
