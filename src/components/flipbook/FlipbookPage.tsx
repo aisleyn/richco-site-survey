@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
-import type { ReportPage, Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia } from '../../types'
+import type { ReportPage, Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia, Sample } from '../../types'
 import { getSurveyById, getSurveyMedia } from '../../services/surveys'
 import { getSurveyUpdates } from '../../services/surveyUpdates'
+import { getSampleById } from '../../services/samples'
 import { Spinner, MediaPreviewModal } from '../ui'
 
 interface FlipbookPageProps {
@@ -11,9 +12,11 @@ interface FlipbookPageProps {
 
 export function FlipbookPage({ page }: FlipbookPageProps) {
   const [surveys, setSurveys] = useState<Array<{ survey: Survey; media: SurveyMedia[]; updates: Array<SurveyUpdate & { media: SurveyUpdateMedia[] }> }>>([])
+  const [sample, setSample] = useState<Sample | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMedia, setSelectedMedia] = useState<{ file_url: string; media_type: string } | null>(null)
+  const [contentType, setContentType] = useState<'chapter' | 'sample' | 'surveys'>('surveys')
 
   useEffect(() => {
     loadPageSurveys()
@@ -21,11 +24,37 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
 
   const loadPageSurveys = async () => {
     try {
+      console.log('Loading page:', page.id)
+
+      // Handle chapter breaks
+      if (page.is_chapter_break) {
+        setContentType('chapter')
+        setIsLoading(false)
+        return
+      }
+
+      // Handle sample pages
+      if (page.sample_id) {
+        try {
+          const sampleData = await getSampleById(page.sample_id)
+          setSample(sampleData)
+          setContentType('sample')
+          setIsLoading(false)
+        } catch (err) {
+          console.error('Failed to load sample:', err)
+          setError('Failed to load sample')
+          setIsLoading(false)
+        }
+        return
+      }
+
+      // Handle survey pages (existing logic)
       console.log('Loading surveys for page:', page.id, 'with survey IDs:', page.survey_ids)
 
       if (!page.survey_ids || page.survey_ids.length === 0) {
         console.log('No survey IDs found for this page')
         setSurveys([])
+        setIsLoading(false)
         return
       }
 
@@ -77,6 +106,76 @@ export function FlipbookPage({ page }: FlipbookPageProps) {
       <div className="p-8 bg-red-50 rounded border border-red-200">
         <p className="text-red-700 font-semibold">Error loading surveys</p>
         <p className="text-red-600 text-sm mt-1">{error}</p>
+      </div>
+    )
+  }
+
+  // Render chapter break
+  if (contentType === 'chapter') {
+    return (
+      <div className="p-12 bg-gradient-to-r from-slate-50 to-slate-100 min-h-96 flex flex-col items-center justify-center border-2 border-slate-300">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-slate-800 mb-4">{page.chapter_label}</h1>
+          <p className="text-slate-600">
+            {new Date(page.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Render sample page
+  if (contentType === 'sample' && sample) {
+    return (
+      <div className="p-8 bg-white min-h-96">
+        <div className="mb-8 pb-6 border-b border-slate-200">
+          <h2 className="text-2xl font-bold text-black mb-2">Sample: {sample.title}</h2>
+          <div className="inline-block px-3 py-1 rounded-full text-sm font-semibold mt-2"
+            style={{
+              backgroundColor: sample.status === 'approved' ? '#dcfce7' : sample.status === 'denied' ? '#fee2e2' : '#fef3c7',
+              color: sample.status === 'approved' ? '#166534' : sample.status === 'denied' ? '#991b1b' : '#92400e',
+            }}>
+            {sample.status.charAt(0).toUpperCase() + sample.status.slice(1)}
+          </div>
+          <p className="text-sm text-slate-600 mt-3">
+            Created {new Date(sample.created_at).toLocaleDateString()}
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {sample.image_url && (
+            <div>
+              <h3 className="text-lg font-semibold text-black mb-3">Sample Image</h3>
+              <img
+                src={sample.image_url}
+                alt={sample.title}
+                className="max-w-md rounded border border-slate-200 cursor-pointer hover:shadow-lg transition"
+                onClick={() => setSelectedMedia({ file_url: sample.image_url!, media_type: 'image' })}
+              />
+            </div>
+          )}
+
+          {sample.product_details && (
+            <div>
+              <h3 className="text-lg font-semibold text-black mb-2">Product Details</h3>
+              <p className="text-slate-700">{sample.product_details}</p>
+            </div>
+          )}
+
+          {sample.process_details && (
+            <div>
+              <h3 className="text-lg font-semibold text-black mb-2">Process Details</h3>
+              <p className="text-slate-700">{sample.process_details}</p>
+            </div>
+          )}
+
+          {sample.proposal && (
+            <div>
+              <h3 className="text-lg font-semibold text-black mb-2">Proposal</h3>
+              <p className="text-slate-700">{sample.proposal}</p>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
