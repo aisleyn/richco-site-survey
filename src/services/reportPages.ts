@@ -22,9 +22,9 @@ export async function getReportPagesByProject(projectId: string): Promise<Report
   const totalSurveys = surveys?.length || 0
   const existingSurveyIds = new Set(surveys?.map(s => s.id) || [])
 
-  // Clean up report pages with orphaned survey IDs
+  // Clean up report pages with orphaned survey IDs (skip chapter breaks and sample pages)
   const pagesToCleanup = data?.filter(page =>
-    page.survey_ids?.some((id: string) => !existingSurveyIds.has(id))
+    !page.is_chapter_break && !page.sample_id && page.survey_ids?.some((id: string) => !existingSurveyIds.has(id))
   ) || []
 
   if (pagesToCleanup.length > 0) {
@@ -36,8 +36,12 @@ export async function getReportPagesByProject(projectId: string): Promise<Report
       return { ...page, survey_ids: validIds }
     }) || []
 
-    // Update pages with cleaned survey_ids or delete if empty
+    // Update pages with cleaned survey_ids or delete if empty (skip chapter breaks and sample pages)
     for (const page of cleanedPages) {
+      if (page.is_chapter_break || page.sample_id) {
+        // Don't delete chapter breaks or sample pages
+        continue
+      }
       if (page.survey_ids && page.survey_ids.length > 0) {
         const { error: updateError } = await supabase
           .from('report_pages')
@@ -53,8 +57,8 @@ export async function getReportPagesByProject(projectId: string): Promise<Report
       }
     }
 
-    // Return the cleaned version
-    return cleanedPages.filter(p => p.survey_ids && p.survey_ids.length > 0)
+    // Return the cleaned version (keep chapter breaks and sample pages)
+    return cleanedPages.filter(p => p.is_chapter_break || p.sample_id || (p.survey_ids && p.survey_ids.length > 0))
   }
 
   const surveysCovered = data?.reduce((sum, page) => sum + (page.survey_ids?.length || 0), 0) || 0
@@ -227,8 +231,8 @@ export async function splitBundledReportPages(projectId: string): Promise<void> 
   if (selectError) throw selectError
   if (!pages || pages.length === 0) return
 
-  // Find pages with multiple surveys
-  const bundledPages = pages.filter((p: any) => p.survey_ids && p.survey_ids.length > 1)
+  // Find pages with multiple surveys (skip chapter breaks and sample pages)
+  const bundledPages = pages.filter((p: any) => !p.is_chapter_break && !p.sample_id && p.survey_ids && p.survey_ids.length > 1)
   if (bundledPages.length === 0) return
 
   // Delete the bundled pages
@@ -261,5 +265,75 @@ export async function splitBundledReportPages(projectId: string): Promise<void> 
   if (newPages.length > 0) {
     const { error: insertError } = await supabase.from('report_pages').insert(newPages)
     if (insertError) throw insertError
+  }
+}
+
+export async function upsertSampleReportPage(projectId: string, sampleId: string): Promise<void> {
+  const monthTag = format(new Date(), 'yyyy-MM')
+
+  // Check if sample already has a page
+  const { data: existing } = await supabase
+    .from('report_pages')
+    .select('id')
+    .eq('project_id', projectId)
+    .eq('sample_id', sampleId)
+    .limit(1)
+
+  if (existing && existing.length > 0) {
+    return
+  }
+
+  // Get next page number
+  const { data: pages } = await supabase
+    .from('report_pages')
+    .select('page_number')
+    .eq('project_id', projectId)
+    .order('page_number', { ascending: false })
+    .limit(1)
+
+  const pageNumber = (pages?.[0]?.page_number || 0) + 1
+
+  const { error } = await supabase.from('report_pages').insert([
+    {
+      project_id: projectId,
+      page_number: pageNumber,
+      month_tag: monthTag,
+      survey_ids: [],
+      sample_id: sampleId,
+    },
+  ])
+
+  if (error) {
+    console.error('Error creating sample report page:', error)
+  }
+}
+
+export async function insertChapterBreak(projectId: string, label: string): Promise<void> {
+  const monthTag = format(new Date(), 'yyyy-MM')
+
+  // Get next page number
+  const { data: pages } = await supabase
+    .from('report_pages')
+    .select('page_number')
+    .eq('project_id', projectId)
+    .order('page_number', { ascending: false })
+    .limit(1)
+
+  const pageNumber = (pages?.[0]?.page_number || 0) + 1
+
+  const { error } = await supabase.from('report_pages').insert([
+    {
+      project_id: projectId,
+      page_number: pageNumber,
+      month_tag: monthTag,
+      survey_ids: [],
+      is_chapter_break: true,
+      chapter_label: label,
+    },
+  ])
+
+  if (error) {
+    console.error('Error creating chapter break:', error)
+    throw error
   }
 }

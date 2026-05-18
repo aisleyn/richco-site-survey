@@ -4,6 +4,10 @@ export type MediaType = 'image' | 'video' | '3d_scan' | 'pdf'
 export type SurveyStatus = 'draft' | 'published' | 'archived'
 export type WaypointStatus = 'needs_repair' | 'in_progress' | 'completed' | 'temporary_repair' | 'permanent_repair'
 export type WaypointPhotoType = 'before' | 'after' | 'progress' | 'general'
+export type ProjectType = 'maintenance' | 'development'
+export type ZoneStatus = 'concept' | 'in_development' | 'approved' | 'denied' | 'on_hold'
+export type WaypointType = 'repair' | 'new_work'
+export type SampleStatus = 'pending' | 'approved' | 'denied'
 
 export const UserRole = {
   STAFF: 'richco_staff' as const,
@@ -31,6 +35,30 @@ export const WaypointStatus = {
   PERMANENT_REPAIR: 'permanent_repair' as const,
 }
 
+export const ProjectType = {
+  MAINTENANCE: 'maintenance' as const,
+  DEVELOPMENT: 'development' as const,
+}
+
+export const ZoneStatus = {
+  CONCEPT: 'concept' as const,
+  IN_DEVELOPMENT: 'in_development' as const,
+  APPROVED: 'approved' as const,
+  DENIED: 'denied' as const,
+  ON_HOLD: 'on_hold' as const,
+}
+
+export const WaypointType = {
+  REPAIR: 'repair' as const,
+  NEW_WORK: 'new_work' as const,
+}
+
+export const SampleStatus = {
+  PENDING: 'pending' as const,
+  APPROVED: 'approved' as const,
+  DENIED: 'denied' as const,
+}
+
 // Database Models
 export interface Profile {
   id: string
@@ -50,6 +78,7 @@ export interface Project {
   map_image_url: string | null
   created_at: string
   archived?: boolean
+  project_type: ProjectType
 }
 
 export interface Survey {
@@ -85,6 +114,9 @@ export interface ReportPage {
   month_tag: string
   survey_ids: string[]
   staff_notes: string | null
+  is_chapter_break: boolean
+  chapter_label: string | null
+  sample_id: string | null
 }
 
 export interface ClientSubmission {
@@ -117,6 +149,7 @@ export interface ProjectSubcategory {
   project_id: string
   name: string
   created_at: string
+  status: ZoneStatus
 }
 
 export interface MapWaypoint {
@@ -133,6 +166,8 @@ export interface MapWaypoint {
   created_at: string
   updated_at: string
   repair_notes: string | null
+  waypoint_type: WaypointType
+  work_completed: string | null
 }
 
 export interface WaypointRepairHistory {
@@ -200,6 +235,7 @@ export interface SurveyFormValues {
 export interface ProjectFormValues {
   name: string
   client_id: string
+  project_type: ProjectType
 }
 
 export interface ClientSubmissionFormValues {
@@ -207,6 +243,20 @@ export interface ClientSubmissionFormValues {
   notes: string
   images: File[]
   videos: File[]
+}
+
+export interface Sample {
+  id: string
+  project_id: string
+  title: string
+  image_url: string | null
+  product_details: string | null
+  process_details: string | null
+  proposal: string | null
+  status: SampleStatus
+  created_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 // Auth Types

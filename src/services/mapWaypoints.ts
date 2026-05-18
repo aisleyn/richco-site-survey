@@ -1,6 +1,6 @@
 import { apiFetch } from '../lib/api'
 import { addRepairHistoryEntry } from './waypointRepairHistory'
-import type { MapWaypoint, WaypointStatus } from '../types'
+import type { MapWaypoint, WaypointStatus, WaypointType } from '../types'
 
 export async function getWaypointsByProject(projectId: string): Promise<MapWaypoint[]> {
   const data = await apiFetch<MapWaypoint[]>(
@@ -15,9 +15,11 @@ export async function createWaypoint(
   xPercent: number,
   yPercent: number,
   floorPlanPageId?: string,
+  waypointType: WaypointType = 'repair',
 ): Promise<MapWaypoint> {
   try {
     console.log('createWaypoint: creating new waypoint')
+    const initialStatus = waypointType === 'new_work' ? 'in_progress' : 'needs_repair'
     const data = await apiFetch<MapWaypoint[]>(
       'map_waypoints',
       {
@@ -28,7 +30,8 @@ export async function createWaypoint(
           area_name: areaName,
           x_percent: xPercent,
           y_percent: yPercent,
-          status: 'needs_repair',
+          status: initialStatus,
+          waypoint_type: waypointType,
           floor_plan_page_id: floorPlanPageId || null,
         }),
       }
