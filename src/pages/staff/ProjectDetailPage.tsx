@@ -97,7 +97,16 @@ export default function ProjectDetailPage() {
 
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">{project.name}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white">{project.name}</h1>
+            <span className={`px-3 py-1 rounded text-sm font-medium ${
+              project.project_type === 'development'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+            </span>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link to={`/staff/projects/${projectId}/map`}>
@@ -109,6 +118,11 @@ export default function ProjectDetailPage() {
           <Link to={`/staff/projects/${projectId}/flipbook`}>
             <Button variant="secondary">View Flipbook</Button>
           </Link>
+          {project.project_type === 'development' && (
+            <Link to={`/staff/projects/${projectId}/samples`}>
+              <Button variant="secondary">Samples</Button>
+            </Link>
+          )}
           <Link to={`/staff/projects/${projectId}/surveys/new`} state={{ subcategoryId: activeZoneId }}>
             <Button variant="primary">New Survey</Button>
           </Link>
@@ -128,6 +142,7 @@ export default function ProjectDetailPage() {
             subcategories={subcategories}
             surveys={surveys}
             onSelectZone={(zoneId) => setSearchParams({ zone: zoneId })}
+            projectType={project.project_type}
           />
         )}
 
@@ -253,6 +268,7 @@ export default function ProjectDetailPage() {
         onCreated={(sub) => setSubcategories([...subcategories, sub])}
         onDeleted={(id) => setSubcategories(subcategories.filter((s) => s.id !== id))}
         onClose={() => setIsSubcategoryModalOpen(false)}
+        projectType={project.project_type}
       />
     </div>
   )
