@@ -274,7 +274,7 @@ export default function ProjectsPage() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Project">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Project Name" error={errors.name?.message} {...register('name')} />
+          <Input label="Project Name" error={errors.name?.message as string | undefined} {...register('name')} />
           <div>
             <Select
               label="Link Client"
@@ -288,7 +288,7 @@ export default function ProjectsPage() {
               ]}
             />
             {errors.client_id?.message && (
-              <p className="text-red-600 text-sm mt-1">{errors.client_id.message}</p>
+              <p className="text-red-600 text-sm mt-1">{errors.client_id?.message as string}</p>
             )}
           </div>
           <div>
