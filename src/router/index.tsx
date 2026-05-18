@@ -18,6 +18,7 @@ import SettingsPage from '../pages/staff/SettingsPage'
 import ClientManagementPage from '../pages/staff/VendorManagementPage'
 import VendorProjectsPage from '../pages/staff/VendorProjectsPage'
 import UserManagementPage from '../pages/staff/UserManagementPage'
+import SamplesPage from '../pages/staff/SamplesPage'
 import ClientDashboard from '../pages/client/ClientDashboard'
 import ClientProfilePage from '../pages/client/ProfilePage'
 import ClientSubmitPage from '../pages/client/ClientSubmitPage'
@@ -103,6 +104,10 @@ export const router = createBrowserRouter([
       {
         path: 'projects/:projectId/map',
         element: <MapPage />,
+      },
+      {
+        path: 'projects/:projectId/samples',
+        element: <SamplesPage />,
       },
     ],
   },
