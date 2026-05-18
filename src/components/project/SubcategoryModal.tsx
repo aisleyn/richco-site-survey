@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Modal, Button, Input, Card } from '../ui'
-import { createSubcategory, deleteSubcategory } from '../../services/subcategories'
+import { Modal, Button, Input, Card, Select } from '../ui'
+import { createSubcategory, deleteSubcategory, updateSubcategoryStatus } from '../../services/subcategories'
 import { useToast } from '../ui/Toast'
-import type { ProjectSubcategory } from '../../types'
+import type { ProjectSubcategory, ProjectType, ZoneStatus } from '../../types'
 
 interface SubcategoryModalProps {
   isOpen: boolean
@@ -11,6 +11,7 @@ interface SubcategoryModalProps {
   onCreated: (subcategory: ProjectSubcategory) => void
   onDeleted: (id: string) => void
   onClose: () => void
+  projectType?: ProjectType
 }
 
 export function SubcategoryModal({
@@ -20,11 +21,29 @@ export function SubcategoryModal({
   onCreated,
   onDeleted,
   onClose,
+  projectType,
 }: SubcategoryModalProps) {
   const [name, setName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const toast = useToast()
+
+  const zoneStatuses: ZoneStatus[] = ['concept', 'in_development', 'approved', 'denied', 'on_hold']
+
+  const handleStatusChange = async (zoneId: string, newStatus: ZoneStatus) => {
+    setUpdatingId(zoneId)
+    try {
+      await updateSubcategoryStatus(zoneId, newStatus)
+      toast({ message: 'Zone status updated', type: 'success' })
+      // Refetch would happen through parent component
+    } catch (err) {
+      console.error(err)
+      toast({ message: 'Failed to update zone status', type: 'error' })
+    } finally {
+      setUpdatingId(null)
+    }
+  }
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -105,8 +124,25 @@ export function SubcategoryModal({
             <label className="block text-sm font-semibold text-white mb-2">Existing Zones</label>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {subcategories.map(zone => (
-                <Card key={zone.id} className="flex items-center justify-between p-3">
-                  <span className="text-white">{zone.name}</span>
+                <Card key={zone.id} className="flex items-center justify-between p-3 gap-2">
+                  <div className="flex-1">
+                    <span className="text-white block">{zone.name}</span>
+                    {projectType === 'development' && (
+                      <Select
+                        value={zone.status}
+                        onChange={(e) => handleStatusChange(zone.id, e.target.value as ZoneStatus)}
+                        disabled={updatingId === zone.id}
+                        size="sm"
+                        className="mt-1"
+                      >
+                        {zoneStatuses.map(status => (
+                          <option key={status} value={status}>
+                            {status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  </div>
                   <Button
                     onClick={() => handleDelete(zone.id)}
                     variant="danger"
