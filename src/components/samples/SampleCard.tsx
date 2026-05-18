@@ -4,7 +4,6 @@ import { updateSampleStatus } from '../../services/samples'
 import { sendSampleStatusEmail } from '../../services/email'
 import type { Sample } from '../../types'
 import { useToast } from '../ui/Toast'
-import { useAuthStore } from '../../store/authStore'
 
 interface SampleCardProps {
   sample: Sample
@@ -71,7 +70,7 @@ export function SampleCard({ sample, onStatusChange, projectName, staffEmail }: 
         {sample.product_details && (
           <p className="text-sm text-slate-300 mb-2 line-clamp-2">{sample.product_details}</p>
         )}
-        {sample.pending === 'pending' && (
+        {sample.status === 'pending' && (
           <div className="mt-auto flex gap-2">
             <Button
               size="sm"

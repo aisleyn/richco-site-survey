@@ -76,7 +76,7 @@ export function CollapsibleActionMenu({ actions, className }: CollapsibleActionM
                   console.log('Action clicked:', action.label)
                   localStorage.setItem('debug-menu', `Action clicked: ${action.label}`)
                   e.stopPropagation()
-                  action.onClick(e)
+                  action.onClick()
                   setIsOpen(false)
                 }}
                 className={getButtonClass(action.variant)}

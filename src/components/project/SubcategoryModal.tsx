@@ -127,12 +127,11 @@ export function SubcategoryModal({
                 <Card key={zone.id} className="flex items-center justify-between p-3 gap-2">
                   <div className="flex-1">
                     <span className="text-white block">{zone.name}</span>
-                    {projectType === 'development' && (
+                    {(projectType === 'in_development' || projectType === 'new_project') && (
                       <Select
                         value={zone.status}
                         onChange={(e) => handleStatusChange(zone.id, e.target.value as ZoneStatus)}
                         disabled={updatingId === zone.id}
-                        size="sm"
                         className="mt-1"
                       >
                         {zoneStatuses.map(status => (

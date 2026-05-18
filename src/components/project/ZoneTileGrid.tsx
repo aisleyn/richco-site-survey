@@ -45,7 +45,7 @@ export function ZoneTileGrid({ subcategories, surveys, onSelectZone, projectType
                 <div className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
               )}
               <h3 className="text-white font-semibold text-center mb-2">{zone.name}</h3>
-              {projectType === 'development' && (
+              {(projectType === 'in_development' || projectType === 'new_project') && (
                 <div className={`px-2 py-1 rounded text-xs font-medium border mb-2 ${getStatusColor(zone.status)}`}>
                   {zone.status.replace('_', ' ').charAt(0).toUpperCase() + zone.status.replace('_', ' ').slice(1)}
                 </div>

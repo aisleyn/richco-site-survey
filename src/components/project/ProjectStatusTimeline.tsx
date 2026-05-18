@@ -47,7 +47,6 @@ export function ProjectStatusTimeline({ projectType, zoneStatuses = [], onStatus
         {stages.map((stage, idx) => {
           const isPast = idx < currentStageIndex
           const isCurrent = idx === currentStageIndex
-          const isFuture = idx > currentStageIndex
           const isClickable = idx > currentStageIndex && stageTypeMap[idx]
 
           return (

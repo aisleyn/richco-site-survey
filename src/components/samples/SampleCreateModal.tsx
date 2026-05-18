@@ -7,7 +7,7 @@ import { upsertSampleReportPage } from '../../services/reportPages'
 import { sendSampleCreatedEmail } from '../../services/email'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../ui/Toast'
-import type { Sample, Project } from '../../types'
+import type { Sample } from '../../types'
 import { getProjectById } from '../../services/projects'
 
 interface SampleCreateModalProps {
@@ -44,11 +44,11 @@ export function SampleCreateModal({ isOpen, projectId, onCreated, onClose }: Sam
 
     setIsLoading(true)
     try {
-      const imageUrl = await uploadFile('sample-media', `${projectId}/${Date.now()}-${selectedFile.name}`, selectedFile)
+      const uploadedFile = await uploadFile('sample-media', `${projectId}/${Date.now()}-${selectedFile.name}`, selectedFile)
 
       const newSample = await createSample(projectId, {
         title: data.title,
-        image_url: imageUrl,
+        image_url: uploadedFile.signedUrl,
         product_details: data.product_details,
         process_details: data.process_details,
         proposal: data.proposal,
