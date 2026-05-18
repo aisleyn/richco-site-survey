@@ -6,7 +6,7 @@ import { getReportPagesByProject } from '../../services/reportPages'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
 import { Flipbook } from '../../components/flipbook'
-import { Button, Spinner, Card, Badge } from '../../components/ui'
+import { Button, Spinner, Card } from '../../components/ui'
 import { SampleCard } from '../../components/samples/SampleCard'
 import { useRealtimeNotifications } from '../../hooks/useRealtimeNotifications'
 import type { ReportPage, Project, ProjectSubcategory, Sample } from '../../types'
@@ -133,7 +133,7 @@ export default function ClientDashboard() {
           }
 
           // Load zones for development projects
-          if (p.project_type === 'development') {
+          if (p.project_type === 'in_development' || p.project_type === 'new_project') {
             try {
               const zones = await getSubcategoriesByProject(p.id)
               zonesMap.set(p.id, zones)

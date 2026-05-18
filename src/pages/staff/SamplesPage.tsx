@@ -93,7 +93,7 @@ export default function SamplesPage() {
 
       <SampleCreateModal
         isOpen={isCreateModalOpen}
-        projectId={projectId}
+        projectId={projectId!}
         onCreated={handleSampleCreated}
         onClose={() => setIsCreateModalOpen(false)}
       />

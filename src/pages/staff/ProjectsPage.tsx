@@ -18,7 +18,6 @@ const projectSchema = z.object({
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [clients, setClients] = useState<Profile[]>([])
-  const [clientMap, setClientMap] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -48,13 +47,6 @@ export default function ProjectsPage() {
       ])
       setProjects(projectsData)
       setClients(clientsData)
-
-      const map = clientsData.reduce((acc, client) => {
-        acc[client.id] = client.email
-        return acc
-      }, {} as Record<string, string>)
-      setClientMap(map)
-
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
@@ -196,11 +188,12 @@ export default function ProjectsPage() {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                            project.project_type === 'development'
+                            project.project_type === 'new_project' || project.project_type === 'in_development'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+                            {project.project_type === 'new_project' ? 'New Project' :
+                             project.project_type === 'in_development' ? 'In Development' : 'Maintenance'}
                           </span>
                           <div onClick={(e) => e.stopPropagation()}>
                             <CollapsibleActionMenu
@@ -250,11 +243,12 @@ export default function ProjectsPage() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
-                              project.project_type === 'development'
+                              project.project_type === 'new_project' || project.project_type === 'in_development'
                                 ? 'bg-blue-100 text-blue-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
-                              {project.project_type === 'development' ? 'Development' : 'Maintenance'}
+                              {project.project_type === 'new_project' ? 'New Project' :
+                               project.project_type === 'in_development' ? 'In Development' : 'Maintenance'}
                             </span>
                             <div onClick={(e) => e.stopPropagation()}>
                               <CollapsibleActionMenu
