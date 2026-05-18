@@ -133,13 +133,11 @@ export function SubcategoryModal({
                         onChange={(e) => handleStatusChange(zone.id, e.target.value as ZoneStatus)}
                         disabled={updatingId === zone.id}
                         className="mt-1"
-                      >
-                        {zoneStatuses.map(status => (
-                          <option key={status} value={status}>
-                            {status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
-                          </option>
-                        ))}
-                      </Select>
+                        options={zoneStatuses.map(status => ({
+                          value: status,
+                          label: status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)
+                        }))}
+                      />
                     )}
                   </div>
                   <Button

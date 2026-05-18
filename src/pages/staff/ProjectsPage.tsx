@@ -27,12 +27,14 @@ export default function ProjectsPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm({
+  } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
+      name: '',
+      client_id: '',
       project_type: 'new_project',
     },
-  } as any)
+  })
 
   useEffect(() => {
     loadData()
@@ -55,9 +57,9 @@ export default function ProjectsPage() {
     }
   }
 
-  const onSubmit = async (data: ProjectFormValues) => {
+  const onSubmit = async (data: any) => {
     try {
-      const newProject = await createProject(data)
+      const newProject = await createProject(data as ProjectFormValues)
       setProjects([newProject, ...projects])
       setIsModalOpen(false)
       reset()
@@ -66,10 +68,7 @@ export default function ProjectsPage() {
     }
   }
 
-  const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-
+  const handleDeleteProject = async (projectId: string) => {
     if (!confirm('Are you sure you want to delete this project? This cannot be undone.')) return
 
     try {
@@ -99,10 +98,7 @@ export default function ProjectsPage() {
     }
   }
 
-  const handleArchiveProject = async (e: React.MouseEvent, projectId: string, archived: boolean) => {
-    e.preventDefault()
-    e.stopPropagation()
-
+  const handleArchiveProject = async (projectId: string, archived: boolean) => {
     try {
       const msg = `[${new Date().toISOString()}] Starting archive for ${projectId}`
       console.log(msg)
@@ -200,12 +196,12 @@ export default function ProjectsPage() {
                               actions={[
                                 {
                                   label: 'Archive',
-                                  onClick: () => handleArchiveProject({} as any, project.id, project.archived || false),
+                                  onClick: () => handleArchiveProject(project.id, project.archived || false),
                                 },
                                 {
                                   label: 'Delete',
                                   variant: 'danger' as const,
-                                  onClick: () => handleDeleteProject({} as any, project.id),
+                                  onClick: () => handleDeleteProject(project.id),
                                 },
                               ]}
                             />
@@ -255,12 +251,12 @@ export default function ProjectsPage() {
                                 actions={[
                                   {
                                     label: 'Restore',
-                                    onClick: () => handleArchiveProject({} as any, project.id, project.archived || false),
+                                    onClick: () => handleArchiveProject(project.id, project.archived || false),
                                   },
                                   {
                                     label: 'Delete',
                                     variant: 'danger' as const,
-                                    onClick: () => handleDeleteProject({} as any, project.id),
+                                    onClick: () => handleDeleteProject(project.id),
                                   },
                                 ]}
                               />
@@ -277,7 +273,7 @@ export default function ProjectsPage() {
       )}
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Project">
-        <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input label="Project Name" error={errors.name?.message} {...register('name')} />
           <div>
             <Select
