@@ -14,7 +14,6 @@ import type { Project, ProjectSubcategory, Sample, MapWaypoint } from '../../typ
 
 export default function ClientProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const { profile } = useAuthStore()
   const [project, setProject] = useState<Project | null>(null)
   const [zones, setZones] = useState<ProjectSubcategory[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
