@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
