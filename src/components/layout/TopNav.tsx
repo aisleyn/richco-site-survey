@@ -50,9 +50,7 @@ export function TopNav() {
   const isClient = profile?.role === 'client'
 
   const clientNavItems = [
-    { label: 'Submit Repair Request', href: '/client/submit', id: 'repair-requests' },
-    { label: 'Floor Plan Map', href: '/client/floor-plan', id: 'floor-plan' },
-    { label: 'Surveys', href: '/client/surveys', id: 'surveys' },
+    { label: 'Your Projects', href: '/client/projects', id: 'projects' },
     { label: 'Flipbook', href: '/client/flipbook', id: 'flipbook' },
   ]
 
@@ -79,12 +77,8 @@ export function TopNav() {
                 isActive = location.pathname.startsWith(item.href.split('/').slice(0, 3).join('/'))
               } else {
                 // For clients, check based on item id
-                if (item.id === 'repair-requests') {
-                  isActive = location.pathname === '/client/submit'
-                } else if (item.id === 'floor-plan') {
-                  isActive = location.pathname === '/client/floor-plan'
-                } else if (item.id === 'surveys') {
-                  isActive = location.pathname.startsWith('/client/survey')
+                if (item.id === 'projects') {
+                  isActive = location.pathname.startsWith('/client/projects')
                 } else if (item.id === 'flipbook') {
                   isActive = location.pathname === '/client/flipbook'
                 }

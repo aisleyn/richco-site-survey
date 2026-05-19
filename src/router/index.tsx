@@ -27,6 +27,8 @@ import ClientFlipbookPage from '../pages/client/ClientFlipbookPage'
 import ClientFloorPlanPage from '../pages/client/ClientFloorPlanPage'
 import ClientSurveysPage from '../pages/client/ClientSurveysPage'
 import ClientSurveysListPage from '../pages/client/ClientSurveysListPage'
+import ClientProjectsPage from '../pages/client/ClientProjectsPage'
+import ClientProjectDetailPage from '../pages/client/ClientProjectDetailPage'
 
 export const router = createBrowserRouter([
   {
@@ -158,6 +160,14 @@ export const router = createBrowserRouter([
       {
         path: 'profile',
         element: <ClientProfilePage />,
+      },
+      {
+        path: 'projects',
+        element: <ClientProjectsPage />,
+      },
+      {
+        path: 'projects/:projectId',
+        element: <ClientProjectDetailPage />,
       },
     ],
   },

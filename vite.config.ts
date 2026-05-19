@@ -10,6 +10,11 @@ export default defineConfig({
   server: {
     port: 5175,
     strictPort: false,
+    hmr: {
+      host: 'localhost',
+      port: 5175,
+      protocol: 'ws',
+    },
   },
   build: {
     sourcemap: false,

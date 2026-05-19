@@ -8,7 +8,8 @@ export function useRealtimeNotifications(projectIds: string[]) {
   useEffect(() => {
     if (projectIds.length === 0) return
 
-    const channel = supabase.channel('sample-status-changes', {
+    const channelName = `sample-status-changes-${projectIds.join('-')}`
+    const channel = supabase.channel(channelName, {
       config: {
         broadcast: { self: true },
       },
@@ -44,6 +45,7 @@ export function useRealtimeNotifications(projectIds: string[]) {
     })
 
     return () => {
+      channel.unsubscribe()
       supabase.removeChannel(channel)
     }
   }, [projectIds, toast])

@@ -12,21 +12,22 @@ export function BackButton({ label = 'Back', className = '' }: BackButtonProps) 
 
   const handleClick = () => {
     const pathSegments = location.pathname.split('/').filter(Boolean)
+    const userType = pathSegments[0] // 'staff' or 'client'
 
-    // Settings-related admin pages
+    // Settings-related admin pages (staff only)
     const settingsRelatedPages = ['users', 'vendors', 'vendor-projects']
     const isSettingsRelated = settingsRelatedPages.includes(pathSegments[1])
 
-    // Main pages have 2 segments: /staff/surveys, /staff/projects, /staff/settings, etc.
+    // Main pages have 2 segments: /staff/surveys, /staff/projects, /client/projects, etc.
     const isMainPage =
-      pathSegments.length === 1 || // /staff
-      (pathSegments.length === 2 && !pathSegments[1].match(/^[a-f0-9-]{36}$/) && !isSettingsRelated) // /staff/surveys, /staff/projects, etc.
+      pathSegments.length === 1 || // /staff or /client
+      (pathSegments.length === 2 && !pathSegments[1].match(/^[a-f0-9-]{36}$/) && !isSettingsRelated) // /staff/surveys, /client/projects, etc.
 
     if (isMainPage) {
       // Main page: go to dashboard
-      navigate('/staff')
+      navigate(`/${userType}`)
     } else if (isSettingsRelated) {
-      // Settings-related pages: go to settings
+      // Settings-related pages: go to settings (staff only)
       navigate('/staff/settings')
     } else {
       // Subpage: go to appropriate parent page
@@ -34,18 +35,18 @@ export function BackButton({ label = 'Back', className = '' }: BackButtonProps) 
 
       if (pathSegments[1] === 'surveys' && pathSegments[2]) {
         // /staff/surveys/:surveyId → /staff/surveys
-        parentPath = '/staff/surveys'
+        parentPath = `/${userType}/surveys`
       } else if (pathSegments[1] === 'projects' && pathSegments[2]) {
         if (pathSegments[3]) {
           // /staff/projects/:projectId/... → /staff/projects/:projectId
-          parentPath = `/staff/projects/${pathSegments[2]}`
+          parentPath = `/${userType}/projects/${pathSegments[2]}`
         } else {
           // /staff/projects/:projectId → /staff/projects
-          parentPath = '/staff/projects'
+          parentPath = `/${userType}/projects`
         }
       } else {
         // Fallback to dashboard
-        parentPath = '/staff'
+        parentPath = `/${userType}`
       }
 
       navigate(parentPath)

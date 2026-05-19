@@ -199,29 +199,13 @@ export default function ClientDashboard() {
 
             {/* Headline */}
             <h1 className="text-6xl md:text-7xl font-light tracking-tight text-white mb-6" style={{ fontFamily: '"Syne", sans-serif' }}>
-              Your Site Surveys
+              Site Hub
             </h1>
 
             {/* Subtitle */}
             <p className="text-lg md:text-xl text-secondary mb-12 font-medium leading-relaxed">
-              Richco Site Surveys and Repair Requests
+              Richco Project Management Hub
             </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-              <Link to="/client/submit" className="w-full sm:w-auto">
-                <Button className="px-8 py-3 font-medium rounded-lg transition-colors">
-                  Submit Repair Request
-                </Button>
-              </Link>
-              {projects.length > 0 && (
-                <Link to="/client/floor-plan" className="w-full sm:w-auto">
-                  <Button className="px-8 py-3 font-medium rounded-lg transition-colors">
-                    View Floor Plan Map
-                  </Button>
-                </Link>
-              )}
-            </div>
 
             {/* Floating stat nodes */}
             <div className="relative h-48 flex items-center justify-center">
