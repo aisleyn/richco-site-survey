@@ -13,11 +13,12 @@ import { getProjectById } from '../../services/projects'
 interface SampleCreateModalProps {
   isOpen: boolean
   projectId: string
+  subcategoryId?: string
   onCreated: (sample: Sample) => void
   onClose: () => void
 }
 
-export function SampleCreateModal({ isOpen, projectId, onCreated, onClose }: SampleCreateModalProps) {
+export function SampleCreateModal({ isOpen, projectId, subcategoryId, onCreated, onClose }: SampleCreateModalProps) {
   const { profile } = useAuthStore()
   const toast = useToast()
   const [isLoading, setIsLoading] = useState(false)
@@ -52,7 +53,7 @@ export function SampleCreateModal({ isOpen, projectId, onCreated, onClose }: Sam
         product_details: data.product_details,
         process_details: data.process_details,
         proposal: data.proposal,
-      }, profile?.id || '')
+      }, profile?.id || '', subcategoryId)
 
       await upsertSampleReportPage(projectId, newSample.id)
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { getProjectById } from '../../services/projects'
 import {
   getWaypointsByProject,
@@ -42,6 +42,8 @@ const getStatusLabel = (status: string): string => {
 
 export default function MapPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const [searchParams] = useSearchParams()
+  const zoneFilter = searchParams.get('zone')
   const addToast = useToast()
   const profile = useAuthStore((state) => state.profile)
   const [project, setProject] = useState<Project | null>(null)
@@ -364,7 +366,16 @@ export default function MapPage() {
     )
   }
 
-  const filteredWaypoints = waypoints.filter((wp) => selectedStatuses.includes(wp.status))
+  const filteredWaypoints = waypoints.filter((wp) =>
+    selectedStatuses.includes(wp.status) &&
+    (!zoneFilter || wp.subcategory_id === zoneFilter)
+  )
+
+  const filteredFloorPlans = zoneFilter
+    ? floorPlanPages.filter((fp) => fp.subcategory_id === zoneFilter)
+    : floorPlanPages
+
+  const activeZone = zoneFilter ? subcategories.find((s) => s.id === zoneFilter) : null
 
   const groupAndSortWaypoints = (wps: MapWaypoint[]) => {
     const statusOrder: WaypointStatus[] = ['needs_repair', 'in_progress', 'temporary_repair', 'permanent_repair']
@@ -441,10 +452,18 @@ export default function MapPage() {
         </div>
       </div>
 
-      {floorPlanPages.length === 0 && !project.map_image_url ? (
+      {activeZone && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-slate-400">
+          <span className="text-white font-medium">{activeZone.name}</span>
+          <span>•</span>
+          <span>{filteredWaypoints.length} waypoints</span>
+        </div>
+      )}
+
+      {filteredFloorPlans.length === 0 && !project.map_image_url ? (
         <Card>
           <div className="text-center py-12">
-            <p className="text-secondary mb-4">No floor plan uploaded for this project</p>
+            <p className="text-secondary mb-4">No floor plan uploaded{activeZone ? ' for this zone' : ' for this project'}</p>
             <p className="text-sm text-slate-500 mb-6">
               Upload a PDF or image to get started with waypoints
             </p>
@@ -497,9 +516,9 @@ export default function MapPage() {
             </Button>
           </div>
 
-          {floorPlanPages.length > 1 && (
+          {filteredFloorPlans.length > 1 && (
             <div className="flex flex-wrap gap-2">
-              {floorPlanPages.map((page) => (
+              {filteredFloorPlans.map((page) => (
                 <Button
                   key={page.id}
                   variant={activePageId === page.id ? 'primary' : 'secondary'}
@@ -518,13 +537,13 @@ export default function MapPage() {
           )}
 
           <div className="relative">
-            {floorPlanPages.length > 0 && (
+            {filteredFloorPlans.length > 0 && (
               <StatusLegend selectedStatuses={selectedStatuses} onStatusToggle={handleStatusToggle} />
             )}
             <PhaserMap
               ref={phaserMapRef}
-              imageUrl={floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''}
-              waypoints={filteredWaypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
+              imageUrl={filteredFloorPlans.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''}
+              waypoints={filteredWaypoints.filter(w => w.floor_plan_page_id === activePageId || (filteredFloorPlans.length === 0 && !w.floor_plan_page_id))}
               isEditable={true}
               isPlacingWaypoint={isPlacingWaypoint}
               isMovingWaypoint={isMovingWaypoint}

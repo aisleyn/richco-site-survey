@@ -9,14 +9,18 @@ interface PdfUploadModalProps {
   isOpen: boolean
   onClose: () => void
   projectId: string
+  subcategoryId?: string
   onSuccess?: (pages: FloorPlanPage[]) => void
+  onFloorPlanCreated?: (page: FloorPlanPage) => void
 }
 
 export function PdfUploadModal({
   isOpen,
   onClose,
   projectId,
+  subcategoryId,
   onSuccess,
+  onFloorPlanCreated,
 }: PdfUploadModalProps) {
   const [file, setFile] = useState<File | null>(null)
   const [isConverting, setIsConverting] = useState(false)
@@ -69,8 +73,9 @@ export function PdfUploadModal({
         const uploadResult = await uploadFile('floor-plans', fileName, file)
 
         const label = file.name.replace(/\.[^/.]+$/, '') || 'Floor Plan'
-        const page = await createFloorPlanPage(projectId, 1, label, uploadResult.signedUrl)
+        const page = await createFloorPlanPage(projectId, 1, label, uploadResult.signedUrl, subcategoryId)
         pages.push(page)
+        onFloorPlanCreated?.(page)
       } else {
         // Multi-page PDF
         console.log('[PdfUpload] Detected as PDF file, starting multi-page processing')
@@ -152,9 +157,10 @@ export function PdfUploadModal({
                 imageUrl: uploadResult.signedUrl ? '✓ has URL' : '✗ NO URL'
               })
               try {
-                const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl)
+                const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl, subcategoryId)
                 console.log('[PdfUpload] ✓ Created floor plan page record for page', pageNum, 'with id:', page.id)
                 pages.push(page)
+                onFloorPlanCreated?.(page)
               } catch (dbErr) {
                 console.error('[PdfUpload] ✗ FAILED to create floor plan page record:', dbErr)
                 throw new Error(`Failed to save page ${pageNum} to database: ${dbErr instanceof Error ? dbErr.message : 'Unknown error'}`)

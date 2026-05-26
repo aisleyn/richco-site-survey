@@ -1,10 +1,12 @@
 import { apiFetch } from '../lib/api'
 import type { Sample, SampleStatus } from '../types'
 
-export async function getSamplesByProject(projectId: string): Promise<Sample[]> {
-  const data = await apiFetch<Sample[]>(
-    `samples?project_id=eq.${projectId}&order=created_at.desc`
-  )
+export async function getSamplesByProject(projectId: string, zoneId?: string): Promise<Sample[]> {
+  let query = `samples?project_id=eq.${projectId}&order=created_at.desc`
+  if (zoneId) {
+    query += `&subcategory_id=eq.${zoneId}`
+  }
+  const data = await apiFetch<Sample[]>(query)
   return data || []
 }
 
@@ -27,21 +29,26 @@ export async function createSample(
   projectId: string,
   data: SampleFormData,
   userId: string,
+  subcategoryId?: string,
 ): Promise<Sample> {
+  const body: any = {
+    project_id: projectId,
+    title: data.title,
+    image_url: data.image_url,
+    product_details: data.product_details,
+    process_details: data.process_details,
+    proposal: data.proposal,
+    created_by: userId,
+  }
+  if (subcategoryId) {
+    body.subcategory_id = subcategoryId
+  }
   const result = await apiFetch<Sample[]>(
     'samples',
     {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({
-        project_id: projectId,
-        title: data.title,
-        image_url: data.image_url,
-        product_details: data.product_details,
-        process_details: data.process_details,
-        proposal: data.proposal,
-        created_by: userId,
-      }),
+      body: JSON.stringify(body),
     }
   )
   return result[0]

@@ -12,7 +12,7 @@ import { CollapsibleActionMenu } from '../../components/project/CollapsibleActio
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
   client_id: z.string().min(1, 'Client is required'),
-  project_type: z.enum(['new_project', 'in_development', 'maintenance']).default('new_project'),
+  project_type: z.enum(['new_project', 'in_development', 'maintenance', 'completed']).default('new_project'),
 })
 
 export default function ProjectsPage() {

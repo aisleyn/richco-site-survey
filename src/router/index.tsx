@@ -7,6 +7,7 @@ import LoginPage from '../pages/LoginPage'
 import StaffDashboard from '../pages/staff/StaffDashboard'
 import ProjectsPage from '../pages/staff/ProjectsPage'
 import ProjectDetailPage from '../pages/staff/ProjectDetailPage'
+import ZoneDetailPage from '../pages/staff/ZoneDetailPage'
 import SurveyFormPage from '../pages/staff/SurveyFormPage'
 import SurveyDetailPage from '../pages/staff/SurveyDetailPage'
 import FlipbookViewPage from '../pages/staff/FlipbookViewPage'
@@ -82,6 +83,10 @@ export const router = createBrowserRouter([
       {
         path: 'projects/:projectId',
         element: <ProjectDetailPage />,
+      },
+      {
+        path: 'projects/:projectId/zones/:zoneId',
+        element: <ZoneDetailPage />,
       },
       {
         path: 'projects/:projectId/surveys/new',

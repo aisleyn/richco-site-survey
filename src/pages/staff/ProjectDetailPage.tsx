@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { getProjectById, updateProject } from '../../services/projects'
 import { getSurveysByProject } from '../../services/surveys'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
-import type { Project, Survey, ProjectSubcategory, Sample } from '../../types'
+import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
+import type { Project, Survey, ProjectSubcategory, Sample, FloorPlanPage } from '../../types'
 import { Card, Button, Spinner, Badge, BackButton } from '../../components/ui'
 import { SubcategoryModal } from '../../components/project/SubcategoryModal'
-import { ZoneTileGrid } from '../../components/project/ZoneTileGrid'
+import { ZoneList } from '../../components/project/ZoneList'
 import { ProjectStatusTimeline } from '../../components/project/ProjectStatusTimeline'
 import { CollapsibleActionMenu } from '../../components/project/CollapsibleActionMenu'
 import { SampleCard } from '../../components/samples/SampleCard'
@@ -15,14 +16,13 @@ import { SampleCreateModal } from '../../components/samples/SampleCreateModal'
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
-  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const activeZoneId = searchParams.get('zone')
 
   const [project, setProject] = useState<Project | null>(null)
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [subcategories, setSubcategories] = useState<ProjectSubcategory[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
+  const [floorPlans, setFloorPlans] = useState<FloorPlanPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubcategoryModalOpen, setIsSubcategoryModalOpen] = useState(false)
   const [isCreateSampleModalOpen, setIsCreateSampleModalOpen] = useState(false)
@@ -30,14 +30,13 @@ export default function ProjectDetailPage() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(['draft', 'published', 'archived'])
   )
-  const [activeTab, setActiveTab] = useState<'overview' | 'samples' | 'surveys'>('surveys')
+  const [activeTab, setActiveTab] = useState<'overview' | 'zones' | 'samples' | 'surveys'>('surveys')
 
-  // Adjust default tab based on project type
+  // Adjust default tab based on project type and zones
   const isDevelopment = project?.project_type === 'in_development'
   const isNewProject = project?.project_type === 'new_project'
   const showSamples = isNewProject || isDevelopment
-  const defaultTab = isNewProject ? 'samples' : (isDevelopment ? 'overview' : 'surveys')
-  const currentTab = (activeTab === 'overview' && !isDevelopment) ? defaultTab : activeTab
+  const hasZones = subcategories.length > 0
 
   const toggleCategory = (category: string) => {
     const newExpandedCategories = new Set(expandedCategories)
@@ -66,19 +65,27 @@ export default function ProjectDetailPage() {
     loadData()
   }, [projectId])
 
+  useEffect(() => {
+    if (project && subcategories.length > 0 && activeTab === 'surveys') {
+      setActiveTab('zones')
+    }
+  }, [project?.id, subcategories.length])
+
   const loadData = async () => {
     if (!projectId) return
     try {
-      const [p, s, sc, sa] = await Promise.all([
+      const [p, s, sc, sa, fp] = await Promise.all([
         getProjectById(projectId),
         getSurveysByProject(projectId),
         getSubcategoriesByProject(projectId),
         getSamplesByProject(projectId),
+        getFloorPlanPagesByProject(projectId),
       ])
       setProject(p)
       setSurveys(s)
       setSubcategories(sc)
       setSamples(sa)
+      setFloorPlans(fp)
     } catch (err) {
       console.error('Failed to load project data:', err)
       setProject(null)
@@ -87,16 +94,9 @@ export default function ProjectDetailPage() {
     }
   }
 
-  const visibleSurveys = activeZoneId
-    ? surveys.filter((s) => s.subcategory_id === activeZoneId)
-    : surveys
-
-  const draftSurveys = visibleSurveys.filter((s) => s.status === 'draft')
-  const publishedSurveys = visibleSurveys.filter((s) => s.status === 'published')
-  const archivedSurveys = visibleSurveys.filter((s) => s.status === 'archived')
-
-  const hasSubcategories = subcategories.length > 0
-  const activeSubcategory = activeZoneId ? subcategories.find((z) => z.id === activeZoneId) : null
+  const draftSurveys = surveys.filter((s) => s.status === 'draft')
+  const publishedSurveys = surveys.filter((s) => s.status === 'published')
+  const archivedSurveys = surveys.filter((s) => s.status === 'archived')
 
   const handleSampleCreated = (newSample: Sample) => {
     setSamples([newSample, ...samples])
@@ -127,16 +127,6 @@ export default function ProjectDetailPage() {
       <div className="mb-4">
         <BackButton label="Back to Projects" />
       </div>
-      {/* Breadcrumb for zone view */}
-      {hasSubcategories && activeZoneId && (
-        <div className="flex items-center gap-2 mb-4 text-sm text-slate-400">
-          <button onClick={() => setSearchParams({})} className="hover:text-white underline">
-            {project.name}
-          </button>
-          <span>/</span>
-          <span className="text-white font-medium">{activeSubcategory?.name}</span>
-        </div>
-      )}
 
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -149,11 +139,12 @@ export default function ProjectDetailPage() {
                   className="px-3 py-1 rounded text-sm font-medium bg-slate-700 text-white hover:bg-slate-600 transition-colors"
                 >
                   {project.project_type === 'new_project' ? 'New Project' :
-                   project.project_type === 'in_development' ? 'In Development' : 'Maintenance'}
+                   project.project_type === 'in_development' ? 'In Development' :
+                   project.project_type === 'completed' ? 'Completed' : 'Maintenance'}
                 </button>
                 {selectedProjectType !== null && (
                   <div className="absolute top-full left-0 mt-2 bg-slate-800 border border-slate-700 rounded shadow-lg z-20 py-2">
-                    {['new_project', 'in_development', 'maintenance'].map(type => (
+                    {['new_project', 'in_development', 'maintenance', 'completed'].map(type => (
                       <button
                         key={type}
                         onClick={() => handleChangeProjectType(type)}
@@ -163,7 +154,8 @@ export default function ProjectDetailPage() {
                       >
                         <span className="text-white text-sm">
                           {type === 'new_project' ? 'New Project' :
-                           type === 'in_development' ? 'In Development' : 'Maintenance'}
+                           type === 'in_development' ? 'In Development' :
+                           type === 'completed' ? 'Completed' : 'Maintenance'}
                         </span>
                       </button>
                     ))}
@@ -223,14 +215,23 @@ export default function ProjectDetailPage() {
       {/* Tab Navigation */}
       <div className="border-b border-slate-700 mb-6">
         <div className="flex gap-0">
+          {hasZones && (
+            <button
+              onClick={() => setActiveTab('zones')}
+              className={`px-4 py-3 font-medium transition-colors border-b-2 ${
+                activeTab === 'zones'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              Zones
+            </button>
+          )}
           {isDevelopment && (
             <button
-              onClick={() => {
-                setActiveTab('overview')
-                setSearchParams({})
-              }}
+              onClick={() => setActiveTab('overview')}
               className={`px-4 py-3 font-medium transition-colors border-b-2 ${
-                currentTab === 'overview'
+                activeTab === 'overview'
                   ? 'border-blue-500 text-blue-400'
                   : 'border-transparent text-slate-400 hover:text-white'
               }`}
@@ -242,7 +243,7 @@ export default function ProjectDetailPage() {
             <button
               onClick={() => setActiveTab('samples')}
               className={`px-4 py-3 font-medium transition-colors border-b-2 ${
-                currentTab === 'samples'
+                activeTab === 'samples'
                   ? 'border-blue-500 text-blue-400'
                   : 'border-transparent text-slate-400 hover:text-white'
               }`}
@@ -254,7 +255,7 @@ export default function ProjectDetailPage() {
             <button
               onClick={() => setActiveTab('surveys')}
               className={`px-4 py-3 font-medium transition-colors border-b-2 ${
-                currentTab === 'surveys'
+                activeTab === 'surveys'
                   ? 'border-blue-500 text-blue-400'
                   : 'border-transparent text-slate-400 hover:text-white'
               }`}
@@ -267,90 +268,24 @@ export default function ProjectDetailPage() {
 
       {/* Tab Content */}
       <div className="space-y-6">
-        {/* Overview Tab (Development Zones) */}
-        {isDevelopment && currentTab === 'overview' && (
+        {/* Zones Tab */}
+        {hasZones && activeTab === 'zones' && (
           <>
-            {hasSubcategories && !activeZoneId && (
-              <ZoneTileGrid
-                subcategories={subcategories}
-                surveys={surveys}
-                onSelectZone={(zoneId) => setSearchParams({ zone: zoneId })}
-                projectType={project.project_type}
-              />
-            )}
+            <ZoneList
+              projectId={projectId!}
+              subcategories={subcategories}
+              surveys={surveys}
+              floorPlans={floorPlans}
+              samples={samples}
+              projectType={project.project_type}
+            />
+          </>
+        )}
 
-            {activeZoneId && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-white">{activeSubcategory?.name}</h2>
-                  <button
-                    onClick={() => setSearchParams({})}
-                    className="text-slate-400 hover:text-white text-sm"
-                  >
-                    ← Back to zones
-                  </button>
-                </div>
-
-                {draftSurveys.length === 0 && publishedSurveys.length === 0 && archivedSurveys.length === 0 ? (
-                  <Card>
-                    <p className="text-center text-secondary py-12">No surveys in this zone</p>
-                  </Card>
-                ) : (
-                  <>
-                    {draftSurveys.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-white mb-3">Active ({draftSurveys.length})</h3>
-                        <div className="space-y-4">
-                          {draftSurveys.map((survey) => (
-                            <Link key={survey.id} to={`/staff/surveys/${survey.id}`}>
-                              <Card className="card-hover cursor-pointer">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <div>
-                                      <h3 className="text-lg font-semibold text-white">{survey.area_name}</h3>
-                                      <p className="text-sm text-secondary mt-1">
-                                        {new Date(survey.survey_date).toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                                  </div>
-                                  <Badge variant={survey.status}>{getStatusLabel(survey.status)}</Badge>
-                                </div>
-                              </Card>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {publishedSurveys.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold text-white mb-3">Completed ({publishedSurveys.length})</h3>
-                        <div className="space-y-4">
-                          {publishedSurveys.map((survey) => (
-                            <Link key={survey.id} to={`/staff/surveys/${survey.id}`}>
-                              <Card className="card-hover cursor-pointer">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <h3 className="text-lg font-semibold text-white">{survey.area_name}</h3>
-                                    <p className="text-sm text-secondary mt-1">
-                                      {new Date(survey.survey_date).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  <Badge variant={survey.status}>{getStatusLabel(survey.status)}</Badge>
-                                </div>
-                              </Card>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {!activeZoneId && subcategories.length === 0 && (
+        {/* Overview Tab (Development Zones - legacy) */}
+        {isDevelopment && activeTab === 'overview' && (
+          <>
+            {!hasZones && (
               <Card>
                 <p className="text-center text-secondary py-12">No zones yet</p>
               </Card>
@@ -359,7 +294,7 @@ export default function ProjectDetailPage() {
         )}
 
         {/* Samples Tab */}
-        {showSamples && currentTab === 'samples' && (
+        {showSamples && activeTab === 'samples' && (
           <>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">Samples</h2>
@@ -392,7 +327,7 @@ export default function ProjectDetailPage() {
         )}
 
         {/* Surveys Tab */}
-        {project.project_type !== 'new_project' && currentTab === 'surveys' && (
+        {project.project_type !== 'new_project' && activeTab === 'surveys' && (
           <>
             <div>
               <button
