@@ -21,6 +21,9 @@ export function ProjectStatusTimeline({ projectType, zoneStatuses = [], onStatus
       1,
       stageKeys.findIndex(s => zoneStatuses.some(zs => zs === s))
     )
+  } else if (projectType === 'completed') {
+    // Completed projects are at Completed stage
+    currentStageIndex = 2
   } else {
     // Maintenance projects are at Maintenance stage
     currentStageIndex = 3
@@ -29,6 +32,7 @@ export function ProjectStatusTimeline({ projectType, zoneStatuses = [], onStatus
   const stageTypeMap: Record<number, ProjectType> = {
     0: 'new_project',
     1: 'in_development',
+    2: 'completed',
     3: 'maintenance',
   }
 

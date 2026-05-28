@@ -81,6 +81,7 @@ export interface Project {
   created_at: string
   archived?: boolean
   project_type: ProjectType
+  completed_at?: string | null
 }
 
 export interface Survey {

@@ -5,7 +5,7 @@ import { getSurveysByProject } from '../../services/surveys'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
-import type { Project, Survey, ProjectSubcategory, Sample, FloorPlanPage } from '../../types'
+import type { Project, Survey, ProjectSubcategory, Sample, FloorPlanPage, ProjectType } from '../../types'
 import { Card, Button, Spinner, Badge, BackButton } from '../../components/ui'
 import { SubcategoryModal } from '../../components/project/SubcategoryModal'
 import { ZoneList } from '../../components/project/ZoneList'
@@ -27,6 +27,8 @@ export default function ProjectDetailPage() {
   const [isSubcategoryModalOpen, setIsSubcategoryModalOpen] = useState(false)
   const [isCreateSampleModalOpen, setIsCreateSampleModalOpen] = useState(false)
   const [selectedProjectType, setSelectedProjectType] = useState<string | null>(null)
+  const [completionModalOpen, setCompletionModalOpen] = useState(false)
+  const [pendingCompletedAt, setPendingCompletedAt] = useState<string>(new Date().toISOString().slice(0, 10))
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(['draft', 'published', 'archived'])
   )
@@ -107,13 +109,28 @@ export default function ProjectDetailPage() {
     setSamples(samples.map(s => s.id === updatedSample.id ? updatedSample : s))
   }
 
-  const handleChangeProjectType = async (newType: string) => {
-    if (!confirm(`Change project status to "${newType}"?`)) return
+  const handleChangeProjectType = async (newType: string, completedAt?: string) => {
+    // For 'completed', open the date modal instead of confirm
+    if (newType === 'completed' && !completedAt) {
+      setPendingCompletedAt(new Date().toISOString().slice(0, 10))
+      setCompletionModalOpen(true)
+      return
+    }
+    if (newType !== 'completed' && !confirm(`Change project status to "${newType}"?`)) return
+
+    const updates: Partial<Project> = { project_type: newType as ProjectType }
+    if (newType === 'completed' && completedAt) {
+      updates.completed_at = completedAt
+    }
+    if (newType !== 'completed') {
+      updates.completed_at = null
+    }
 
     try {
-      const updated = await updateProject(projectId!, { project_type: newType as any })
+      const updated = await updateProject(projectId!, updates)
       setProject(updated)
       setSelectedProjectType(null)
+      setCompletionModalOpen(false)
     } catch (err) {
       alert('Failed to update project status')
     }
@@ -162,6 +179,11 @@ export default function ProjectDetailPage() {
                   </div>
                 )}
               </div>
+              {project.project_type === 'completed' && project.completed_at && (
+                <p className="text-sm text-slate-400 mt-1">
+                  Completed {new Date(project.completed_at).toLocaleDateString()}
+                </p>
+              )}
             </div>
             <p className="text-sm text-secondary">Attached Client: {project.client_id ? 'Linked client' : 'No client linked'}</p>
           </div>
@@ -455,6 +477,36 @@ export default function ProjectDetailPage() {
         onClose={() => setIsSubcategoryModalOpen(false)}
         projectType={project.project_type}
       />
+
+      {/* Completion Date Modal */}
+      {completionModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-80 shadow-xl">
+            <h3 className="text-white font-semibold mb-1">Mark Project Completed</h3>
+            <p className="text-slate-400 text-sm mb-4">Choose a completion date:</p>
+            <input
+              type="date"
+              value={pendingCompletedAt}
+              onChange={e => setPendingCompletedAt(e.target.value)}
+              className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm mb-4"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setCompletionModalOpen(false)}
+                className="px-4 py-2 text-slate-400 hover:text-white text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleChangeProjectType('completed', pendingCompletedAt)}
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
