@@ -8,7 +8,7 @@ import {
   updateWaypointStatus,
   deleteWaypoint,
 } from '../../services/mapWaypoints'
-import { getFloorPlanPagesByProject, updateFloorPlanPage } from '../../services/floorPlanPages'
+import { getFloorPlanPagesByProject, updateFloorPlanPage, deleteAllFloorPlanPages } from '../../services/floorPlanPages'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { publishSurvey, archiveSurvey } from '../../services/surveys'
 import { useAuthStore } from '../../store/authStore'
@@ -360,6 +360,25 @@ export default function MapPage() {
     }
   }
 
+  const handleRemoveAllFloorPlans = async () => {
+    if (!confirm('Remove all floor plan pages? This cannot be undone.')) return
+    if (!projectId) return
+    try {
+      await deleteAllFloorPlanPages(projectId)
+      setFloorPlanPages([])
+      setActivePageId(null)
+      addToast({
+        type: 'success',
+        message: 'All floor plan pages removed',
+      })
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: 'Failed to remove floor plan pages',
+      })
+    }
+  }
+
   const handleStatusToggle = (status: WaypointStatus) => {
     setSelectedStatuses((prev) =>
       prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
@@ -442,13 +461,24 @@ export default function MapPage() {
               {waypoints.length} waypoint{waypoints.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <Button
-            variant="primary"
-            onClick={() => setIsPdfModalOpen(true)}
-            className="w-full sm:w-auto"
-          >
-            📄 Upload Floor Plan
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button
+              variant="primary"
+              onClick={() => setIsPdfModalOpen(true)}
+              className="flex-1 sm:flex-initial"
+            >
+              📄 Upload Floor Plan
+            </Button>
+            {floorPlanPages.length > 0 && (
+              <Button
+                variant="secondary"
+                onClick={handleRemoveAllFloorPlans}
+                className="flex-1 sm:flex-initial text-red-400 hover:text-red-300"
+              >
+                🗑️ Remove All Pages
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

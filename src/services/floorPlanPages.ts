@@ -55,3 +55,7 @@ export async function updateFloorPlanPage(
 export async function deleteFloorPlanPage(id: string): Promise<void> {
   await apiFetch(`floor_plan_pages?id=eq.${id}`, { method: 'DELETE' })
 }
+
+export async function deleteAllFloorPlanPages(projectId: string): Promise<void> {
+  await apiFetch(`floor_plan_pages?project_id=eq.${projectId}`, { method: 'DELETE' })
+}
