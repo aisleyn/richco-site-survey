@@ -202,7 +202,7 @@ export const PhaserMap = forwardRef<PhaserMapHandle, PhaserMapProps>(
       resetView: () => sceneRef.current?.resetView(),
     }))
 
-    return <div ref={containerRef} className={className} style={{ width: '100%' }} />
+    return <div ref={containerRef} className={className} style={{ width: '100%', height: '100%' }} />
   },
 )
 
