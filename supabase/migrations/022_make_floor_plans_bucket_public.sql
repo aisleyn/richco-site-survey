@@ -1,9 +1,13 @@
 -- ============================================================
--- MAKE FLOOR-PLANS BUCKET PUBLIC
--- Set existing floor-plans bucket to public so images are
--- always accessible without signed URL expiration issues
+-- MAKE ALL MEDIA BUCKETS PUBLIC
+-- Set all media buckets to public so images are always
+-- accessible without signed URL expiration issues:
+-- - floor-plans: Floor plan PDFs converted to images
+-- - waypoint-photos: Before/after/progress photos from surveys
+-- - survey-media: Survey photos and media
+-- - client-submission-media: Client submission photos
 -- ============================================================
 
 UPDATE storage.buckets
 SET public = true
-WHERE id = 'floor-plans';
+WHERE id IN ('floor-plans', 'waypoint-photos', 'survey-media', 'client-submission-media');

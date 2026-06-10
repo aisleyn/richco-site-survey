@@ -5,10 +5,10 @@
 
 INSERT INTO storage.buckets (id, name, public)
 VALUES
-  ('survey-media',              'survey-media',              false),
-  ('client-submission-media',   'client-submission-media',   false),
+  ('survey-media',              'survey-media',              true),
+  ('client-submission-media',   'client-submission-media',   true),
   ('floor-plans',               'floor-plans',               true),
-  ('waypoint-photos',           'waypoint-photos',           false)
+  ('waypoint-photos',           'waypoint-photos',           true)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================

@@ -13,9 +13,11 @@ export async function uploadFile(bucket: string, path: string, file: File): Prom
 
   if (error) throw error
 
-  // Use public URL for floor-plans bucket, signed URL for others
+  // Use public URL for all media buckets to avoid signed URL expiration
+  const publicBuckets = ['floor-plans', 'waypoint-photos', 'survey-media', 'client-submission-media']
   let url: string
-  if (bucket === 'floor-plans') {
+
+  if (publicBuckets.includes(bucket)) {
     url = getPublicUrl(bucket, data.path)
   } else {
     const { data: urlData } = await supabase.storage
