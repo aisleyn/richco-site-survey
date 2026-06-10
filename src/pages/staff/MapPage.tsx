@@ -303,7 +303,7 @@ export default function MapPage() {
 
   const handlePdfUploadSuccess = async (pages: FloorPlanPage[]) => {
     if (pages.length > 0) {
-      setFloorPlanPages(pages)
+      setFloorPlanPages(prev => [...prev, ...pages])
       setActivePageId(pages[0].id)
       setIsPdfModalOpen(false)
       addToast({
@@ -546,27 +546,58 @@ export default function MapPage() {
             </Button>
           </div>
 
-          {filteredFloorPlans.length > 1 && (
-            <div className="flex flex-wrap gap-2">
-              {filteredFloorPlans.map((page) => (
-                <Button
-                  key={page.id}
-                  variant={activePageId === page.id ? 'primary' : 'secondary'}
-                  onClick={() => setActivePageId(page.id)}
-                  onDoubleClick={() => {
-                    setRenamingPageId(page.id)
-                    setIsRenameModalOpen(true)
-                  }}
-                  className="text-sm"
-                  title="Double-click to rename"
-                >
-                  {page.label}
-                </Button>
-              ))}
+          {filteredFloorPlans.length > 0 && (
+            <div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {filteredFloorPlans.map((page) => (
+                  <Button
+                    key={page.id}
+                    variant={activePageId === page.id ? 'primary' : 'secondary'}
+                    onClick={() => setActivePageId(page.id)}
+                    onDoubleClick={() => {
+                      setRenamingPageId(page.id)
+                      setIsRenameModalOpen(true)
+                    }}
+                    className="text-sm"
+                    title="Double-click to rename"
+                  >
+                    {page.label}
+                  </Button>
+                ))}
+              </div>
+              {filteredFloorPlans.length > 1 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-white mb-2">All Floor Plans</p>
+                  <div className="flex flex-wrap gap-3 overflow-x-auto pb-2">
+                    {filteredFloorPlans.map((page) => (
+                      <div
+                        key={page.id}
+                        onClick={() => setActivePageId(page.id)}
+                        className={`flex-shrink-0 cursor-pointer rounded border-2 transition-all ${
+                          activePageId === page.id
+                            ? 'border-blue-500 ring-2 ring-blue-400'
+                            : 'border-slate-400 hover:border-slate-300'
+                        }`}
+                        title={page.label}
+                      >
+                        <img
+                          src={page.image_url}
+                          alt={page.label}
+                          className="h-24 w-32 object-cover rounded"
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement
+                            img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" font-size="10" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          <div className="relative">
+          <div className="relative h-80 sm:h-[600px]">
             {filteredFloorPlans.length > 0 && (
               <StatusLegend selectedStatuses={selectedStatuses} onStatusToggle={handleStatusToggle} />
             )}
@@ -585,7 +616,7 @@ export default function MapPage() {
                   handleUpdateWaypoint({ ...wp, x_percent: x, y_percent: y })
                 }
               }}
-              className="h-80 sm:h-[600px] border border-slate-200 rounded-lg overflow-hidden"
+              className="absolute inset-0 border border-slate-200 rounded-lg overflow-hidden"
             />
           </div>
         </div>

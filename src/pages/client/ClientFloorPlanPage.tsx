@@ -196,18 +196,49 @@ export default function ClientFloorPlanPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {floorPlanPages.length > 1 && (
-            <div className="flex flex-wrap gap-2">
-              {floorPlanPages.map((page) => (
-                <Button
-                  key={page.id}
-                  variant={activePageId === page.id ? 'primary' : 'secondary'}
-                  onClick={() => setActivePageId(page.id)}
-                  className="text-sm"
-                >
-                  {page.label || `Floor Plan ${page.page_number}`}
-                </Button>
-              ))}
+          {floorPlanPages.length > 0 && (
+            <div>
+              <div className="flex flex-wrap gap-2">
+                {floorPlanPages.map((page) => (
+                  <Button
+                    key={page.id}
+                    variant={activePageId === page.id ? 'primary' : 'secondary'}
+                    onClick={() => setActivePageId(page.id)}
+                    className="text-sm"
+                  >
+                    {page.label || `Floor Plan ${page.page_number}`}
+                  </Button>
+                ))}
+              </div>
+              {floorPlanPages.length > 1 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-white mb-2">All Floor Plans</p>
+                  <div className="flex flex-wrap gap-3 overflow-x-auto pb-2">
+                    {floorPlanPages.map((page) => (
+                      <div
+                        key={page.id}
+                        onClick={() => setActivePageId(page.id)}
+                        className={`flex-shrink-0 cursor-pointer rounded border-2 transition-all ${
+                          activePageId === page.id
+                            ? 'border-blue-500 ring-2 ring-blue-400'
+                            : 'border-slate-400 hover:border-slate-300'
+                        }`}
+                        title={page.label}
+                      >
+                        <img
+                          src={page.image_url}
+                          alt={page.label}
+                          className="h-24 w-32 object-cover rounded"
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement
+                            img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" font-size="10" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -229,7 +260,7 @@ export default function ClientFloorPlanPage() {
           </div>
 
           {activePage && (
-            <div className="relative">
+            <div className="relative h-80 sm:h-[600px]">
               <PhaserMap
                 ref={phaserMapRef}
                 imageUrl={activePage.image_url}
@@ -240,7 +271,7 @@ export default function ClientFloorPlanPage() {
                 onWaypointClick={handleWaypointClick}
                 onWaypointAdd={handleWaypointAdd}
                 onWaypointDrop={() => {}}
-                className="h-80 sm:h-[600px] border border-slate-200 rounded-lg overflow-hidden"
+                className="absolute inset-0 border border-slate-200 rounded-lg overflow-hidden"
               />
             </div>
           )}
