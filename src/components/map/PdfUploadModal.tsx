@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Modal, Button } from '../ui'
 import { uploadFile } from '../../services/storage'
-import { createFloorPlanPage } from '../../services/floorPlanPages'
+import { createFloorPlanPage, getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { pdfjsLib } from '../../lib/pdf'
 import type { FloorPlanPage } from '../../types'
 
@@ -64,6 +64,19 @@ export function PdfUploadModal({
         endsWithPdf: file.name.toLowerCase().endsWith('.pdf'),
       })
 
+      // Get existing floor plan pages to determine next page number
+      let nextPageNumber = 1
+      try {
+        const existingPages = await getFloorPlanPagesByProject(projectId)
+        if (existingPages.length > 0) {
+          nextPageNumber = Math.max(...existingPages.map(p => p.page_number)) + 1
+          console.log('[PdfUpload] Found existing pages, next page number will be:', nextPageNumber)
+        }
+      } catch (err) {
+        console.warn('[PdfUpload] Could not get existing pages:', err)
+        // Continue with nextPageNumber = 1 as fallback
+      }
+
       if (isImage) {
         // Single image file - create one floor plan page
         console.log('[PdfUpload] Detected as IMAGE file, creating single floor plan page')
@@ -73,7 +86,7 @@ export function PdfUploadModal({
         const uploadResult = await uploadFile('floor-plans', fileName, file)
 
         const label = file.name.replace(/\.[^/.]+$/, '') || 'Floor Plan'
-        const page = await createFloorPlanPage(projectId, 1, label, uploadResult.signedUrl, subcategoryId)
+        const page = await createFloorPlanPage(projectId, nextPageNumber, label, uploadResult.signedUrl, subcategoryId)
         pages.push(page)
         onFloorPlanCreated?.(page)
       } else {
@@ -105,6 +118,7 @@ export function PdfUploadModal({
           for (let pageNum = 1; pageNum <= numPages; pageNum++) {
             try {
               console.log('[PdfUpload] Processing page', pageNum, 'of', numPages)
+              const actualPageNumber = nextPageNumber + pageNum - 1
               setProgress({ current: pageNum, total: numPages })
 
               const pdfPage = await pdf.getPage(pageNum)
@@ -152,12 +166,12 @@ export function PdfUploadModal({
               // Create floor plan page record
               console.log('[PdfUpload] Creating floor plan page record:', {
                 projectId,
-                pageNum,
-                label: `Page ${pageNum}`,
+                pageNum: actualPageNumber,
+                label: `Page ${actualPageNumber}`,
                 imageUrl: uploadResult.signedUrl ? '✓ has URL' : '✗ NO URL'
               })
               try {
-                const page = await createFloorPlanPage(projectId, pageNum, `Page ${pageNum}`, uploadResult.signedUrl, subcategoryId)
+                const page = await createFloorPlanPage(projectId, actualPageNumber, `Page ${actualPageNumber}`, uploadResult.signedUrl, subcategoryId)
                 console.log('[PdfUpload] ✓ Created floor plan page record for page', pageNum, 'with id:', page.id)
                 pages.push(page)
                 onFloorPlanCreated?.(page)
