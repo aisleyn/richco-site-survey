@@ -170,7 +170,31 @@ export default function ClientFloorPlanPage() {
         </div>
       </div>
 
-      {floorPlanPages.length > 0 && (
+      {projects.length > 1 && (
+        <div className="space-y-4 mb-4">
+          <div className="flex flex-wrap gap-2">
+            {projects.map((p) => (
+              <Button
+                key={p.id}
+                onClick={() => setCurrentProjectId(p.id)}
+                variant={currentProjectId === p.id ? 'primary' : 'secondary'}
+                className="text-sm"
+              >
+                {p.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {floorPlanPages.length === 0 ? (
+        <Card>
+          <div className="text-center py-12">
+            <p className="text-secondary text-lg">Floor plan not yet available</p>
+            <p className="text-sm text-slate-500 mt-2">Check back soon!</p>
+          </div>
+        </Card>
+      ) : (
         <div className="space-y-4">
           {floorPlanPages.length > 1 && (
             <div className="flex flex-wrap gap-2">
@@ -187,101 +211,77 @@ export default function ClientFloorPlanPage() {
             </div>
           )}
 
-          {projects.length > 1 && (
-            <div className="flex flex-wrap gap-2">
-              {projects.map((p) => (
-                <Button
-                  key={p.id}
-                  onClick={() => setCurrentProjectId(p.id)}
-                  variant={currentProjectId === p.id ? 'primary' : 'secondary'}
-                  className="text-sm"
-                >
-                  {p.name}
-                </Button>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={handleStartAddRepair}
+              variant={isPlacingWaypoint ? 'primary' : 'secondary'}
+            >
+              {isPlacingWaypoint ? '✓ Placing Marker' : '+ Add Repair Location'}
+            </Button>
+            {isPlacingWaypoint && (
+              <Button
+                onClick={() => setIsPlacingWaypoint(false)}
+                variant="secondary"
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
 
           {activePage && (
-            <>
-              <div className="flex gap-2 mb-4">
-                <Button
-                  onClick={handleStartAddRepair}
-                  variant={isPlacingWaypoint ? 'primary' : 'secondary'}
-                  size="sm"
-                  className="text-sm"
-                >
-                  {isPlacingWaypoint ? 'Click to place marker...' : 'Add Repair Request'}
-                </Button>
-                {isPlacingWaypoint && (
-                  <Button
-                    onClick={() => setIsPlacingWaypoint(false)}
-                    variant="secondary"
-                    size="sm"
-                    className="text-sm"
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </div>
-              <div className="flex gap-4" style={{ height: '600px' }}>
-                <div className="flex-1">
-                  <PhaserMap
-                    ref={phaserMapRef}
-                    imageUrl={activePage.image_url}
-                    waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
-                    isEditable={false}
-                    isPlacingWaypoint={isPlacingWaypoint}
-                    isMovingWaypoint={false}
-                    onWaypointClick={handleWaypointClick}
-                    onWaypointAdd={handleWaypointAdd}
-                    onWaypointDrop={() => {}}
-                  />
-                </div>
-
-                {waypoints.length > 0 && (
-                  <div className="w-64 flex flex-col">
-                    <Card className="flex-1 overflow-y-auto bg-white text-black">
-                      <div className="space-y-2 p-4">
-                        {waypoints
-                          .filter(wp => wp.floor_plan_page_id === activePageId)
-                          .map((wp) => (
-                            <button
-                              key={wp.id}
-                              onClick={() => handleWaypointClick(wp)}
-                              className="w-full text-left p-3 bg-[#e8e8e8] hover:bg-slate-300 rounded-lg border border-slate-300 transition cursor-pointer text-black"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-black text-sm truncate">{wp.area_name}</p>
-                                  <p className="text-xs text-slate-600 mt-1 truncate">
-                                    {wp.status.replace('_', ' ')}
-                                  </p>
-                                </div>
-                                <span
-                                  className="inline-block w-3 h-3 rounded-full flex-shrink-0 mt-1"
-                                  style={{
-                                    backgroundColor:
-                                      wp.status === 'needs_repair'
-                                        ? '#ef4444'
-                                        : wp.status === 'in_progress'
-                                          ? '#fbbf24'
-                                          : wp.status === 'temporary_repair'
-                                            ? '#3b82f6'
-                                            : '#10b981',
-                                  }}
-                                />
-                              </div>
-                            </button>
-                          ))}
-                      </div>
-                    </Card>
-                  </div>
-                )}
-              </div>
-            </>
+            <div className="relative">
+              <PhaserMap
+                ref={phaserMapRef}
+                imageUrl={activePage.image_url}
+                waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
+                isEditable={false}
+                isPlacingWaypoint={isPlacingWaypoint}
+                isMovingWaypoint={false}
+                onWaypointClick={handleWaypointClick}
+                onWaypointAdd={handleWaypointAdd}
+                onWaypointDrop={() => {}}
+                className="h-80 sm:h-[600px] border border-slate-200 rounded-lg overflow-hidden"
+              />
+            </div>
           )}
         </div>
+      )}
+
+      {waypoints.length > 0 && (
+        <Card className="mt-8">
+          <h2 className="text-lg font-semibold text-white mb-4">Repair Locations ({waypoints.filter(wp => wp.floor_plan_page_id === activePageId).length})</h2>
+          <div className="space-y-2">
+            {waypoints
+              .filter(wp => wp.floor_plan_page_id === activePageId)
+              .map((wp) => (
+                <div
+                  key={wp.id}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200 cursor-pointer hover:bg-slate-100 transition"
+                  onClick={() => handleWaypointClick(wp)}
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-black">{wp.area_name}</p>
+                    <p className="text-xs text-secondary">
+                      ({wp.x_percent.toFixed(1)}%, {wp.y_percent.toFixed(1)}%)
+                    </p>
+                  </div>
+                  <span
+                    className="inline-block w-3 h-3 rounded-full flex-shrink-0"
+                    style={{
+                      backgroundColor:
+                        wp.status === 'needs_repair'
+                          ? '#ef4444'
+                          : wp.status === 'in_progress'
+                            ? '#fbbf24'
+                            : wp.status === 'temporary_repair'
+                              ? '#3b82f6'
+                              : '#10b981',
+                    }}
+                  />
+                </div>
+              ))}
+          </div>
+        </Card>
       )}
 
       <Modal
