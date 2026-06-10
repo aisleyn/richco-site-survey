@@ -13,17 +13,24 @@ export async function uploadFile(bucket: string, path: string, file: File): Prom
 
   if (error) throw error
 
-  const { data: urlData } = await supabase.storage
-    .from(bucket)
-    .createSignedUrl(data.path, 604800)
+  // Use public URL for floor-plans bucket, signed URL for others
+  let url: string
+  if (bucket === 'floor-plans') {
+    url = getPublicUrl(bucket, data.path)
+  } else {
+    const { data: urlData } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(data.path, 604800)
 
-  if (!urlData?.signedUrl) {
-    throw new Error('Failed to generate signed URL')
+    if (!urlData?.signedUrl) {
+      throw new Error('Failed to generate signed URL')
+    }
+    url = urlData.signedUrl
   }
 
   return {
     path: data.path,
-    signedUrl: urlData.signedUrl,
+    signedUrl: url,
   }
 }
 
