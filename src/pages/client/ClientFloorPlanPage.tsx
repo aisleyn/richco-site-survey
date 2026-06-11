@@ -112,6 +112,8 @@ export default function ClientFloorPlanPage() {
     }
   }
 
+  const activePage = floorPlanPages.find(p => p.id === activePageId)
+
   const handleWaypointClick = (waypoint: MapWaypoint) => {
     setSelectedWaypoint(waypoint)
   }
@@ -311,11 +313,11 @@ export default function ClientFloorPlanPage() {
             </Button>
           </div>
 
-          {floorPlanPages.find(p => p.id === activePageId) && (
+          {activePage && (
             <div className="relative h-80 sm:h-[600px]">
               <PhaserMap
                 ref={phaserMapRef}
-                imageUrl={floorPlanPages.find(p => p.id === activePageId)?.image_url || project?.map_image_url || ''}
+                imageUrl={activePage.image_url}
                 waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
                 isEditable={false}
                 isPlacingWaypoint={isPlacingWaypoint}
