@@ -253,6 +253,39 @@ app.post('/api/delete-user-by-email', async (req, res) => {
   }
 })
 
+app.get('/api/floor-plan-pages/:projectId', async (req, res) => {
+  if (!supabaseAdmin) {
+    return res.status(500).json({ error: 'Admin client not configured' })
+  }
+
+  try {
+    const { projectId } = req.params
+
+    if (!projectId) {
+      return res.status(400).json({ error: 'Project ID required' })
+    }
+
+    log('Fetching floor plan pages for project:', projectId)
+
+    const { data, error } = await supabaseAdmin
+      .from('floor_plan_pages')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('page_number', { ascending: true })
+
+    if (error) {
+      log('Error fetching floor plan pages:', error.message)
+      return res.status(400).json({ error: error.message })
+    }
+
+    log('Floor plan pages fetched:', data?.length || 0)
+    res.json(data || [])
+  } catch (error) {
+    log('Floor plan pages exception:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 
 // Serve static files from dist folder
 app.use(express.static(path.join(__dirname, 'dist')))
