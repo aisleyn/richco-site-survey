@@ -187,14 +187,27 @@ export default function SurveyDetailPage() {
   const handleTemporaryRepair = async () => {
     if (!survey) return
     try {
-      // Get linked waypoint for modal
+      let waypoint: any = null
+
+      // First, try to find waypoint from survey updates (for follow-up surveys)
       const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
       const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
+
       if (waypointUpdate?.waypoint_id) {
         const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
         if (waypoints && waypoints.length > 0) {
-          setLinkedWaypoint(waypoints[0])
+          waypoint = waypoints[0]
         }
+      } else {
+        // For initial issues, find waypoint by linked_survey_id
+        const waypoints = await apiFetch<any[]>(`map_waypoints?linked_survey_id=eq.${survey.id}`)
+        if (waypoints && waypoints.length > 0) {
+          waypoint = waypoints[0]
+        }
+      }
+
+      if (waypoint) {
+        setLinkedWaypoint(waypoint)
       }
       setPendingRepairType('temporary_repair')
     } catch (err) {
@@ -209,14 +222,27 @@ export default function SurveyDetailPage() {
   const handlePermanentRepair = async () => {
     if (!survey) return
     try {
-      // Get linked waypoint for modal
+      let waypoint: any = null
+
+      // First, try to find waypoint from survey updates (for follow-up surveys)
       const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
       const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
+
       if (waypointUpdate?.waypoint_id) {
         const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
         if (waypoints && waypoints.length > 0) {
-          setLinkedWaypoint(waypoints[0])
+          waypoint = waypoints[0]
         }
+      } else {
+        // For initial issues, find waypoint by linked_survey_id
+        const waypoints = await apiFetch<any[]>(`map_waypoints?linked_survey_id=eq.${survey.id}`)
+        if (waypoints && waypoints.length > 0) {
+          waypoint = waypoints[0]
+        }
+      }
+
+      if (waypoint) {
+        setLinkedWaypoint(waypoint)
       }
       setPendingRepairType('permanent_repair')
     } catch (err) {
