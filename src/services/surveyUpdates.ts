@@ -104,7 +104,10 @@ export async function getSurveyUpdates(
     updates.map(async (update) => {
       const media = await apiFetch<SurveyUpdateMedia[]>(
         `survey_update_media?survey_update_id=eq.${update.id}&order=uploaded_at.asc`
-      )
+      ).catch((err) => {
+        console.warn(`Failed to load media for update ${update.id}:`, err)
+        return []
+      })
       return {
         ...update,
         media: media || [],
