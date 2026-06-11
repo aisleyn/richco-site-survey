@@ -186,30 +186,46 @@ export default function SurveyDetailPage() {
 
   const handleTemporaryRepair = async () => {
     if (!survey) return
-    // Get linked waypoint for modal
-    const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
-    const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
-    if (waypointUpdate?.waypoint_id) {
-      const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
-      if (waypoints && waypoints.length > 0) {
-        setLinkedWaypoint(waypoints[0])
+    try {
+      // Get linked waypoint for modal
+      const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
+      const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
+      if (waypointUpdate?.waypoint_id) {
+        const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
+        if (waypoints && waypoints.length > 0) {
+          setLinkedWaypoint(waypoints[0])
+        }
       }
+      setPendingRepairType('temporary_repair')
+    } catch (err) {
+      console.error('Error in handleTemporaryRepair:', err)
+      addToast({
+        type: 'error',
+        message: 'Failed to load repair details',
+      })
     }
-    setPendingRepairType('temporary_repair')
   }
 
   const handlePermanentRepair = async () => {
     if (!survey) return
-    // Get linked waypoint for modal
-    const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
-    const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
-    if (waypointUpdate?.waypoint_id) {
-      const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
-      if (waypoints && waypoints.length > 0) {
-        setLinkedWaypoint(waypoints[0])
+    try {
+      // Get linked waypoint for modal
+      const surveyUpdates = await getSurveyUpdates(survey.id).catch(() => [])
+      const waypointUpdate = surveyUpdates.find((u: any) => u.waypoint_id)
+      if (waypointUpdate?.waypoint_id) {
+        const waypoints = await apiFetch<any[]>(`map_waypoints?id=eq.${waypointUpdate.waypoint_id}`)
+        if (waypoints && waypoints.length > 0) {
+          setLinkedWaypoint(waypoints[0])
+        }
       }
+      setPendingRepairType('permanent_repair')
+    } catch (err) {
+      console.error('Error in handlePermanentRepair:', err)
+      addToast({
+        type: 'error',
+        message: 'Failed to load repair details',
+      })
     }
-    setPendingRepairType('permanent_repair')
   }
 
   const handleSubmitSurvey = async () => {
@@ -493,9 +509,16 @@ export default function SurveyDetailPage() {
         </div>
         <div className="flex flex-col xs:flex-row gap-2 w-full sm:w-auto">
           {isStaff && survey.status === 'draft' && (
-            <Button variant="primary" onClick={() => setShowRepairTypeModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
-              ✓ Complete Repair
-            </Button>
+            <>
+              <Button variant="primary" onClick={() => setShowRepairTypeModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
+                ✓ Complete Repair
+              </Button>
+              {!survey.suggested_system && !survey.install_notes && (
+                <Button variant="secondary" onClick={() => navigate(`/staff/projects/${survey.project_id}/surveys/new?issueId=${survey.id}`)} className="w-full xs:w-auto">
+                  📝 New Survey
+                </Button>
+              )}
+            </>
           )}
           {isClient && survey.status === 'draft' && (
             <Button variant="primary" onClick={handleSubmitSurvey} isLoading={isPublishing} className="w-full xs:w-auto">
