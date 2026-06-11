@@ -2,17 +2,19 @@ import { useEffect, useState, useRef } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { supabase } from '../../lib/supabase'
 import { getProjectById } from '../../services/projects'
-import { getWaypointsByProject } from '../../services/mapWaypoints'
+import { getWaypointsByProject, createWaypoint } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { PhaserMap } from '../../components/map/PhaserMap'
 import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 import { ClientWaypointDrawer } from '../../components/map/ClientWaypointDrawer'
 import { Card, Spinner, BackButton, Button, Modal } from '../../components/ui'
+import { useToast } from '../../components/ui/Toast'
 import type { Project, MapWaypoint, FloorPlanPage } from '../../types'
 
 export default function ClientFloorPlanPage() {
   const { profile } = useAuthStore()
   const phaserMapRef = useRef<PhaserMapHandle>(null)
+  const addToast = useToast()
   const [project, setProject] = useState<Project | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
@@ -22,6 +24,7 @@ export default function ClientFloorPlanPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isPlacingWaypoint, setIsPlacingWaypoint] = useState(false)
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
+  const [newWaypointCoords, setNewWaypointCoords] = useState<{ x: number; y: number } | null>(null)
   const [selectedWaypoint, setSelectedWaypoint] = useState<MapWaypoint | null>(null)
 
   useEffect(() => {
@@ -109,8 +112,6 @@ export default function ClientFloorPlanPage() {
     }
   }
 
-  const activePage = floorPlanPages.find(p => p.id === activePageId)
-
   const handleWaypointClick = (waypoint: MapWaypoint) => {
     setSelectedWaypoint(waypoint)
   }
@@ -119,13 +120,40 @@ export default function ClientFloorPlanPage() {
     setIsPlacingWaypoint(!isPlacingWaypoint)
   }
 
-  const handleWaypointAdd = () => {
+  const handleWaypointAdd = (x: number, y: number) => {
+    setNewWaypointCoords({ x, y })
     setIsPlacingWaypoint(false)
     setIsSubmitModalOpen(true)
   }
 
+  const handleSubmitRepair = async (areaName: string) => {
+    if (!newWaypointCoords || !currentProjectId || !activePageId) return
+    try {
+      const waypoint = await createWaypoint(
+        currentProjectId,
+        areaName || `Repair Location ${waypoints.length + 1}`,
+        newWaypointCoords.x,
+        newWaypointCoords.y,
+        activePageId,
+      )
+      setWaypoints([...waypoints, waypoint])
+      addToast({
+        type: 'success',
+        message: 'Repair location submitted to staff',
+      })
+      setIsSubmitModalOpen(false)
+      setNewWaypointCoords(null)
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: 'Failed to submit repair location',
+      })
+    }
+  }
+
   const handleCloseModal = () => {
     setIsSubmitModalOpen(false)
+    setNewWaypointCoords(null)
   }
 
   if (isLoading) {
@@ -198,7 +226,7 @@ export default function ClientFloorPlanPage() {
         <div className="space-y-4">
           {floorPlanPages.length > 0 && (
             <div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {floorPlanPages.map((page) => (
                   <Button
                     key={page.id}
@@ -206,12 +234,12 @@ export default function ClientFloorPlanPage() {
                     onClick={() => setActivePageId(page.id)}
                     className="text-sm"
                   >
-                    {page.label || `Floor Plan ${page.page_number}`}
+                    {page.label}
                   </Button>
                 ))}
               </div>
               {floorPlanPages.length > 1 && (
-                <div className="mt-4">
+                <div className="mb-4">
                   <p className="text-sm font-medium text-white mb-2">All Floor Plans</p>
                   <div className="flex flex-wrap gap-3 overflow-x-auto pb-2">
                     {floorPlanPages.map((page) => (
@@ -246,6 +274,7 @@ export default function ClientFloorPlanPage() {
             <Button
               onClick={handleStartAddRepair}
               variant={isPlacingWaypoint ? 'primary' : 'secondary'}
+              className="flex-1 xs:flex-none"
             >
               {isPlacingWaypoint ? '✓ Placing Marker' : '+ Add Repair Location'}
             </Button>
@@ -253,17 +282,40 @@ export default function ClientFloorPlanPage() {
               <Button
                 onClick={() => setIsPlacingWaypoint(false)}
                 variant="secondary"
+                className="flex-1 xs:flex-none"
               >
                 Cancel
               </Button>
             )}
+            <Button
+              variant="secondary"
+              onClick={() => phaserMapRef.current?.resetView()}
+              className="flex-1 xs:flex-none flex items-center justify-center gap-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-white"
+              >
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+              </svg>
+              Reset View
+            </Button>
           </div>
 
-          {activePage && (
+          {floorPlanPages.find(p => p.id === activePageId) && (
             <div className="relative h-80 sm:h-[600px]">
               <PhaserMap
                 ref={phaserMapRef}
-                imageUrl={activePage.image_url}
+                imageUrl={floorPlanPages.find(p => p.id === activePageId)?.image_url || project?.map_image_url || ''}
                 waypoints={waypoints.filter(wp => wp.floor_plan_page_id === activePageId)}
                 isEditable={false}
                 isPlacingWaypoint={isPlacingWaypoint}
@@ -281,7 +333,7 @@ export default function ClientFloorPlanPage() {
       {waypoints.length > 0 && (
         <Card className="mt-8">
           <h2 className="text-lg font-semibold text-white mb-4">Repair Locations ({waypoints.filter(wp => wp.floor_plan_page_id === activePageId).length})</h2>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-96 overflow-y-auto">
             {waypoints
               .filter(wp => wp.floor_plan_page_id === activePageId)
               .map((wp) => (
@@ -317,11 +369,22 @@ export default function ClientFloorPlanPage() {
 
       <Modal
         isOpen={isSubmitModalOpen}
-        title="Add Repair Location"
+        title="Submit Repair Location"
         onClose={handleCloseModal}
       >
         <div className="space-y-4">
-          <p className="text-gray-600">
+          <input
+            type="text"
+            placeholder="Description (optional)"
+            className="w-full px-3 py-2 border border-gray-300 rounded text-black"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                handleSubmitRepair((e.target as HTMLInputElement).value)
+              }
+            }}
+            id="repair-description"
+          />
+          <p className="text-gray-600 text-sm">
             Location has been marked on the floor plan. Staff will review and create a survey for this repair.
           </p>
           <div className="flex gap-2 justify-end">
@@ -329,7 +392,16 @@ export default function ClientFloorPlanPage() {
               variant="secondary"
               onClick={handleCloseModal}
             >
-              Close
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const input = document.getElementById('repair-description') as HTMLInputElement
+                handleSubmitRepair(input.value)
+              }}
+            >
+              Submit
             </Button>
           </div>
         </div>
