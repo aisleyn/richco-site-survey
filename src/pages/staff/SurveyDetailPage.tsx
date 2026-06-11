@@ -38,6 +38,7 @@ export default function SurveyDetailPage() {
   const [showRepairTypeModal, setShowRepairTypeModal] = useState(false)
   const [pendingRepairType, setPendingRepairType] = useState<'temporary_repair' | 'permanent_repair' | null>(null)
   const [linkedWaypoint, setLinkedWaypoint] = useState<any>(null)
+  const isClient = profile?.role === 'client'
 
   useEffect(() => {
     loadData()
@@ -209,6 +210,26 @@ export default function SurveyDetailPage() {
       }
     }
     setPendingRepairType('permanent_repair')
+  }
+
+  const handleSubmitSurvey = async () => {
+    if (!survey) return
+    setIsPublishing(true)
+    try {
+      await publishSurvey(survey.id, survey.project_id)
+      setSurvey({ ...survey, status: 'published' })
+      addToast({
+        type: 'success',
+        message: 'Survey submitted successfully. Staff will review it soon.',
+      })
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: 'Failed to submit survey',
+      })
+    } finally {
+      setIsPublishing(false)
+    }
   }
 
   const handleDownloadReport = async () => {
@@ -474,6 +495,11 @@ export default function SurveyDetailPage() {
           {isStaff && survey.status === 'draft' && (
             <Button variant="primary" onClick={() => setShowRepairTypeModal(true)} isLoading={isPublishing} className="w-full xs:w-auto">
               ✓ Complete Repair
+            </Button>
+          )}
+          {isClient && survey.status === 'draft' && (
+            <Button variant="primary" onClick={handleSubmitSurvey} isLoading={isPublishing} className="w-full xs:w-auto">
+              📤 Submit Survey
             </Button>
           )}
           {(survey.status === 'published' || survey.status === 'archived') && (
