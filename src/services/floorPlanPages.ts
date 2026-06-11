@@ -3,15 +3,20 @@ import { useAuthStore } from '../store/authStore'
 import type { FloorPlanPage } from '../types'
 
 export async function getFloorPlanPagesByProject(projectId: string, zoneId?: string): Promise<FloorPlanPage[]> {
+  const profile = useAuthStore.getState().profile
+  console.log('getFloorPlanPagesByProject:', { projectId, zoneId, userRole: profile?.role })
+
   try {
     // For clients, use the RLS bypass endpoint
-    const profile = useAuthStore.getState().profile
     if (profile?.role === 'client') {
+      console.log('Using RLS bypass endpoint for client')
       const response = await fetch(`/api/floor-plan-pages/${projectId}`)
+      console.log('RLS bypass response status:', response.status)
       if (!response.ok) {
-        console.warn('Floor plan pages RLS bypass failed, falling back to direct query')
+        console.warn('Floor plan pages RLS bypass failed:', response.statusText, 'falling back to direct query')
       } else {
         let data = await response.json()
+        console.log('RLS bypass returned:', data?.length || 0, 'floor plan pages')
         if (zoneId) {
           data = data.filter((p: any) => p.subcategory_id === zoneId)
         }
@@ -23,11 +28,13 @@ export async function getFloorPlanPagesByProject(projectId: string, zoneId?: str
   }
 
   // Fallback to direct Supabase query
+  console.log('Falling back to direct Supabase query')
   let query = `floor_plan_pages?project_id=eq.${projectId}&order=page_number.asc`
   if (zoneId) {
     query += `&subcategory_id=eq.${zoneId}`
   }
   const data = await apiFetch<FloorPlanPage[]>(query)
+  console.log('Direct Supabase query returned:', data?.length || 0, 'floor plan pages')
   return data || []
 }
 
