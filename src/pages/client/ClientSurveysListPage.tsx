@@ -111,7 +111,7 @@ export default function ClientSurveysListPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="flex flex-col min-h-screen bg-slate-950">
       <div className="flex-1 p-4 sm:p-6">
         <div className="w-full max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-6">
@@ -135,7 +135,7 @@ export default function ClientSurveysListPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold text-black truncate">{survey.area_name}</h3>
+                        <h3 className="text-lg font-semibold text-white truncate">{survey.area_name}</h3>
                         <Badge className={getStatusColor(survey.status)}>
                           {getStatusLabel(survey.status)}
                         </Badge>
