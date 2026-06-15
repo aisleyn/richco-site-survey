@@ -4,8 +4,7 @@ import { getProjectById, updateProject } from '../../services/projects'
 import { getSurveysByProject } from '../../services/surveys'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
-import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
-import type { Project, Survey, ProjectSubcategory, Sample, FloorPlanPage, ProjectType } from '../../types'
+import type { Project, Survey, ProjectSubcategory, Sample, ProjectType } from '../../types'
 import { Card, Button, Spinner, Badge, BackButton } from '../../components/ui'
 import { SubcategoryModal } from '../../components/project/SubcategoryModal'
 import { ZoneList } from '../../components/project/ZoneList'
@@ -22,7 +21,6 @@ export default function ProjectDetailPage() {
   const [surveys, setSurveys] = useState<Survey[]>([])
   const [subcategories, setSubcategories] = useState<ProjectSubcategory[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
-  const [floorPlans, setFloorPlans] = useState<FloorPlanPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubcategoryModalOpen, setIsSubcategoryModalOpen] = useState(false)
   const [isCreateSampleModalOpen, setIsCreateSampleModalOpen] = useState(false)
@@ -76,18 +74,16 @@ export default function ProjectDetailPage() {
   const loadData = async () => {
     if (!projectId) return
     try {
-      const [p, s, sc, sa, fp] = await Promise.all([
+      const [p, s, sc, sa] = await Promise.all([
         getProjectById(projectId),
         getSurveysByProject(projectId),
         getSubcategoriesByProject(projectId),
         getSamplesByProject(projectId),
-        getFloorPlanPagesByProject(projectId),
       ])
       setProject(p)
       setSurveys(s)
       setSubcategories(sc)
       setSamples(sa)
-      setFloorPlans(fp)
     } catch (err) {
       console.error('Failed to load project data:', err)
       setProject(null)
