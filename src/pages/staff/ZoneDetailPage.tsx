@@ -71,9 +71,11 @@ export default function ZoneDetailPage() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-white">{zone.name}</h1>
-              <Badge variant={getZoneStatusBadgeVariant(zone.status)}>
-                {zone.status.replace('_', ' ').charAt(0).toUpperCase() + zone.status.replace('_', ' ').slice(1)}
-              </Badge>
+              {(project.project_type === 'in_development' || project.project_type === 'new_project') && (
+                <Badge variant={getZoneStatusBadgeVariant(zone.status)}>
+                  {zone.status.replace('_', ' ').charAt(0).toUpperCase() + zone.status.replace('_', ' ').slice(1)}
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-secondary">Project: {project.name}</p>
           </div>
