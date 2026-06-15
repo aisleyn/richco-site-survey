@@ -12,7 +12,6 @@ import type { Survey, MapWaypoint, WaypointStatus } from '../../types'
 
 const surveyUpdateSchema = z.object({
   area_name: z.string().optional().default(''),
-  area_size_sqft: z.coerce.number().positive().nullable().optional(),
   update_notes: z.string().optional().default(''),
   suggested_system: z.string().optional().default(''),
   install_notes: z.string().optional().default(''),
@@ -48,7 +47,6 @@ export function WaypointSurveyUpdateModal({
     resolver: zodResolver(surveyUpdateSchema),
     defaultValues: {
       area_name: survey.area_name,
-      area_size_sqft: survey.area_size_sqft,
       suggested_system: survey.suggested_system,
       install_notes: survey.install_notes,
     },
@@ -76,7 +74,6 @@ export function WaypointSurveyUpdateModal({
         {
           update_notes: data.update_notes,
           area_name: data.area_name,
-          area_size_sqft: data.area_size_sqft,
           suggested_system: data.suggested_system,
           install_notes: data.install_notes,
         },
@@ -141,14 +138,6 @@ export function WaypointSurveyUpdateModal({
               label="Area Name / Room Number"
               error={getErrorMessage(formErrors.area_name)}
               {...register('area_name')}
-            />
-
-            <Input
-              label="Area Size (sqft)"
-              type="number"
-              step="0.01"
-              error={getErrorMessage(formErrors.area_size_sqft)}
-              {...register('area_size_sqft')}
             />
 
             <Textarea

@@ -88,7 +88,7 @@ export function WaypointDetailModal({
         {/* Waypoint Info */}
         <div className="bg-slate-50 p-4 rounded-lg space-y-4">
           <div>
-            <label className="text-xs font-medium text-slate-600 uppercase">Status</label>
+            <label className="text-xs font-medium text-black uppercase">Status</label>
             {isStaff ? (
               <Select
                 options={[
