@@ -297,8 +297,6 @@ export default function ProjectDetailPage() {
               projectId={projectId!}
               subcategories={subcategories}
               surveys={surveys}
-              floorPlans={floorPlans}
-              samples={samples}
               projectType={project.project_type}
             />
           </>

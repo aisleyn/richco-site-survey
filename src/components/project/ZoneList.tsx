@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom'
 import { Card } from '../ui'
-import type { ProjectSubcategory, Survey, FloorPlanPage, Sample, ProjectType } from '../../types'
+import type { ProjectSubcategory, Survey, ProjectType } from '../../types'
 
 interface ZoneListProps {
   projectId: string
   subcategories: ProjectSubcategory[]
   surveys: Survey[]
-  floorPlans: FloorPlanPage[]
-  samples: Sample[]
   projectType?: ProjectType
 }
 
@@ -15,20 +13,10 @@ export function ZoneList({
   projectId,
   subcategories,
   surveys,
-  floorPlans,
-  samples,
   projectType,
 }: ZoneListProps) {
   const getZoneSurveyCount = (zoneId: string) => {
     return surveys.filter(s => s.subcategory_id === zoneId).length
-  }
-
-  const getZoneFloorPlanCount = (zoneId: string) => {
-    return floorPlans.filter(fp => fp.subcategory_id === zoneId).length
-  }
-
-  const getZoneSampleCount = (zoneId: string) => {
-    return samples.filter(s => s.subcategory_id === zoneId).length
   }
 
   const getStatusColor = (status: string): string => {
@@ -43,32 +31,28 @@ export function ZoneList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {subcategories.map(zone => {
         const surveyCount = getZoneSurveyCount(zone.id)
-        const floorPlanCount = getZoneFloorPlanCount(zone.id)
-        const sampleCount = getZoneSampleCount(zone.id)
 
         return (
           <Link key={zone.id} to={`/staff/projects/${projectId}/zones/${zone.id}`}>
-            <Card className="p-4 cursor-pointer hover:bg-slate-600 transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
+            <Card className="p-4 cursor-pointer hover:bg-slate-600 transition-colors h-full">
+              <div className="flex flex-col justify-between h-full">
+                <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-white">{zone.name}</h3>
+                    <h3 className="text-base font-semibold text-white">{zone.name}</h3>
                     {(projectType === 'in_development' || projectType === 'new_project') && (
                       <div className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(zone.status)}`}>
                         {zone.status.replace('_', ' ').charAt(0).toUpperCase() + zone.status.replace('_', ' ').slice(1)}
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-secondary">
-                    <span>{surveyCount} {surveyCount === 1 ? 'survey' : 'surveys'}</span>
-                    {floorPlanCount > 0 && <span>{floorPlanCount} {floorPlanCount === 1 ? 'floor plan' : 'floor plans'}</span>}
-                    {sampleCount > 0 && <span>{sampleCount} {sampleCount === 1 ? 'sample' : 'samples'}</span>}
-                  </div>
+                  <p className="text-sm text-secondary">
+                    {surveyCount} {surveyCount === 1 ? 'survey' : 'surveys'}
+                  </p>
                 </div>
-                <div className="text-slate-400">→</div>
+                <div className="text-slate-400 mt-3 text-right text-lg">→</div>
               </div>
             </Card>
           </Link>
