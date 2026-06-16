@@ -3,23 +3,26 @@ import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
+import { getSurveysByProject } from '../../services/surveys'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
-import { Spinner, Card, Button } from '../../components/ui'
+import { Spinner, Card, Button, Badge } from '../../components/ui'
 import { ProjectStatusTimeline } from '../../components/project/ProjectStatusTimeline'
 import { SampleCard } from '../../components/samples/SampleCard'
 import { BackButton } from '../../components/ui/BackButton'
 import { InteractiveMap } from '../../components/map'
-import type { Project, ProjectSubcategory, Sample, MapWaypoint, FloorPlanPage } from '../../types'
+import type { Project, ProjectSubcategory, Sample, MapWaypoint, FloorPlanPage, Survey } from '../../types'
 
 export default function ClientProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const [project, setProject] = useState<Project | null>(null)
   const [zones, setZones] = useState<ProjectSubcategory[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
+  const [surveys, setSurveys] = useState<Survey[]>([])
   const [waypoints, setWaypoints] = useState<MapWaypoint[]>([])
   const [floorPlanPages, setFloorPlanPages] = useState<FloorPlanPage[]>([])
   const [activePageId, setActivePageId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'map' | 'surveys' | 'samples'>('map')
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -67,6 +70,14 @@ export default function ClientProjectDetailPage() {
         }
       } catch (error) {
         console.error('Error loading floor plan pages:', error)
+      }
+
+      // Load surveys
+      try {
+        const surveyData = await getSurveysByProject(projectId)
+        setSurveys(surveyData)
+      } catch (error) {
+        console.error('Error loading surveys:', error)
       }
 
       // Load zones and samples if project type is new_project or in_development
@@ -160,55 +171,149 @@ export default function ClientProjectDetailPage() {
           />
         </Card>
 
-        {/* Floor Plan Map */}
-        <Card className="p-6 mb-8">
-          <h2 className="text-xl font-bold text-white mb-4">Floor Plan Map</h2>
-          {floorPlanPages.length > 0 || project.map_image_url ? (
-            <>
-              <div className="bg-slate-900 rounded-lg overflow-hidden mb-4" style={{ height: '500px' }}>
-                <InteractiveMap
-                  imageUrl={
-                    floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''
-                  }
-                  waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
-                  isEditable={false}
-                />
-              </div>
-              {floorPlanPages.length > 1 && (
-                <div className="flex gap-2 flex-wrap">
-                  {floorPlanPages.map((page, index) => (
-                    <button
-                      key={page.id}
-                      onClick={() => setActivePageId(page.id)}
-                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        activePageId === page.id
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                      }`}
-                    >
-                      {page.label || `Page ${index + 1}`}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-secondary text-center py-12">No floor plan map available for this project.</p>
-          )}
-        </Card>
+        {/* Tab Navigation */}
+        <div className="border-b border-slate-700 mb-6">
+          <div className="flex gap-0">
+            <button
+              onClick={() => setActiveTab('map')}
+              className={`px-4 py-3 font-medium transition-colors border-b-2 ${
+                activeTab === 'map'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              Floor Plan Map
+            </button>
+            {surveys.length > 0 && (
+              <button
+                onClick={() => setActiveTab('surveys')}
+                className={`px-4 py-3 font-medium transition-colors border-b-2 ${
+                  activeTab === 'surveys'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                Surveys ({surveys.length})
+              </button>
+            )}
+            {isSamplesVisible && samples.length > 0 && (
+              <button
+                onClick={() => setActiveTab('samples')}
+                className={`px-4 py-3 font-medium transition-colors border-b-2 ${
+                  activeTab === 'samples'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-slate-400 hover:text-white'
+                }`}
+              >
+                Samples ({samples.length})
+              </button>
+            )}
+          </div>
+        </div>
 
-        {/* Conditional Content */}
-        {project.project_type === 'maintenance' ? (
-          // Maintenance: Show Submit Repair Request button
-          <Card className="p-8 text-center">
-            <h2 className="text-xl font-semibold text-white mb-4">Need a Repair?</h2>
-            <p className="text-secondary mb-6">Submit a repair request for this project.</p>
-            <Link to="/client/submit">
-              <Button className="px-8 py-3 font-medium">Submit Repair Request</Button>
-            </Link>
+        {/* Map Tab */}
+        {activeTab === 'map' && (
+          <Card className="p-6 mb-8">
+            <h2 className="text-xl font-bold text-white mb-4">Floor Plan Map</h2>
+            {floorPlanPages.length > 0 || project.map_image_url ? (
+              <>
+                <div className="bg-slate-900 rounded-lg overflow-hidden mb-4" style={{ height: '500px' }}>
+                  <InteractiveMap
+                    imageUrl={
+                      floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''
+                    }
+                    waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
+                    isEditable={false}
+                  />
+                </div>
+                {floorPlanPages.length > 1 && (
+                  <div className="flex gap-2 flex-wrap">
+                    {floorPlanPages.map((page, index) => (
+                      <button
+                        key={page.id}
+                        onClick={() => setActivePageId(page.id)}
+                        className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                          activePageId === page.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                        }`}
+                      >
+                        {page.label || `Page ${index + 1}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-secondary text-center py-12">No floor plan map available for this project.</p>
+            )}
+
+            {project.project_type === 'maintenance' && (
+              <div className="mt-8 border-t border-slate-700 pt-8 text-center">
+                <h2 className="text-xl font-semibold text-white mb-4">Need a Repair?</h2>
+                <p className="text-secondary mb-6">Submit a repair request for this project.</p>
+                <Link to="/client/submit">
+                  <Button className="px-8 py-3 font-medium">Submit Repair Request</Button>
+                </Link>
+              </div>
+            )}
           </Card>
-        ) : isSamplesVisible ? (
-          // New Project / In Development: Show Samples
+        )}
+
+        {/* Surveys Tab */}
+        {activeTab === 'surveys' && (
+          <div>
+            {surveys.length === 0 ? (
+              <Card className="p-8 text-center">
+                <p className="text-secondary">No surveys yet.</p>
+              </Card>
+            ) : (
+              <div className="space-y-8">
+                {zones.length > 0 ? (
+                  zones.map(zone => {
+                    const zoneSurveys = surveys.filter(s => s.subcategory_id === zone.id)
+                    if (zoneSurveys.length === 0) return null
+                    return (
+                      <div key={zone.id}>
+                        <h3 className="text-lg font-bold text-white mb-4">{zone.name}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {zoneSurveys.map(survey => (
+                            <Card key={survey.id} className="p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                              <div className="flex flex-col h-full">
+                                <h4 className="text-base font-semibold text-white mb-2">{survey.area_name}</h4>
+                                <p className="text-sm text-slate-400 mb-3">{new Date(survey.survey_date).toLocaleDateString()}</p>
+                                <div className="mt-auto flex items-center gap-2">
+                                  <Badge variant={survey.status}>{survey.status}</Badge>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {surveys.map(survey => (
+                      <Card key={survey.id} className="p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                        <div className="flex flex-col h-full">
+                          <h4 className="text-base font-semibold text-white mb-2">{survey.area_name}</h4>
+                          <p className="text-sm text-slate-400 mb-3">{new Date(survey.survey_date).toLocaleDateString()}</p>
+                          <div className="mt-auto flex items-center gap-2">
+                            <Badge variant={survey.status}>{survey.status}</Badge>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Samples Tab */}
+        {activeTab === 'samples' && (
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">Samples</h2>
@@ -231,7 +336,7 @@ export default function ClientProjectDetailPage() {
               </div>
             )}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   )
