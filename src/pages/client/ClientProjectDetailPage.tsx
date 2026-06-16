@@ -4,12 +4,13 @@ import { supabase } from '../../lib/supabase'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
 import { getWaypointsByProject } from '../../services/mapWaypoints'
+import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
 import { Spinner, Card, Button } from '../../components/ui'
 import { ProjectStatusTimeline } from '../../components/project/ProjectStatusTimeline'
 import { SampleCard } from '../../components/samples/SampleCard'
 import { BackButton } from '../../components/ui/BackButton'
 import { InteractiveMap } from '../../components/map'
-import type { Project, ProjectSubcategory, Sample, MapWaypoint } from '../../types'
+import type { Project, ProjectSubcategory, Sample, MapWaypoint, FloorPlanPage } from '../../types'
 
 export default function ClientProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -17,6 +18,8 @@ export default function ClientProjectDetailPage() {
   const [zones, setZones] = useState<ProjectSubcategory[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
   const [waypoints, setWaypoints] = useState<MapWaypoint[]>([])
+  const [floorPlanPages, setFloorPlanPages] = useState<FloorPlanPage[]>([])
+  const [activePageId, setActivePageId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -53,6 +56,17 @@ export default function ClientProjectDetailPage() {
         setWaypoints(waypointData)
       } catch (error) {
         console.error('Error loading waypoints:', error)
+      }
+
+      // Load floor plan pages
+      try {
+        const floorPlanData = await getFloorPlanPagesByProject(projectId)
+        setFloorPlanPages(floorPlanData)
+        if (floorPlanData.length > 0) {
+          setActivePageId(floorPlanData[0].id)
+        }
+      } catch (error) {
+        console.error('Error loading floor plan pages:', error)
       }
 
       // Load zones and samples if project type is new_project or in_development
@@ -149,14 +163,35 @@ export default function ClientProjectDetailPage() {
         {/* Floor Plan Map */}
         <Card className="p-6 mb-8">
           <h2 className="text-xl font-bold text-white mb-4">Floor Plan Map</h2>
-          {project.map_image_url ? (
-            <div className="bg-slate-900 rounded-lg overflow-hidden" style={{ height: '500px' }}>
-              <InteractiveMap
-                imageUrl={project.map_image_url}
-                waypoints={waypoints}
-                isEditable={false}
-              />
-            </div>
+          {floorPlanPages.length > 0 || project.map_image_url ? (
+            <>
+              <div className="bg-slate-900 rounded-lg overflow-hidden mb-4" style={{ height: '500px' }}>
+                <InteractiveMap
+                  imageUrl={
+                    floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''
+                  }
+                  waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
+                  isEditable={false}
+                />
+              </div>
+              {floorPlanPages.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {floorPlanPages.map((page, index) => (
+                    <button
+                      key={page.id}
+                      onClick={() => setActivePageId(page.id)}
+                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                        activePageId === page.id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      }`}
+                    >
+                      {page.label || `Page ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-secondary text-center py-12">No floor plan map available for this project.</p>
           )}
