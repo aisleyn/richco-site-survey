@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { getSubcategoriesByProject } from '../../services/subcategories'
 import { getSamplesByProject } from '../../services/samples'
@@ -10,11 +10,14 @@ import { Spinner, Card, Button, Badge } from '../../components/ui'
 import { ProjectStatusTimeline } from '../../components/project/ProjectStatusTimeline'
 import { SampleCard } from '../../components/samples/SampleCard'
 import { BackButton } from '../../components/ui/BackButton'
-import { InteractiveMap } from '../../components/map'
+import { PhaserMap } from '../../components/map/PhaserMap'
+import type { PhaserMapHandle } from '../../components/map/PhaserMap'
 import type { Project, ProjectSubcategory, Sample, MapWaypoint, FloorPlanPage, Survey } from '../../types'
 
 export default function ClientProjectDetailPage() {
+  const navigate = useNavigate()
   const { projectId } = useParams<{ projectId: string }>()
+  const phaserMapRef = useRef<PhaserMapHandle>(null)
   const [project, setProject] = useState<Project | null>(null)
   const [zones, setZones] = useState<ProjectSubcategory[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
@@ -217,17 +220,8 @@ export default function ClientProjectDetailPage() {
             <h2 className="text-xl font-bold text-white mb-4">Floor Plan Map</h2>
             {floorPlanPages.length > 0 || project.map_image_url ? (
               <>
-                <div className="bg-slate-900 rounded-lg overflow-hidden mb-4" style={{ height: '500px' }}>
-                  <InteractiveMap
-                    imageUrl={
-                      floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''
-                    }
-                    waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
-                    isEditable={false}
-                  />
-                </div>
                 {floorPlanPages.length > 1 && (
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="flex gap-2 flex-wrap mb-4">
                     {floorPlanPages.map((page, index) => (
                       <button
                         key={page.id}
@@ -243,6 +237,44 @@ export default function ClientProjectDetailPage() {
                     ))}
                   </div>
                 )}
+                <div className="relative h-80 sm:h-[600px] mb-4">
+                  <PhaserMap
+                    ref={phaserMapRef}
+                    imageUrl={
+                      floorPlanPages.find(p => p.id === activePageId)?.image_url || project.map_image_url || ''
+                    }
+                    waypoints={waypoints.filter(w => w.floor_plan_page_id === activePageId || (floorPlanPages.length === 0 && !w.floor_plan_page_id))}
+                    isEditable={false}
+                    isPlacingWaypoint={false}
+                    isMovingWaypoint={false}
+                    onWaypointClick={() => {}}
+                    onWaypointAdd={() => {}}
+                    onWaypointDrop={() => {}}
+                    className="absolute inset-0 border border-slate-200 rounded-lg overflow-hidden"
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => phaserMapRef.current?.resetView()}
+                  className="flex items-center justify-center gap-2"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-white"
+                  >
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                  </svg>
+                  Reset View
+                </Button>
               </>
             ) : (
               <p className="text-secondary text-center py-12">No floor plan map available for this project.</p>
@@ -278,15 +310,21 @@ export default function ClientProjectDetailPage() {
                         <h3 className="text-lg font-bold text-white mb-4">{zone.name}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {zoneSurveys.map(survey => (
-                            <Card key={survey.id} className="p-4 hover:bg-slate-700 transition-colors cursor-pointer">
-                              <div className="flex flex-col h-full">
-                                <h4 className="text-base font-semibold text-white mb-2">{survey.area_name}</h4>
-                                <p className="text-sm text-slate-400 mb-3">{new Date(survey.survey_date).toLocaleDateString()}</p>
-                                <div className="mt-auto flex items-center gap-2">
-                                  <Badge variant={survey.status}>{survey.status}</Badge>
+                            <button
+                              key={survey.id}
+                              onClick={() => navigate(`/client/survey/${survey.id}`)}
+                              className="text-left"
+                            >
+                              <Card className="p-4 hover:bg-slate-700 transition-colors cursor-pointer h-full">
+                                <div className="flex flex-col h-full">
+                                  <h4 className="text-base font-semibold text-white mb-2">{survey.area_name}</h4>
+                                  <p className="text-sm text-slate-400 mb-3">{new Date(survey.survey_date).toLocaleDateString()}</p>
+                                  <div className="mt-auto flex items-center gap-2">
+                                    <Badge variant={survey.status}>{survey.status}</Badge>
+                                  </div>
                                 </div>
-                              </div>
-                            </Card>
+                              </Card>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -295,15 +333,21 @@ export default function ClientProjectDetailPage() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {surveys.map(survey => (
-                      <Card key={survey.id} className="p-4 hover:bg-slate-700 transition-colors cursor-pointer">
-                        <div className="flex flex-col h-full">
-                          <h4 className="text-base font-semibold text-white mb-2">{survey.area_name}</h4>
-                          <p className="text-sm text-slate-400 mb-3">{new Date(survey.survey_date).toLocaleDateString()}</p>
-                          <div className="mt-auto flex items-center gap-2">
-                            <Badge variant={survey.status}>{survey.status}</Badge>
+                      <button
+                        key={survey.id}
+                        onClick={() => navigate(`/client/survey/${survey.id}`)}
+                        className="text-left"
+                      >
+                        <Card className="p-4 hover:bg-slate-700 transition-colors cursor-pointer h-full">
+                          <div className="flex flex-col h-full">
+                            <h4 className="text-base font-semibold text-white mb-2">{survey.area_name}</h4>
+                            <p className="text-sm text-slate-400 mb-3">{new Date(survey.survey_date).toLocaleDateString()}</p>
+                            <div className="mt-auto flex items-center gap-2">
+                              <Badge variant={survey.status}>{survey.status}</Badge>
+                            </div>
                           </div>
-                        </div>
-                      </Card>
+                        </Card>
+                      </button>
                     ))}
                   </div>
                 )}
