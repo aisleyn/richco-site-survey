@@ -120,7 +120,12 @@ export function SampleCard({
                   console.log('[SampleCard] Image clicked, opening preview')
                   setPreviewOpen(true)
                 }}
-                className="w-full h-40 object-cover group-hover:opacity-75 transition-opacity cursor-pointer"
+                onTouchEnd={() => {
+                  console.log('[SampleCard] Image touch, opening preview')
+                  setPreviewOpen(true)
+                }}
+                style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                className="w-full h-40 object-cover group-hover:opacity-75 transition-opacity"
               />
             ) : isPdf ? (
               <div
@@ -128,6 +133,11 @@ export function SampleCard({
                   console.log('[SampleCard] PDF clicked, opening preview')
                   setPreviewOpen(true)
                 }}
+                onTouchEnd={() => {
+                  console.log('[SampleCard] PDF touch, opening preview')
+                  setPreviewOpen(true)
+                }}
+                style={{ pointerEvents: 'auto' }}
                 className="w-full h-40 bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <div className="text-center">
