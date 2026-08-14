@@ -71,23 +71,36 @@ export function MediaPreviewModal({ isOpen, media, onClose }: MediaPreviewModalP
   const renderPage = async (pdfDoc: any, pageNum: number) => {
     try {
       const canvas = canvasRef.current
-      if (!canvas) return
+      console.log('[PDF renderPage] Starting render for page', pageNum, 'canvas:', !!canvas)
+      if (!canvas) {
+        console.error('[PDF renderPage] No canvas ref!')
+        return
+      }
 
       const page = await pdfDoc.getPage(pageNum)
+      console.log('[PDF renderPage] Got page object')
+
       const viewport = page.getViewport({ scale: 2 })
+      console.log('[PDF renderPage] Viewport:', viewport.width, 'x', viewport.height)
 
       canvas.width = viewport.width
       canvas.height = viewport.height
+      console.log('[PDF renderPage] Canvas set to:', canvas.width, 'x', canvas.height)
 
       const context = canvas.getContext('2d')
-      if (!context) return
+      if (!context) {
+        console.error('[PDF renderPage] No 2D context!')
+        return
+      }
 
+      console.log('[PDF renderPage] Starting render operation...')
       await page.render({
         canvasContext: context,
         viewport,
       }).promise
+      console.log('[PDF renderPage] Render complete!')
     } catch (err) {
-      console.error('Error rendering PDF page:', err)
+      console.error('[PDF renderPage] Error rendering PDF page:', err)
     }
   }
 
