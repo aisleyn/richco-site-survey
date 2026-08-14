@@ -23,23 +23,43 @@ export function MediaPreviewModal({ isOpen, media, onClose }: MediaPreviewModalP
   const is3dScan = media?.media_type === '3d_scan'
   const isPdf = media?.media_type === 'pdf'
 
+  // Debug logging
+  if (isOpen) {
+    console.log('[MediaPreviewModal] Opened with:', {
+      isOpen,
+      media_type: media?.media_type,
+      file_url: media?.file_url?.substring(0, 100),
+      isPdf,
+      isImage,
+    })
+  }
+
   useEffect(() => {
-    if (!isPdf || !isOpen || !media) return
+    if (!isPdf || !isOpen || !media) {
+      console.log('[MediaPreviewModal PDF effect] Skipping - isPdf:', isPdf, 'isOpen:', isOpen, 'media:', !!media)
+      return
+    }
+
+    console.log('[MediaPreviewModal PDF effect] Starting PDF load...')
 
     const loadPdf = async () => {
       try {
         setIsLoadingPdf(true)
         setCurrentPage(1)
 
+        console.log('[MediaPreviewModal PDF effect] Loading from:', media!.file_url)
         const pdfDoc = await pdfjsLib.getDocument(media!.file_url).promise
+        console.log('[MediaPreviewModal PDF effect] Loaded successfully, pages:', pdfDoc.numPages)
+
         pdfDocRef.current = pdfDoc
         setTotalPages(pdfDoc.numPages)
 
         if (canvasRef.current) {
+          console.log('[MediaPreviewModal PDF effect] Rendering page 1...')
           renderPage(pdfDoc, 1)
         }
       } catch (err) {
-        console.error('Error loading PDF:', err)
+        console.error('[MediaPreviewModal PDF effect] Error loading PDF:', err)
       } finally {
         setIsLoadingPdf(false)
       }
