@@ -33,7 +33,17 @@ export function SampleCard({
   const [previewOpen, setPreviewOpen] = useState(false)
   const toast = useToast()
 
-  const isPdf = sample.image_url?.toLowerCase().endsWith('.pdf') || false
+  // Detect file type by looking at filename before query params
+  const getFileExtension = (url: string | null | undefined): string => {
+    if (!url) return ''
+    // Remove query params and get the last path segment
+    const pathOnly = url.split('?')[0]
+    const filename = pathOnly.split('/').pop() || ''
+    return filename.toLowerCase()
+  }
+
+  const filename = getFileExtension(sample.image_url)
+  const isPdf = filename.endsWith('.pdf')
   const isImage = sample.image_url && !isPdf
 
   const handleStatusChange = async (newStatus: 'approved' | 'denied') => {
