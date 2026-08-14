@@ -41,6 +41,10 @@ export default function SamplesPage() {
     setSamples(samples.map(s => s.id === updatedSample.id ? updatedSample : s))
   }
 
+  const handleSampleDeleted = (sampleId: string) => {
+    setSamples(samples.filter(s => s.id !== sampleId))
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -86,6 +90,7 @@ export default function SamplesPage() {
               sample={sample}
               projectName={project?.name}
               onStatusChange={handleSampleStatusUpdated}
+              onDeleted={handleSampleDeleted}
             />
           ))}
         </div>

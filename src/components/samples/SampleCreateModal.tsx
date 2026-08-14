@@ -39,7 +39,7 @@ export function SampleCreateModal({ isOpen, projectId, subcategoryId, onCreated,
 
   const onSubmit = async (data: any) => {
     if (!selectedFile) {
-      toast({ message: 'Please upload an image', type: 'error' })
+      toast({ message: 'Please upload a document or image', type: 'error' })
       return
     }
 
@@ -95,14 +95,21 @@ export function SampleCreateModal({ isOpen, projectId, subcategoryId, onCreated,
         />
 
         <div>
-          <label className="block text-sm font-semibold text-white mb-2">Sample Image</label>
+          <label className="block text-sm font-semibold text-white mb-2">Sample Image or Document (PDF)</label>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,.pdf"
             onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
             className="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
-          {selectedFile && <p className="text-sm text-slate-400 mt-1">Selected: {selectedFile.name}</p>}
+          {selectedFile && (
+            <div className="mt-1">
+              <p className="text-sm text-slate-400">Selected: {selectedFile.name}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {selectedFile.type.startsWith('image/') ? '📷 Image' : '📄 PDF Document'}
+              </p>
+            </div>
+          )}
         </div>
 
         <Textarea
