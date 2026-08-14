@@ -14,7 +14,7 @@ export async function uploadFile(bucket: string, path: string, file: File): Prom
   if (error) throw error
 
   // Use public URL for all media buckets to avoid signed URL expiration
-  const publicBuckets = ['floor-plans', 'waypoint-photos', 'survey-media', 'client-submission-media']
+  const publicBuckets = ['floor-plans', 'waypoint-photos', 'survey-media', 'client-submission-media', 'sample-media']
   let url: string
 
   if (publicBuckets.includes(bucket)) {

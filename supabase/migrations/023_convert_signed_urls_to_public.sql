@@ -30,3 +30,12 @@ SET image_url = regexp_replace(
   'storage/v1/object/public/\1/\2'
 )
 WHERE image_url LIKE '%storage/v1/object/sign%';
+
+-- Samples: convert signed URLs to public URLs (images and PDFs)
+UPDATE public.samples
+SET image_url = regexp_replace(
+  image_url,
+  'storage/v1/object/sign/([^/]+)/(.+)\?.*',
+  'storage/v1/object/public/\1/\2'
+)
+WHERE image_url LIKE '%storage/v1/object/sign%';
