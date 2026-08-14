@@ -46,6 +46,15 @@ export function SampleCard({
   const isPdf = filename.endsWith('.pdf')
   const isImage = sample.image_url && !isPdf
 
+  // Debug logging
+  console.log('[SampleCard]', {
+    title: sample.title,
+    filename,
+    isPdf,
+    isImage,
+    imageUrl: sample.image_url?.substring(0, 100),
+  })
+
   const handleStatusChange = async (newStatus: 'approved' | 'denied') => {
     setIsUpdating(true)
     try {
