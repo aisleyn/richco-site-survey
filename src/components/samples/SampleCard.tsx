@@ -116,13 +116,19 @@ export function SampleCard({
               <img
                 src={sample.image_url}
                 alt={sample.title}
-                onClick={() => setPreviewOpen(true)}
-                className="w-full h-40 object-cover group-hover:opacity-75 transition-opacity"
+                onClick={() => {
+                  console.log('[SampleCard] Image clicked, opening preview')
+                  setPreviewOpen(true)
+                }}
+                className="w-full h-40 object-cover group-hover:opacity-75 transition-opacity cursor-pointer"
               />
             ) : isPdf ? (
               <div
-                onClick={() => setPreviewOpen(true)}
-                className="w-full h-40 bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors"
+                onClick={() => {
+                  console.log('[SampleCard] PDF clicked, opening preview')
+                  setPreviewOpen(true)
+                }}
+                className="w-full h-40 bg-slate-800 flex items-center justify-center group-hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 <div className="text-center">
                   <FileIcon className="w-8 h-8 text-slate-400 mx-auto mb-2" />
