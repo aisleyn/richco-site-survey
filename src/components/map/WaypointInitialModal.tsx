@@ -106,6 +106,7 @@ export function WaypointInitialModal({
         suggested_system: '',
         install_notes: '',
         subcategory_id: zoneId,
+        room_id: null,
         images: files,
         scans_3d: [],
         videos: [],

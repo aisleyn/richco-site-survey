@@ -99,6 +99,7 @@ export interface Survey {
   install_notes: string | null
   status: SurveyStatus
   subcategory_id: string | null
+  room_id: string | null
 }
 
 export interface SurveyMedia {
@@ -145,6 +146,7 @@ export interface FloorPlanPage {
   label: string
   image_url: string
   subcategory_id: string | null
+  room_id: string | null
   created_at: string
 }
 
@@ -154,6 +156,18 @@ export interface ProjectSubcategory {
   name: string
   created_at: string
   status: ZoneStatus
+}
+
+export interface ProjectRoom {
+  id: string
+  project_id: string
+  subcategory_id: string
+  name: string
+  description: string | null
+  status: ZoneStatus
+  room_order: number
+  created_at: string
+  updated_at: string
 }
 
 export interface MapWaypoint {
@@ -166,6 +180,7 @@ export interface MapWaypoint {
   linked_survey_id: string | null
   floor_plan_page_id: string | null
   subcategory_id: string | null
+  room_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string
@@ -231,6 +246,7 @@ export interface SurveyFormValues {
   suggested_system: string
   install_notes: string
   subcategory_id: string | null
+  room_id: string | null
   images: File[]
   scans_3d: File[]
   videos: File[]
@@ -259,6 +275,7 @@ export interface Sample {
   proposal: string | null
   status: SampleStatus
   subcategory_id: string | null
+  room_id: string | null
   created_by: string | null
   created_at: string
   updated_at: string

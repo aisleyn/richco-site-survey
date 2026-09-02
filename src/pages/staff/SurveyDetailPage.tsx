@@ -7,11 +7,13 @@ import { getSurveyUpdates, updateSurveyUpdate } from '../../services/surveyUpdat
 import { updateWaypointStatusByLinkedSurvey } from '../../services/mapWaypoints'
 import { getWaypointHistory } from '../../services/waypointRepairHistory'
 import { getFloorPlanPagesByProject } from '../../services/floorPlanPages'
+import { getSubcategoriesByProject } from '../../services/subcategories'
+import { getRoomById } from '../../services/rooms'
 import { uploadFile } from '../../services/storage'
 import { generateSurveyFromTemplate } from '../../lib/templateExport'
 import { captureWaypointLocation } from '../../lib/waypointScreenshot'
 import { apiFetch } from '../../lib/api'
-import type { Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia } from '../../types'
+import type { Survey, SurveyMedia, SurveyUpdate, SurveyUpdateMedia, ProjectSubcategory, ProjectRoom } from '../../types'
 import { Card, CardHeader, CardTitle, Button, Badge, Spinner, MediaPreviewModal, Input, Textarea, BackButton } from '../../components/ui'
 import { useToast } from '../../components/ui/Toast'
 import { WaypointCompletionModal } from '../../components/map/WaypointCompletionModal'
@@ -25,6 +27,8 @@ export default function SurveyDetailPage() {
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [media, setMedia] = useState<SurveyMedia[]>([])
   const [surveyUpdates, setSurveyUpdates] = useState<(SurveyUpdate & { media: SurveyUpdateMedia[] })[]>([])
+  const [zone, setZone] = useState<ProjectSubcategory | null>(null)
+  const [room, setRoom] = useState<ProjectRoom | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isPublishing, setIsPublishing] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -59,6 +63,30 @@ export default function SurveyDetailPage() {
       setSurvey(s)
       setMedia(m)
       setSurveyUpdates(updates)
+
+      // Load zone and room info
+      if (s.subcategory_id) {
+        try {
+          const subcategories = await getSubcategoriesByProject(s.project_id)
+          const zoneData = subcategories.find((sub) => sub.id === s.subcategory_id)
+          if (zoneData) {
+            setZone(zoneData)
+          }
+        } catch (err) {
+          console.error('Failed to load zone:', err)
+        }
+      }
+
+      if (s.room_id) {
+        try {
+          const roomData = await getRoomById(s.room_id)
+          if (roomData) {
+            setRoom(roomData)
+          }
+        } catch (err) {
+          console.error('Failed to load room:', err)
+        }
+      }
     } finally {
       setIsLoading(false)
     }
@@ -910,6 +938,14 @@ export default function SurveyDetailPage() {
                 <label className="text-secondary">Client</label>
                 <p className="font-medium text-white">{survey.client_name}</p>
               </div>
+              {(zone || room) && (
+                <div>
+                  <label className="text-secondary">Location</label>
+                  <p className="font-medium text-white">
+                    {zone && room ? `${zone.name} > ${room.name}` : zone ? zone.name : room ? room.name : 'N/A'}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="text-secondary">Created</label>
                 <p className="font-medium text-white">

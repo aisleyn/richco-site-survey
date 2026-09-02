@@ -7,9 +7,10 @@ import { useAuthStore } from '../../store/authStore'
 import { getProjectById, getProjects } from '../../services/projects'
 import { createSurvey, addSurveyMedia, getSurveyById, updateSurvey } from '../../services/surveys'
 import { getSubcategoriesByProject } from '../../services/subcategories'
+import { getRoomsByZone } from '../../services/rooms'
 import { uploadFile } from '../../services/storage'
 import { MediaType } from '../../types'
-import type { Project, Survey, ProjectSubcategory } from '../../types'
+import type { Project, Survey, ProjectSubcategory, ProjectRoom } from '../../types'
 import { Card, Button, Input, Textarea, FileDropzone, Spinner, Select, BackButton } from '../../components/ui'
 
 const surveySchema = z.object({
@@ -21,6 +22,7 @@ const surveySchema = z.object({
   suggested_system: z.string().optional().default(''),
   install_notes: z.string().optional().default(''),
   subcategory_id: z.string().nullable().optional().default(null),
+  room_id: z.string().nullable().optional().default(null),
   client_name: z.string().optional().default(''),
   images: z.any().optional(),
   scans_3d: z.any().optional(),
@@ -38,7 +40,10 @@ export default function SurveyFormPage() {
   const [survey, setSurvey] = useState<Survey | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [subcategories, setSubcategories] = useState<ProjectSubcategory[]>([])
+  const [rooms, setRooms] = useState<ProjectRoom[]>([])
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(preselectedZoneId)
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
+  const [isLoadingRooms, setIsLoadingRooms] = useState(false)
   const [isLoading, setIsLoading] = useState(!!projectId || !!surveyId)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +78,34 @@ export default function SurveyFormPage() {
     }
   }, [projectId, surveyId])
 
+  // Load rooms when zone changes
+  useEffect(() => {
+    const loadRoomsForZone = async () => {
+      if (!selectedZoneId) {
+        setRooms([])
+        setSelectedRoomId(null)
+        return
+      }
+
+      setIsLoadingRooms(true)
+      try {
+        const z = await getRoomsByZone(selectedZoneId)
+        setRooms(z)
+        // Clear selected room when zone changes (unless we're loading an existing survey)
+        if (!survey) {
+          setSelectedRoomId(null)
+        }
+      } catch (err) {
+        console.error('Failed to load rooms:', err)
+        setRooms([])
+      } finally {
+        setIsLoadingRooms(false)
+      }
+    }
+
+    loadRoomsForZone()
+  }, [selectedZoneId, survey])
+
   const loadProjects = async () => {
     try {
       const allProjects = await getProjects()
@@ -98,6 +131,17 @@ export default function SurveyFormPage() {
         const subs = await getSubcategoriesByProject(s.project_id)
         setSubcategories(subs)
         setSelectedZoneId(s.subcategory_id ?? null)
+        setSelectedRoomId(s.room_id ?? null)
+
+        // Load rooms if survey is linked to a zone
+        if (s.subcategory_id) {
+          try {
+            const z = await getRoomsByZone(s.subcategory_id)
+            setRooms(z)
+          } catch (err) {
+            console.error('Failed to load rooms:', err)
+          }
+        }
       } else if (projectId) {
         const p = await getProjectById(projectId)
         setProject(p)
@@ -127,6 +171,7 @@ export default function SurveyFormPage() {
         project_id: projId,
         client_name: project?.name || '',
         subcategory_id: selectedZoneId,
+        room_id: selectedRoomId,
       }
 
       let surveyResult: Survey
@@ -217,6 +262,25 @@ export default function SurveyFormPage() {
               value={selectedZoneId ?? ''}
               onChange={e => setSelectedZoneId(e.target.value || null)}
             />
+          )}
+
+          {selectedZoneId && rooms.length > 0 && (
+            <Select
+              label="Room (Optional)"
+              options={[
+                { value: '', label: 'No room assigned' },
+                ...rooms.map(r => ({ value: r.id, label: r.name })),
+              ]}
+              value={selectedRoomId ?? ''}
+              onChange={e => setSelectedRoomId(e.target.value || null)}
+              disabled={isLoadingRooms}
+            />
+          )}
+
+          {selectedZoneId && rooms.length === 0 && !isLoadingRooms && (
+            <div className="text-sm text-gray-500 py-2">
+              No rooms in this zone. Survey will be assigned to the zone.
+            </div>
           )}
 
           <Input
