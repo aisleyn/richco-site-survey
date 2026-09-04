@@ -54,6 +54,7 @@ export async function createSurvey(
         suggested_system: values.suggested_system,
         install_notes: values.install_notes,
         subcategory_id: values.subcategory_id ?? null,
+        room_id: values.room_id ?? null,
         status: 'draft',
       },
     ])
@@ -82,6 +83,8 @@ export async function updateSurvey(
       suggested_system: values.suggested_system,
       install_notes: values.install_notes,
       client_name: values.client_name,
+      subcategory_id: values.subcategory_id ?? undefined,
+      room_id: values.room_id ?? undefined,
     })
     .eq('id', surveyId)
     .select()
